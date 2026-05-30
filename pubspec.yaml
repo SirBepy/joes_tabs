@@ -1,0 +1,10 @@
+name: joes_tabs_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.10.1
+
+workspace:
+  - apps/app
+  - packages/models
+  - packages/data

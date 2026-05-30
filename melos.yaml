@@ -1,0 +1,25 @@
+name: joes_tabs
+
+packages:
+  - apps/*
+  - packages/*
+
+command:
+  bootstrap:
+    # Native Dart pub workspace handles shared resolution.
+    runPubGetInParallel: false
+
+scripts:
+  analyze:
+    description: Analyze all packages.
+    run: dart analyze .
+    concurrency: 5
+
+  format:
+    description: Format all Dart code.
+    run: dart format .
+
+  test:
+    description: Run tests in all packages that have them.
+    run: melos exec --dir-exists=test -- dart test
+    concurrency: 5

@@ -1,0 +1,13 @@
+name: models
+description: Shared domain models for Joes Tabs.
+publish_to: none
+
+environment:
+  sdk: ^3.10.1
+
+resolution: workspace
+
+dependencies:
+
+dev_dependencies:
+  test: ^1.25.0
