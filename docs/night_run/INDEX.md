@@ -8,7 +8,7 @@ End cap: none
 
 ## Tasks
 
-- [ ] Monorepo scaffold - @docs/superpowers/plans/01-monorepo-scaffold.md
+- [~ 03:53] Monorepo scaffold - @docs/superpowers/plans/01-monorepo-scaffold.md
 - [ ] Document design screens - @docs/superpowers/plans/02-document-design-screens.md
 - [ ] Supabase schema & local dev - @docs/superpowers/plans/03-supabase-schema.md
 - [ ] Shared models package - @docs/superpowers/plans/04-models-package.md
