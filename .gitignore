@@ -26,3 +26,6 @@ supabase/.temp/
 
 # Throwaway verification screenshots
 .for_bepy/screenshots/
+
+# Claude Code session/cron scratch
+.claude/
