@@ -24,6 +24,10 @@ build/
 supabase/.branches/
 supabase/.temp/
 
+# Local run config (contains local dev keys, never committed)
+**/dart_define.local.json
+.env.local
+
 # Throwaway verification screenshots
 .for_bepy/screenshots/
 

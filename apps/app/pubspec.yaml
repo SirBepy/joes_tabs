@@ -37,6 +37,19 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # App shell: state, routing, icons (plan 07).
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+  phosphor_flutter: ^2.1.0
+  # Used directly in main.dart for the SupabaseClient type from initSupabase().
+  supabase_flutter: ^2.8.0
+
+  # Local workspace packages (models + data layer).
+  models:
+    path: ../../packages/models
+  data:
+    path: ../../packages/data
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
