@@ -14,7 +14,27 @@ dependencies:
     path: ../models
   supabase_flutter: ^2.8.0
   flutter_riverpod: ^2.6.1
+  # Local-first offline cache (plan 09). drift_flutter bundles the native
+  # sqlite3 libraries for mobile/desktop via build hooks (no EOL
+  # sqlite3_flutter_libs needed). On web, drift uses a wasm worker; see
+  # apps/app/web/ for sqlite3.wasm + drift_worker.js, with a graceful
+  # in-memory fallback if those assets are missing.
+  # drift/drift_dev pinned to the 2.31 line: drift_dev 2.32+ requires
+  # analyzer >=10, but this SDK (Dart 3.10.1) caps at analyzer 8.4.x, so the
+  # newest line that resolves here is 2.31 (analyzer >=8.1 <11).
+  #
+  # drift_flutter 0.3.0 was the preferred native-bundler but it requires
+  # drift 2.32+ (sqlite3 3.x), which does not resolve under analyzer 8. So we
+  # fall back to sqlite3_flutter_libs 0.5.27, the official native sqlite3 2.x
+  # bundler for mobile/desktop. On web we use a documented graceful fallback
+  # (in-memory) rather than the wasm worker - see app_database.dart.
+  drift: ">=2.30.0 <2.32.0"
+  sqlite3_flutter_libs: ^0.5.27
+  path: ^1.9.0
+  path_provider: ^2.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  drift_dev: ^2.31.0
+  build_runner: ^2.4.0

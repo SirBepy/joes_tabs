@@ -1,8 +1,8 @@
 /// Data layer for Joes Tabs: Supabase client wiring, the catalog repository,
 /// and the Riverpod providers the app consumes.
 ///
-/// Cache integration (Drift) is stubbed here via [OfflineCatalogRepository] and
-/// completed in plan 09.
+/// Offline caching (plan 09) is implemented via the Drift [AppDatabase] and the
+/// [OfflineCatalogRepository] decorator wired in [catalogRepositoryProvider].
 ///
 /// Startup:
 /// ```dart
@@ -16,6 +16,9 @@
 library;
 
 export 'src/catalog_repository.dart';
+// Expose the Drift cache type (AppDatabase) + companions so the app can wire a
+// persistent favorites store. Generated row classes come along via the part.
+export 'src/drift/app_database.dart';
 export 'src/env.dart';
 export 'src/mappers.dart';
 export 'src/offline_catalog_repository.dart';

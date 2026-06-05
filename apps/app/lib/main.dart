@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
+import 'state/favorites_provider.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -20,10 +21,27 @@ Future<void> main() async {
     initError = e.toString();
   }
 
+  // Open the offline cache (plan 09) and seed the persistent favorites store
+  // with whatever is already on disk so the Saved screen is populated on first
+  // frame. On web this is in-memory (see data/.../connection_web.dart); if it
+  // throws for any reason we fall back to the in-memory favorites store so the
+  // app still launches.
+  final db = AppDatabase();
+  Set<String> initialFavorites = const <String>{};
+  try {
+    initialFavorites = (await db.favoriteIds()).toSet();
+  } catch (_) {
+    // Cache unavailable: app still runs with non-persistent favorites.
+  }
+
   runApp(
     ProviderScope(
       overrides: [
         if (client != null) supabaseClientProvider.overrideWithValue(client),
+        appDatabaseProvider.overrideWithValue(db),
+        favoritesProvider.overrideWith(
+          (ref) => DriftFavoritesNotifier(db, initial: initialFavorites),
+        ),
       ],
       child: JoesTabsApp(initError: initError),
     ),

@@ -1,4 +1,5 @@
 import 'package:data/data.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -123,10 +124,12 @@ void main() {
   });
 
   test(
-    'OfflineCatalogRepository passes through to its remote (stub)',
+    'OfflineCatalogRepository passes trending + search through to its remote',
     () async {
       final fake = FakeCatalogRepository(songs: [_song('a', 'Aaa')]);
-      final offline = OfflineCatalogRepository(remote: fake);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final offline = OfflineCatalogRepository(remote: fake, cache: db);
 
       final trending = await offline.trending();
       expect(trending.single.title, 'Aaa');

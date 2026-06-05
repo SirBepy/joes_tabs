@@ -3,6 +3,8 @@ import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'catalog_repository.dart';
+import 'drift/app_database.dart';
+import 'offline_catalog_repository.dart';
 import 'supabase_catalog_repository.dart';
 
 /// Exposes the initialized [SupabaseClient] to the Riverpod graph.
@@ -26,12 +28,36 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   );
 });
 
-/// The catalog repository the UI depends on. Today this is the Supabase-backed
-/// implementation; plan 09 can override it with an offline-caching decorator
-/// (see [OfflineCatalogRepository]) without changing any consumer.
-final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
+/// The Drift offline cache (cached songs/tabs, favorites, recent-views LRU).
+///
+/// Opened once per app run and disposed with the provider container. On native
+/// platforms this is a file-backed sqlite database; on web it falls back to an
+/// in-memory database (see drift/connection/connection_web.dart).
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  final db = AppDatabase();
+  ref.onDispose(db.close);
+  return db;
+});
+
+/// The Supabase-backed remote catalog repository (network source of truth).
+final remoteCatalogRepositoryProvider = Provider<CatalogRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
   return SupabaseCatalogRepository(client);
+});
+
+/// The catalog repository the UI depends on: the Supabase remote wrapped in the
+/// offline-caching decorator so opened songs survive offline (spec section 5).
+/// Consumers are unchanged - they still watch [catalogRepositoryProvider].
+final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
+  final remote = ref.watch(remoteCatalogRepositoryProvider);
+  final cache = ref.watch(appDatabaseProvider);
+  return OfflineCatalogRepository(remote: remote, cache: cache);
+});
+
+/// Stream of persisted favorite song ids (newest first) from the Drift cache.
+/// Backs the app's persistent favorites store and the Saved screen.
+final favoriteIdsStreamProvider = StreamProvider<List<String>>((ref) {
+  return ref.watch(appDatabaseProvider).watchFavoriteIds();
 });
 
 /// Trending songs for the home view.

@@ -1,15 +1,17 @@
+import 'dart:async';
+
+import 'package:data/data.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// In-memory set of favorited song ids.
+/// In-memory set of favorited song ids (base notifier).
 ///
-/// PERSISTENCE NOTE: deliberately in-memory only for plan 08. Plan 09 backs the
-/// same contract with a Drift table so favorites survive an app restart. Until
-/// then, favorites reset when the app process exits (acceptable for the
-/// wireframe). The contract plan 09 should preserve:
+/// PERSISTENCE: plan 09 backs the same contract with a Drift table via
+/// [DriftFavoritesNotifier]; the app overrides [favoritesProvider] at the root
+/// `ProviderScope` so favorites survive an app restart. This base class stays
+/// as the default (used in widget tests with no database) and defines the
+/// contract every consumer relies on:
 /// - `state` is the current set of favorited song ids.
 /// - [isFavorite] / [toggle] / [add] / [remove] are the only mutators.
-/// - Replace the body of this notifier with a cache-backed one and override
-///   [favoritesProvider] at the root `ProviderScope`; no consumer changes.
 class FavoritesNotifier extends StateNotifier<Set<String>> {
   FavoritesNotifier([Set<String>? initial])
     : super(Set<String>.unmodifiable(initial ?? const <String>{}));
@@ -34,7 +36,51 @@ class FavoritesNotifier extends StateNotifier<Set<String>> {
       isFavorite(songId) ? remove(songId) : add(songId);
 }
 
-/// The app-wide favorites store. In-memory for plan 08 (see [FavoritesNotifier]).
+/// Drift-backed [FavoritesNotifier] that persists favorites across restart.
+///
+/// Writes go straight to the [AppDatabase] favorites table; `state` is kept in
+/// sync by listening to the table's stream so external changes (and the Saved
+/// screen) always agree. The mutator surface is unchanged from the base class,
+/// so no consumer (`song_detail_screen`, `song_tiles`, `home_screen`,
+/// `saved_screen`) needs to change.
+class DriftFavoritesNotifier extends FavoritesNotifier {
+  DriftFavoritesNotifier(this._db, {Set<String>? initial}) : super(initial) {
+    _sub = _db.watchFavoriteIds().listen((ids) {
+      state = Set<String>.unmodifiable(ids);
+    });
+  }
+
+  final AppDatabase _db;
+  StreamSubscription<List<String>>? _sub;
+
+  @override
+  void add(String songId) {
+    if (state.contains(songId)) return;
+    // Optimistic local update; the stream confirms it shortly after.
+    super.add(songId);
+    unawaited(_db.addFavorite(songId));
+  }
+
+  @override
+  void remove(String songId) {
+    if (!state.contains(songId)) return;
+    super.remove(songId);
+    unawaited(_db.removeFavorite(songId));
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+}
+
+/// The app-wide favorites store.
+///
+/// Default is the in-memory [FavoritesNotifier]; `main.dart` overrides this at
+/// the root `ProviderScope` (via [favoritesProvider.overrideWith]) with a
+/// [DriftFavoritesNotifier] so favorites persist across restart. No consumer
+/// changes because the [FavoritesNotifier] surface is identical.
 final favoritesProvider = StateNotifierProvider<FavoritesNotifier, Set<String>>(
   (ref) => FavoritesNotifier(),
 );

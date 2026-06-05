@@ -1,31 +1,28 @@
 import 'package:models/models.dart';
 
 import 'catalog_repository.dart';
+import 'drift/app_database.dart';
 
-/// Offline-caching decorator extension point for [CatalogRepository].
+/// Offline-caching decorator for [CatalogRepository], backed by a Drift cache.
 ///
-/// STUB ONLY. Plan 09 completes this with a Drift-backed local cache:
-/// read-through (serve cached rows when offline / on error) and write-behind
-/// (persist fresh network results). It is intentionally a thin pass-through to
-/// [_remote] today so the abstraction and provider override path exist now and
-/// nothing else has to change when caching lands.
-///
-/// Wiring (plan 09) will look like:
-/// ```dart
-/// final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
-///   final remote = SupabaseCatalogRepository(ref.watch(supabaseClientProvider));
-///   final cache = ref.watch(catalogCacheProvider); // Drift
-///   return OfflineCatalogRepository(remote: remote, cache: cache);
-/// });
-/// ```
+/// Read-through with offline fallback:
+/// - [getSong] tries the remote; on success it caches the result and records a
+///   view (driving the LRU window), then returns it. On failure it serves the
+///   cached copy if one exists, otherwise rethrows.
+/// - [trending], [listSongs], [search], [instruments] pass through to the
+///   remote (the cache is keyed per song, populated as songs are opened). They
+///   are NOT served from cache on failure - the offline guarantee is scoped to
+///   favorited + recently-viewed *songs* (spec section 5), which [getSong]
+///   covers.
 class OfflineCatalogRepository implements CatalogRepository {
-  OfflineCatalogRepository({required CatalogRepository remote})
-    : _remote = remote;
+  OfflineCatalogRepository({
+    required CatalogRepository remote,
+    required AppDatabase cache,
+  }) : _remote = remote,
+       _cache = cache;
 
   final CatalogRepository _remote;
-
-  // TODO(plan-09): inject a Drift cache and implement read-through /
-  // write-behind around each call below.
+  final AppDatabase _cache;
 
   @override
   Future<List<Song>> trending({int limit = 20}) =>
@@ -39,7 +36,23 @@ class OfflineCatalogRepository implements CatalogRepository {
   Future<List<Song>> search(String query) => _remote.search(query);
 
   @override
-  Future<SongWithTabs?> getSong(String id) => _remote.getSong(id);
+  Future<SongWithTabs?> getSong(String id) async {
+    try {
+      final fresh = await _remote.getSong(id);
+      if (fresh != null) {
+        // Write-through: cache the fresh copy and record the view so it counts
+        // toward the LRU window (favorites are protected from eviction).
+        await _cache.cacheSong(fresh);
+        await _cache.recordView(id);
+      }
+      return fresh;
+    } catch (_) {
+      // Offline / remote error: serve the cached copy if we have one.
+      final cached = await _cache.cachedSong(id);
+      if (cached != null) return cached;
+      rethrow;
+    }
+  }
 
   @override
   Future<List<Instrument>> instruments() => _remote.instruments();
