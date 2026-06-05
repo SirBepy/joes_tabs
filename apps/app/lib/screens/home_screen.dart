@@ -173,8 +173,11 @@ class _SectionLabel extends StatelessWidget {
         AppSpacing.sm,
       ),
       child: Row(
+        // Title at the start, optional link (e.g. "ALL SAVED TABS >") pinned to
+        // the opposite end so the two are not cramped together.
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
+          Flexible(
             child: Text(text, style: Theme.of(context).textTheme.titleLarge),
           ),
           ?trailing,

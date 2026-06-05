@@ -189,6 +189,8 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
 
     return Column(
       children: [
+        // Title now lives in the section header (AppShell); the body keeps the
+        // mic toggle, pinned to the right per the mockup.
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
@@ -198,15 +200,6 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
           ),
           child: Row(
             children: [
-              const Text(
-                'TUNER',
-                style: TextStyle(
-                  color: AppColors.orange,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 24,
-                  letterSpacing: 1.5,
-                ),
-              ),
               const Spacer(),
               _MicToggle(active: _micMode, onTap: _toggleMic),
             ],

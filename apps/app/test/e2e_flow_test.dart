@@ -164,7 +164,12 @@ void main() {
     expect(find.text('Amazing Grace'), findsOneWidget);
     expect(find.text('Moon River'), findsNothing); // only the favorited one
 
-    // 6. Navigate to Trending and back to Home to confirm shell nav works.
+    // 6. Saved is a section screen (back button, no hamburger): tap Back to
+    //    return Home, then open the drawer there and go to Trending.
+    await tester.tap(find.bySemanticsLabel('Back'));
+    await tester.pumpAndSettle();
+    expect(router.routerDelegate.currentConfiguration.uri.path, AppRoutes.home);
+
     await tester.tap(find.byTooltip('Menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Trending'));

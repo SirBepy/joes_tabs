@@ -23,8 +23,9 @@ void main() {
   testWidgets('renders chord diagrams grouped by root', (tester) async {
     await _pump(tester);
 
-    expect(find.text('CHORDS'), findsOneWidget);
-    // Many ChordDiagram cards are rendered for the ukulele set.
+    // The "CHORDS" bubble title now lives in the section header (AppShell),
+    // not the screen body. Here the body is pumped bare, so assert on the body
+    // content it owns: the diagram cards and the root-note section headers.
     expect(find.byType(ChordDiagram), findsWidgets);
     // The C root section header is present.
     expect(find.text('C'), findsWidgets);

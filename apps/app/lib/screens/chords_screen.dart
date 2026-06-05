@@ -47,9 +47,10 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
             AppSpacing.lg,
             AppSpacing.sm,
           ),
+          // Title now lives in the section header (AppShell); the body keeps
+          // just the instrument toggle, pinned to the right per the mockup.
           child: Row(
             children: [
-              Text('CHORDS', style: Theme.of(context).textTheme.titleLarge),
               const Spacer(),
               InstrumentToggle(
                 value: instrument,
