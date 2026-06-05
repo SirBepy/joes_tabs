@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../ads/ad_service.dart';
+import '../ads/watch_ad_action.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -120,6 +122,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SnackBar(content: Text('Tag management coming soon.')),
           ),
         ),
+        const Divider(height: 1),
+        // WATCH AN AD TO SUPPORT US (rewarded ad, mobile only). On web/desktop
+        // the row is disabled with a caption, since AdMob has no web support.
+        _buildWatchAdRow(),
         // LOG OUT only makes sense while signed in; anonymous users see nothing.
         if (user != null) ...[
           const SizedBox(height: AppSpacing.xl),
@@ -134,6 +140,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  /// "Watch an ad to support us" row. Enabled on mobile (triggers a rewarded
+  /// ad); disabled with a caption on web/desktop where AdMob is unsupported.
+  Widget _buildWatchAdRow() {
+    final adService = ref.watch(adServiceProvider);
+    final supported = adService.isSupported;
+
+    return ListTile(
+      key: const Key('watch-ad-row'),
+      enabled: supported,
+      leading: Icon(
+        PhosphorIconsFill.megaphone,
+        color: supported ? AppColors.orange : AppColors.textDark,
+      ),
+      title: const Text(
+        'WATCH AN AD TO SUPPORT US',
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textDark,
+        ),
+      ),
+      subtitle: supported
+          ? null
+          : const Text(
+              'Available on the mobile app',
+              key: Key('watch-ad-web-note'),
+            ),
+      onTap: supported ? () => runWatchAdFlow(context, adService) : null,
     );
   }
 

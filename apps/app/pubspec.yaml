@@ -47,6 +47,11 @@ dependencies:
   # Used directly in main.dart for the SupabaseClient type from initSupabase().
   supabase_flutter: ^2.8.0
 
+  # Google AdMob (official Google verified-publisher plugin, Apache-2.0). Powers
+  # the rewarded "watch an ad to support us" flow on Android/iOS. Guarded behind
+  # a conditional import (lib/ads/) so it is never pulled into the web build.
+  google_mobile_ads: ^6.0.0
+
   # Dart-team web platform bindings (dart:js_interop + DOM/Web Audio types).
   # Used only by lib/tuner/mic_web.dart for live microphone pitch detection on
   # web. Already present transitively; declared directly so the analyzer is

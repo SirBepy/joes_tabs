@@ -30,6 +30,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Google AdMob application id. This is Google's official SAMPLE app id
+             so the rewarded-ad integration builds and serves TEST ads without a
+             real AdMob account. REPLACE with Joe's real AdMob app id once his
+             account is set up. The rewarded ad *unit* id lives in
+             lib/ads/ad_service_mobile.dart. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
