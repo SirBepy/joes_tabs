@@ -64,6 +64,26 @@ tab site.
 | `simple-gifts.cho` | Simple Gifts | Shaker hymn by Joseph Brackett, 1848 | Pre-1929; expired copyright |
 | `home-on-the-range.cho` | Home on the Range | Words Brewster Higley, music Daniel Kelley, c. 1872 | Pre-1929; ruled PD (1930s copyright claim invalidated) |
 | `kumbaya.cho` | Kumbaya | African-American spiritual, pub. by 1926 | Pre-1929; traditional spiritual; PD |
+| `beautiful-dreamer.cho` | Beautiful Dreamer | Stephen Foster, pub. posthumously 1864 | Pre-1929; expired copyright |
+| `jeanie-with-the-light-brown-hair.cho` | Jeanie with the Light Brown Hair | Stephen Foster, 1854 | Pre-1929; expired copyright |
+| `my-old-kentucky-home.cho` | My Old Kentucky Home | Stephen Foster, 1853 | Pre-1929; expired copyright |
+| `danny-boy.cho` | Danny Boy | Lyrics Frederic Weatherly 1910 (set to tune 1913); melody "Londonderry Air" traditional Irish | Lyricist died 1929, words published pre-1931 and PD in the US; melody is centuries-old traditional. Original arrangement, not a modern recorded version |
+| `drunken-sailor.cho` | Drunken Sailor | English/maritime traditional sea shanty, early 19th c. | Traditional folk; no subsisting copyright |
+| `buffalo-gals.cho` | Buffalo Gals | American minstrel/folk song, pub. 1844 ("Lubly Fan" / Cool White) | Pre-1929; expired copyright |
+| `man-of-constant-sorrow.cho` | Man of Constant Sorrow | Traditional Appalachian folk; first printed by Dick Burnett as "Farewell Song", 1913 | Pre-1929; traditional folk; PD (uses the traditional pre-1929 text, not the 2000 film arrangement) |
+| `john-henry.cho` | John Henry | African-American traditional ballad, 19th c.; in print by early 1900s | Traditional folk; pre-1929; PD |
+| `midnight-special.cho` | Midnight Special | Traditional Southern folk/prison song; in print 1923-1927 (Sandburg's "American Songbag", 1927) | Pre-1929; traditional; PD (the traditional version, not a specific later recorded arrangement) |
+| `wabash-cannonball.cho` | Wabash Cannonball | From "The Great Rock Island Route", J. A. Roff 1882; rewritten by William Kindt 1904 | Pre-1929; both source publications PD; uses the traditional pre-1929 text |
+
+## Candidates skipped on public-domain uncertainty
+
+- **Wildwood Flower**: the underlying 1860 "I'll Twine 'Mid the Ringlets"
+  (Webster/Irving) is PD, but the well-known Carter Family text is a 1928
+  derivative with a 1930/1955 copyright registration by Peer International. To
+  avoid accidentally seeding the copyrighted derivative lyric, this song was
+  skipped rather than risk a per-line license review.
+- **Goodnight Irene** (Lead Belly) and the 1964 recorded **House of the Rising
+  Sun** arrangement are NOT public domain and were never used.
 
 ## Notes on "House of the Rising Sun" and "Will the Circle Be Unbroken"
 

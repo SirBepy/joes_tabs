@@ -42,6 +42,16 @@ const Map<String, String> songIds = {
   'simple-gifts': '11627aa9-edb8-557b-afcb-7ee27a3fd893',
   'home-on-the-range': '5c277ae3-7f6f-50ff-8809-25b303421d34',
   'kumbaya': '4b5bcc6e-30bb-5955-ae3c-7c8428a419dc',
+  'beautiful-dreamer': '317c7b40-32af-5f50-beab-4e77cddb5701',
+  'jeanie-with-the-light-brown-hair': '3b284b54-8977-5505-8fe2-5f7902a85634',
+  'my-old-kentucky-home': '145ece0b-99e3-51e8-a722-14687c97e707',
+  'danny-boy': 'd2f8aed1-08c0-5f0f-9748-55b6e153bb60',
+  'drunken-sailor': '0d2acbe6-7c90-52eb-ad42-9f9e220b9dd5',
+  'buffalo-gals': '9bb5c0a5-23af-5907-acb9-c0d3728c7eea',
+  'man-of-constant-sorrow': '6b231d4d-c368-5ad1-bcc1-4a6829899644',
+  'john-henry': '13ca8577-f6f6-5789-8be4-c50198cbf2fb',
+  'midnight-special': '09dfe425-cc90-548b-9c98-5ae17934a166',
+  'wabash-cannonball': '3291dd8c-585d-5832-905f-538c08bd568e',
 };
 
 /// Deterministic tab UUIDs, keyed by `<instrumentSlug>/<songSlug>`.
@@ -88,6 +98,28 @@ const Map<String, String> tabIds = {
   'guitar/simple-gifts': 'cbe80f85-7513-59f3-8ab6-2128cb819abf',
   'guitar/home-on-the-range': '171b2676-ec7e-5cf6-9eac-6e13f8714119',
   'guitar/kumbaya': 'a0593609-832e-51c8-9468-d1465b7d4f33',
+  'ukulele/beautiful-dreamer': 'ae3c70a2-1c80-5c87-85b4-f44446d763f3',
+  'ukulele/jeanie-with-the-light-brown-hair':
+      'a50a6e51-a620-5c60-81ba-b642d0e08ab2',
+  'ukulele/my-old-kentucky-home': '1caa2684-f67b-5dbb-8c35-974afad4dec6',
+  'ukulele/danny-boy': '14c5be09-a905-5244-874a-0cebb956f1f5',
+  'ukulele/drunken-sailor': '83fb7dc9-3683-5f12-ac2d-652bbf5f6d78',
+  'ukulele/buffalo-gals': '9e4cb0b2-894d-502a-bddd-1736be2f0474',
+  'ukulele/man-of-constant-sorrow': '480e3985-7370-549b-b13c-4fe2437bb108',
+  'ukulele/john-henry': '09f4a3eb-5dd2-5e99-adee-c8596b5352db',
+  'ukulele/midnight-special': 'b7467fbc-1ca9-5d50-baee-9f1d5b76f9be',
+  'ukulele/wabash-cannonball': 'ae99e479-6f45-5507-9e99-c2c5413dd2eb',
+  'guitar/beautiful-dreamer': '8c94e165-3485-5748-b0ec-c644f98f2de7',
+  'guitar/jeanie-with-the-light-brown-hair':
+      '5c0d8d02-c9a5-5c13-a953-4a94ff55aa68',
+  'guitar/my-old-kentucky-home': '090815e9-3b6f-5485-803e-c30ea4a5ca66',
+  'guitar/danny-boy': 'a1ae4b0e-eaa2-5dba-bdbf-25e2db15acea',
+  'guitar/drunken-sailor': '52e0fd55-0092-557e-9fbb-42b0fe953d48',
+  'guitar/buffalo-gals': '29d07a5d-9242-5966-a2f1-fb7e80117c1f',
+  'guitar/man-of-constant-sorrow': '5d4767a8-289a-5146-9f72-a2e1bef39725',
+  'guitar/john-henry': '8b7c76ff-d0d4-56b4-b4f9-92e7543aa2f7',
+  'guitar/midnight-special': 'f1939411-2baa-51a2-84dc-9a9dbe33437b',
+  'guitar/wabash-cannonball': '9d7e89e3-9958-5e28-8643-0c35d909cbe0',
 };
 
 /// Instrument slugs that each song is published for. The ChordPro content is
