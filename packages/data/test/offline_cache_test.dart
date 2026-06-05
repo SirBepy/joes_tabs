@@ -58,6 +58,11 @@ class _StubRemote implements CatalogRepository {
   @override
   Future<List<Song>> search(String query) async => const [];
   @override
+  Future<List<Song>> searchSongs(
+    String query, {
+    String? instrumentSlug,
+  }) async => const [];
+  @override
   Future<List<Instrument>> instruments() async => const [];
 }
 

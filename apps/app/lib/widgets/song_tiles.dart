@@ -12,7 +12,12 @@ import '../theme/app_spacing.dart';
 /// A two-line trending/search list row: title over artist with a trailing
 /// bookmark toggle, tappable to the song detail. Matches `trending-2.md`.
 class SongListTile extends ConsumerWidget {
-  const SongListTile({super.key, required this.song, this.trailingChip});
+  const SongListTile({
+    super.key,
+    required this.song,
+    this.trailingChip,
+    this.highlight,
+  });
 
   final Song song;
 
@@ -20,21 +25,26 @@ class SongListTile extends ConsumerWidget {
   /// bookmark.
   final String? trailingChip;
 
+  /// Optional query to emphasise where it matches the title/artist (search).
+  final String? highlight;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saved = ref.watch(isFavoriteProvider(song.id));
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      title: Text(
-        song.title,
-        style: const TextStyle(
+      title: _Highlighted(
+        text: song.title,
+        query: highlight,
+        base: const TextStyle(
           color: AppColors.orange,
           fontWeight: FontWeight.w600,
         ),
       ),
-      subtitle: Text(
-        song.artist,
-        style: const TextStyle(color: AppColors.textMuted),
+      subtitle: _Highlighted(
+        text: song.artist,
+        query: highlight,
+        base: const TextStyle(color: AppColors.textMuted),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -99,6 +109,44 @@ class SongCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Renders [text] in [base] style, bolding the first case-insensitive run that
+/// matches [query]. Falls back to plain text when there is no query or match.
+class _Highlighted extends StatelessWidget {
+  const _Highlighted({required this.text, required this.base, this.query});
+
+  final String text;
+  final String? query;
+  final TextStyle base;
+
+  @override
+  Widget build(BuildContext context) {
+    final q = query?.trim() ?? '';
+    if (q.isEmpty) return Text(text, style: base);
+
+    final lowerText = text.toLowerCase();
+    final start = lowerText.indexOf(q.toLowerCase());
+    if (start < 0) return Text(text, style: base);
+
+    final end = start + q.length;
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          if (start > 0) TextSpan(text: text.substring(0, start)),
+          TextSpan(
+            text: text.substring(start, end),
+            style: const TextStyle(
+              color: AppColors.rust,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (end < text.length) TextSpan(text: text.substring(end)),
+        ],
       ),
     );
   }

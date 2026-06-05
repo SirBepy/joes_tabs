@@ -80,6 +80,22 @@ final searchProvider = FutureProvider.family<List<Song>, String>((ref, query) {
   return ref.watch(catalogRepositoryProvider).search(query);
 });
 
+/// Search query plus an optional instrument-slug filter (null = all/both).
+/// A record so the [searchFilteredProvider] family keys on both values with
+/// structural equality (no extra equatable boilerplate).
+typedef SearchArgs = ({String query, String? instrumentSlug});
+
+/// Full-text search results for [SearchArgs.query], narrowed to songs that
+/// have a published tab for [SearchArgs.instrumentSlug] (null = no filter).
+final searchFilteredProvider = FutureProvider.family<List<Song>, SearchArgs>((
+  ref,
+  args,
+) {
+  return ref
+      .watch(catalogRepositoryProvider)
+      .searchSongs(args.query, instrumentSlug: args.instrumentSlug);
+});
+
 /// A single song with its published tabs, or null if not found/visible.
 final songProvider = FutureProvider.family<SongWithTabs?, String>((ref, id) {
   return ref.watch(catalogRepositoryProvider).getSong(id);

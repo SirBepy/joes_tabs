@@ -38,6 +38,13 @@ class FakeCatalogRepository implements CatalogRepository {
   }
 
   @override
+  Future<List<Song>> searchSongs(String query, {String? instrumentSlug}) async {
+    lastSearchQuery = query;
+    lastInstrumentSlug = instrumentSlug;
+    return songs;
+  }
+
+  @override
   Future<SongWithTabs?> getSong(String id) async {
     lastSongId = id;
     return songDetail;
@@ -86,6 +93,23 @@ void main() {
 
     await container.read(searchProvider('riptide').future);
     expect(fake.lastSearchQuery, 'riptide');
+  });
+
+  test('searchFilteredProvider passes the query and slug through', () async {
+    final fake = FakeCatalogRepository(songs: [_song('a', 'Aaa')]);
+    final container = ProviderContainer(
+      overrides: [catalogRepositoryProvider.overrideWithValue(fake)],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(
+      searchFilteredProvider((
+        query: 'riptide',
+        instrumentSlug: 'guitar',
+      )).future,
+    );
+    expect(fake.lastSearchQuery, 'riptide');
+    expect(fake.lastInstrumentSlug, 'guitar');
   });
 
   test('songsByInstrumentProvider passes the slug through', () async {

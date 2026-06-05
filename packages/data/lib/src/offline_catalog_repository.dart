@@ -36,6 +36,10 @@ class OfflineCatalogRepository implements CatalogRepository {
   Future<List<Song>> search(String query) => _remote.search(query);
 
   @override
+  Future<List<Song>> searchSongs(String query, {String? instrumentSlug}) =>
+      _remote.searchSongs(query, instrumentSlug: instrumentSlug);
+
+  @override
   Future<SongWithTabs?> getSong(String id) async {
     try {
       final fresh = await _remote.getSong(id);

@@ -24,6 +24,16 @@ abstract class CatalogRepository {
   /// server-side by the RPC).
   Future<List<Song>> search(String query);
 
+  /// Full-text search over title + artist, optionally narrowed to songs that
+  /// have at least one published tab for the instrument with [instrumentSlug]
+  /// (e.g. `ukulele`, `guitar`). When [instrumentSlug] is null no instrument
+  /// filter is applied and this is equivalent to [search].
+  ///
+  /// Membership is the intersection of the [search] matches with the songs
+  /// that [listSongs] returns for [instrumentSlug], so a song matches the
+  /// filter exactly when it has a published tab for that instrument.
+  Future<List<Song>> searchSongs(String query, {String? instrumentSlug});
+
   /// A single song with its published tabs, or null if the id is unknown or
   /// not publicly visible.
   Future<SongWithTabs?> getSong(String id);

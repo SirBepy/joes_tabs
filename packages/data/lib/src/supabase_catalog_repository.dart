@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -77,6 +78,29 @@ class SupabaseCatalogRepository implements CatalogRepository {
     } catch (e) {
       throw CatalogException('Search failed', e);
     }
+  }
+
+  @override
+  Future<List<Song>> searchSongs(String query, {String? instrumentSlug}) async {
+    final matches = await search(query);
+    if (instrumentSlug == null) return matches;
+
+    // Narrow to songs that have a published tab for the instrument. listSongs
+    // already encodes that membership (inner join on published tabs).
+    final withInstrument = await listSongs(instrumentSlug: instrumentSlug);
+    return intersectByInstrument(matches, withInstrument);
+  }
+
+  /// Keeps the [matches] (search ranking) whose id also appears in
+  /// [withInstrument] (songs having a published tab for the chosen instrument),
+  /// preserving the search order. Pure + exposed for unit testing.
+  @visibleForTesting
+  static List<Song> intersectByInstrument(
+    List<Song> matches,
+    List<Song> withInstrument,
+  ) {
+    final allowed = {for (final s in withInstrument) s.id};
+    return matches.where((s) => allowed.contains(s.id)).toList();
   }
 
   @override
