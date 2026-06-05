@@ -1,6 +1,8 @@
 import 'package:data/data.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
@@ -9,6 +11,12 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Use clean path-based URLs on web (e.g. /song/<id>) instead of hash routing,
+  // so song links are shareable and reload correctly. No-op on other platforms.
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   // Initialize Supabase from --dart-define config. If the env is missing (or
   // init fails), still launch the app so the shell is navigable, just without a
