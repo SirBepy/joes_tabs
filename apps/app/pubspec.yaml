@@ -47,6 +47,12 @@ dependencies:
   # Used directly in main.dart for the SupabaseClient type from initSupabase().
   supabase_flutter: ^2.8.0
 
+  # Dart-team web platform bindings (dart:js_interop + DOM/Web Audio types).
+  # Used only by lib/tuner/mic_web.dart for live microphone pitch detection on
+  # web. Already present transitively; declared directly so the analyzer is
+  # happy with the explicit import.
+  web: ^1.1.1
+
   # Local workspace packages (models + data layer).
   models:
     path: ../../packages/models
