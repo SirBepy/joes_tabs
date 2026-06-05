@@ -1,10 +1,13 @@
 # Bepy Todos
 
 ### Urgent
-- Keep this PC awake and Claude Code open from now until ~13:00 today. The overnight build runs LOCAL cron ticks starting 05:02; if the PC sleeps or Claude Code closes, the build stalls. (For a PC-off run we'd use /night-run instead.)
-- Confirm the GitHub account: you said `joephus321`, but the gh CLI is logged in as `josipmuzic` and `SirBepy` (not joephus321). Once confirmed, connect the GitHub remote - for tonight `origin` points at a local bare repo so cron pushes work offline.
-- Local Supabase needs Docker Desktop running for plan 03 (schema/migrations) and plan 06 (seed). If Docker is off, those plans will author SQL but mark themselves blocked. Start Docker before 05:02 if you want them fully applied.
-- Later: create a hosted Supabase project, then provide `SUPABASE_URL` + anon key (via --dart-define) and the service-role key (in an untracked .env) for seeding.
+- Confirm the GitHub account: you said `joephus321`, but the gh CLI is logged in as `josipmuzic` and `SirBepy` (not joephus321). Once confirmed I can repoint `origin` from the local bare repo to GitHub and push. Until then everything is committed locally.
 
-### Visual QA
-- After the wireframe build lands, review the screens against DesignImages/ so we can do the UI polish pass together (polish is intentionally NOT part of the overnight run).
+### When you want it (not blocking - local works today)
+- Hosted Supabase project: create one, then drop me `SUPABASE_URL` + the publishable/anon key and (for seeding) the service-role key. I'll wire the prod dart-define and run the seed against it. The LOCAL stack is fully working now, so this is only needed for a deployed/shared build.
+- Decide the final app name (currently "Joe's Tabs" placeholder in the web title only).
+- Device test for the Tuner's live mic pitch detection (reference-tone mode works; real mic is best judged on a phone). Low priority.
+
+### Visual QA (let's do this together)
+- Review the wireframe screens against DesignImages/ for the UI polish pass. The whole build so far is functional wireframe at brand level (peach/cream + orange + mascot placeholders); polish is intentionally yours to drive. Screenshots from this run are in `.for_bepy/screenshots/`.
+</content>
