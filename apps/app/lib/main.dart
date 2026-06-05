@@ -67,11 +67,13 @@ Future<void> main() async {
 
 /// Root app widget: themed [MaterialApp.router] driven by the go_router config.
 ///
-/// A [ConsumerWidget] so it can listen to [currentUserProvider] and run the
-/// first-sign-in favorites merge (local Drift <-> account) whenever a user
-/// signs in. The merge is best-effort: a failure logs and is swallowed so it
-/// never blocks the UI.
-class JoesTabsApp extends ConsumerWidget {
+/// A [ConsumerStatefulWidget] so it can (a) build the [GoRouter] EXACTLY ONCE and
+/// hold it in state, and (b) listen to [currentUserProvider] to run the first
+/// sign-in favorites merge. Building the router once is load-bearing: if it were
+/// rebuilt on every build (e.g. when the dark-mode toggle changes the watched
+/// theme), a fresh GoRouter would reset navigation to its initial location
+/// (splash), kicking the user off whatever screen they were on.
+class JoesTabsApp extends ConsumerStatefulWidget {
   const JoesTabsApp({super.key, this.initError, this.hasBackend = false});
 
   /// Non-null when Supabase failed to initialize (e.g. missing dart-defines).
@@ -81,8 +83,18 @@ class JoesTabsApp extends ConsumerWidget {
   final bool hasBackend;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (hasBackend) {
+  ConsumerState<JoesTabsApp> createState() => _JoesTabsAppState();
+}
+
+class _JoesTabsAppState extends ConsumerState<JoesTabsApp> {
+  // Built once for the lifetime of the app so theme/auth rebuilds never reset
+  // the navigation stack.
+  final _router = buildRouter();
+
+  @override
+  Widget build(BuildContext context) {
+    final initError = widget.initError;
+    if (widget.hasBackend) {
       // Run the account favorites sync on every transition into a signed-in
       // state (sign-in / restored session). Idempotent, so re-runs are safe.
       ref.listen<User?>(currentUserProvider, (previous, next) {
@@ -98,7 +110,6 @@ class JoesTabsApp extends ConsumerWidget {
         }
       });
     }
-    final router = buildRouter();
     final isDark = ref.watch(darkModeProvider);
     return MaterialApp.router(
       title: "Joe's Tabs",
@@ -106,7 +117,7 @@ class JoesTabsApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-      routerConfig: router,
+      routerConfig: _router,
       builder: (context, child) {
         if (initError == null) return child ?? const SizedBox.shrink();
         // Backend unavailable: show a thin banner above the app content.
