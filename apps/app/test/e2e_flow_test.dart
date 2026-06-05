@@ -113,6 +113,10 @@ void main() {
     expect(find.text('Moon River'), findsOneWidget);
 
     // 2. Tap a trending song -> lands on its detail (chord sheet renders).
+    //    The trending panel can sit below the fold on the small test surface
+    //    (the welcome mascot pushes it down), so scroll it into view first.
+    await tester.ensureVisible(find.text('Amazing Grace'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Amazing Grace'));
     await tester.pumpAndSettle();
     expect(find.text('AMAZING GRACE'), findsOneWidget); // header (upper-cased)

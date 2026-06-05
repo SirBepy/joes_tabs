@@ -85,6 +85,15 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Brand display font. Fredoka is a chunky rounded "bubble" face (SIL OFL 1.1,
+  # bundled offline as a variable TTF). Used for headings/titles only; body and
+  # chord-sheet text stay the default readable sans.
+  # NOTE(design): exact brand font is TBD with Joe; Fredoka is the stand-in.
+  fonts:
+    - family: Fredoka
+      fonts:
+        - asset: assets/fonts/Fredoka.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

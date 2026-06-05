@@ -1,12 +1,15 @@
 import 'package:data/data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../router/app_routes.dart';
 import '../state/favorites_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/brand_mascot.dart';
 import '../widgets/song_tiles.dart';
 
 /// Logged-in home / dashboard (mockup `welcome.md`): greeting, a horizontal
@@ -40,25 +43,22 @@ class HomeScreen extends ConsumerWidget {
                 Text(
                   greetingName,
                   style: textTheme.titleMedium?.copyWith(
-                    color: AppColors.textMuted,
+                    color: AppColors.orange.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                const CircleAvatar(
-                  radius: 48,
-                  backgroundColor: AppColors.peach,
-                  child: Icon(
-                    PhosphorIconsFill.guitar,
-                    size: 56,
-                    color: AppColors.orange,
-                  ),
-                ),
+                // Brand mascot placeholder (orange ukulele character TBD).
+                const BrandMascot(size: 140),
               ],
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        const _SectionLabel('SAVED TABS'),
+        _SectionLabel(
+          'SAVED TABS',
+          // "ALL SAVED TABS >" link routes to the full saved list.
+          trailing: _AllSavedLink(),
+        ),
         _SavedRow(favoriteIds: favoriteIds, trending: trending),
         const SizedBox(height: AppSpacing.lg),
         const _SectionLabel('TRENDING'),
@@ -69,10 +69,79 @@ class HomeScreen extends ConsumerWidget {
           ),
           error: (e, _) =>
               const FriendlyError(message: 'Could not load trending tabs.'),
-          data: (songs) =>
-              Column(children: [for (final s in songs) SongListTile(song: s)]),
+          data: (songs) => _TrendingPanel(songs: songs),
         ),
       ],
+    );
+  }
+}
+
+/// The grouped peach panel wrapping the home Trending list, with thin dividers
+/// between rows (mockup Welcome.png).
+class _TrendingPanel extends StatelessWidget {
+  const _TrendingPanel({required this.songs});
+
+  final List<Song> songs;
+
+  @override
+  Widget build(BuildContext context) {
+    if (songs.isEmpty) {
+      return const EmptyState(
+        message: 'No trending tabs right now. Check back soon.',
+        icon: PhosphorIconsRegular.chartLineUp,
+      );
+    }
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.cardPeach,
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < songs.length; i++) ...[
+            if (i > 0)
+              const Divider(
+                height: 1,
+                thickness: 1,
+                indent: AppSpacing.lg,
+                endIndent: AppSpacing.lg,
+                color: AppColors.peach,
+              ),
+            SongListTile(song: songs[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The "ALL SAVED TABS >" navigation link shown to the right of the SAVED TABS
+/// section header.
+class _AllSavedLink extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+      onTap: () => context.push(AppRoutes.saved),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'ALL SAVED TABS',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            const Icon(
+              PhosphorIconsRegular.caretRight,
+              size: 18,
+              color: AppColors.orange,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -87,8 +156,12 @@ String _displayName(String? email) {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
+  const _SectionLabel(this.text, {this.trailing});
   final String text;
+
+  /// Optional widget pinned to the right of the header (e.g. an "ALL SAVED
+  /// TABS >" link).
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +172,14 @@ class _SectionLabel extends StatelessWidget {
         AppSpacing.lg,
         AppSpacing.sm,
       ),
-      child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+          ),
+          ?trailing,
+        ],
+      ),
     );
   }
 }
@@ -130,7 +210,7 @@ class _SavedRow extends StatelessWidget {
       return const SizedBox(height: 1);
     }
     return SizedBox(
-      height: 96,
+      height: 118,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

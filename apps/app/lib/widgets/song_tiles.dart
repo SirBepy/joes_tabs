@@ -33,18 +33,23 @@ class SongListTile extends ConsumerWidget {
     final saved = ref.watch(isFavoriteProvider(song.id));
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      // Production style (trending-5 / Welcome.png): dark title over an orange
+      // artist line.
       title: _Highlighted(
         text: song.title,
         query: highlight,
         base: const TextStyle(
-          color: AppColors.orange,
+          color: AppColors.textDark,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: _Highlighted(
         text: song.artist,
         query: highlight,
-        base: const TextStyle(color: AppColors.textMuted),
+        base: const TextStyle(
+          color: AppColors.orange,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -68,9 +73,11 @@ class SongListTile extends ConsumerWidget {
   }
 }
 
-/// A compact saved-tab card for horizontal rows (home) and grids (saved).
+/// A compact saved-tab card for horizontal rows (home) and grids (saved):
+/// a rounded peach card with the song title, artist, and a small row of three
+/// chord-swatch dots at the bottom (mockup Welcome.png).
 class SongCard extends StatelessWidget {
-  const SongCard({super.key, required this.song, this.width = 150});
+  const SongCard({super.key, required this.song, this.width = 160});
 
   final Song song;
   final double width;
@@ -91,13 +98,16 @@ class SongCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Title is a brand heading-ish line; artist sits in the orange
+            // accent like the mockup card.
             Text(
               song.title,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: AppColors.textDark,
                 fontWeight: FontWeight.bold,
+                fontSize: 15,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -105,11 +115,41 @@ class SongCard extends StatelessWidget {
               song.artist,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: const TextStyle(color: AppColors.orange, fontSize: 12),
             ),
+            const SizedBox(height: AppSpacing.sm),
+            const _ChordSwatches(),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The small row of three chord-swatch dots on a [SongCard]. The Song model has
+/// no chord data yet, so these are decorative orange-shade markers (their
+/// meaning - chord colors / difficulty - is TBD with Joe).
+class _ChordSwatches extends StatelessWidget {
+  const _ChordSwatches();
+
+  static const List<Color> _shades = [
+    AppColors.orange,
+    AppColors.rust,
+    AppColors.orange,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final c in _shades)
+          Container(
+            margin: const EdgeInsets.only(right: AppSpacing.sm),
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+          ),
+      ],
     );
   }
 }
