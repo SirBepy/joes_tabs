@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:joes_tabs_app/ads/ad_service.dart';
+import 'package:joes_tabs_app/ads/watch_ad_action.dart';
 import 'package:joes_tabs_app/router/app_routes.dart';
 import 'package:joes_tabs_app/screens/settings_screen.dart';
 import 'package:joes_tabs_app/screens/support_screen.dart';
@@ -65,7 +66,120 @@ Future<void> _pump(WidgetTester tester, Widget body, FakeAdService ad) async {
   await tester.pumpAndSettle();
 }
 
+/// Pumps a single button that runs [runWatchAdFlow] when tapped, capturing the
+/// result and any onRewarded invocation. Returns a getter pair via the closures.
+Future<void> _pumpFlowButton(
+  WidgetTester tester,
+  FakeAdService ad, {
+  required void Function(AdShowResult) onResult,
+  void Function()? onRewarded,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.light,
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => TextButton(
+            key: const Key('flow-btn'),
+            onPressed: () async {
+              final r = await runWatchAdFlow(
+                context,
+                ad,
+                onRewarded: onRewarded,
+              );
+              onResult(r);
+            },
+            child: const Text('go'),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 void main() {
+  group('runWatchAdFlow outcomes', () {
+    testWidgets('rewarded fires onRewarded and returns rewarded', (
+      tester,
+    ) async {
+      final ad = FakeAdService(
+        isSupported: true,
+        result: AdShowResult.rewarded,
+      );
+      AdShowResult? got;
+      var rewardedCalls = 0;
+      await _pumpFlowButton(
+        tester,
+        ad,
+        onResult: (r) => got = r,
+        onRewarded: () => rewardedCalls++,
+      );
+      await tester.tap(find.byKey(const Key('flow-btn')));
+      await tester.pumpAndSettle();
+
+      expect(ad.showCalls, 1);
+      expect(got, AdShowResult.rewarded);
+      expect(rewardedCalls, 1);
+    });
+
+    testWidgets('dismissed does NOT fire onRewarded', (tester) async {
+      final ad = FakeAdService(
+        isSupported: true,
+        result: AdShowResult.dismissed,
+      );
+      AdShowResult? got;
+      var rewardedCalls = 0;
+      await _pumpFlowButton(
+        tester,
+        ad,
+        onResult: (r) => got = r,
+        onRewarded: () => rewardedCalls++,
+      );
+      await tester.tap(find.byKey(const Key('flow-btn')));
+      await tester.pumpAndSettle();
+
+      expect(got, AdShowResult.dismissed);
+      expect(rewardedCalls, 0, reason: 'no reward on dismissal');
+    });
+
+    testWidgets('noAd returns noAd and never rewards', (tester) async {
+      final ad = FakeAdService(isSupported: true, result: AdShowResult.noAd);
+      AdShowResult? got;
+      var rewardedCalls = 0;
+      await _pumpFlowButton(
+        tester,
+        ad,
+        onResult: (r) => got = r,
+        onRewarded: () => rewardedCalls++,
+      );
+      await tester.tap(find.byKey(const Key('flow-btn')));
+      await tester.pumpAndSettle();
+
+      expect(got, AdShowResult.noAd);
+      expect(rewardedCalls, 0);
+    });
+
+    testWidgets('unsupported short-circuits without ever calling the service', (
+      tester,
+    ) async {
+      final ad = FakeAdService(isSupported: false);
+      AdShowResult? got;
+      var rewardedCalls = 0;
+      await _pumpFlowButton(
+        tester,
+        ad,
+        onResult: (r) => got = r,
+        onRewarded: () => rewardedCalls++,
+      );
+      await tester.tap(find.byKey(const Key('flow-btn')));
+      await tester.pumpAndSettle();
+
+      expect(got, AdShowResult.unsupported);
+      expect(ad.showCalls, 0, reason: 'no ad loaded on unsupported platforms');
+      expect(rewardedCalls, 0);
+    });
+  });
+
   group('createAdService', () {
     test('returns an unsupported service on the test (VM) platform', () {
       // The conditional import resolves to the mobile file under the Dart VM,

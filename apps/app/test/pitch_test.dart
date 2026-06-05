@@ -219,5 +219,51 @@ void main() {
       expect(estimatePitch(const [], 44100), isNull);
       expect(estimatePitch(const [0.1], 44100), isNull);
     });
+
+    test('a custom band narrows what is accepted', () {
+      final samples = _sine(440, 44100);
+      // 440 is inside the default band but outside a 600..1500 band.
+      expect(estimatePitch(samples, 44100), isNotNull);
+      expect(estimatePitch(samples, 44100, minHz: 600, maxHz: 1500), isNull);
+    });
+
+    test('a non-positive sample rate returns null', () {
+      expect(estimatePitch(_sine(440, 44100), 0), isNull);
+      expect(estimatePitch(_sine(440, 44100), -44100), isNull);
+    });
+
+    test('raising the RMS threshold can gate an otherwise-valid tone', () {
+      // A 0.05-amplitude tone passes the default 0.01 gate but not a 0.2 gate.
+      final quietish = _sine(440, 44100, amplitude: 0.05);
+      expect(estimatePitch(quietish, 44100), isNotNull);
+      expect(estimatePitch(quietish, 44100, rmsThreshold: 0.2), isNull);
+    });
+
+    test('high E4 (329.63) at the top of the tuner band detects cleanly', () {
+      final r = estimatePitch(_sine(329.63, 44100), 44100)!;
+      expect(_cents(r, 329.63).abs(), lessThan(5));
+    });
+  });
+
+  group('nearestTargetString octave robustness', () {
+    test(
+      'an octave-high A still matches the A string (cents may exceed 50)',
+      () {
+        const uke = ['G', 'C', 'E', 'A'];
+        // 880 Hz (A5) is an octave above the A4 string. It is still nearest the
+        // A string, with ~ +1200 cents (string match is "nearest of the set").
+        final m = nearestTargetString(880, uke, 'ukulele')!;
+        expect(m.note, 'A');
+        expect(m.cents, closeTo(1200, 5));
+      },
+    );
+
+    test('unknown instrument falls back to octave 4 for every string', () {
+      // openStringFrequencies defaults unknown instruments to octave 4.
+      final m = nearestTargetString(440, const ['G', 'C', 'E', 'A'], 'banjo')!;
+      // A at octave 4 is exactly 440, so the A string matches with ~0 cents.
+      expect(m.note, 'A');
+      expect(m.cents.abs(), lessThan(1));
+    });
   });
 }

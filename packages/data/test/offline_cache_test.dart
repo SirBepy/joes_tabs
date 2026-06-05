@@ -154,6 +154,86 @@ void main() {
       },
     );
 
+    test('exactly at the cap evicts nothing', () async {
+      final base = DateTime.utc(2026, 1, 1);
+      // Exactly kRecentViewsCap non-favorites: the boundary is inclusive, so
+      // none should be evicted.
+      for (var i = 0; i < kRecentViewsCap; i++) {
+        await db.cacheSong(_detail('n$i'));
+        await db.recordView('n$i', at: base.add(Duration(minutes: i)));
+      }
+      for (var i = 0; i < kRecentViewsCap; i++) {
+        expect(
+          await db.cachedSong('n$i'),
+          isNotNull,
+          reason: 'n$i within the cap must survive',
+        );
+      }
+    });
+
+    test('one over the cap evicts exactly the single oldest view', () async {
+      final base = DateTime.utc(2026, 1, 1);
+      for (var i = 0; i <= kRecentViewsCap; i++) {
+        await db.cacheSong(_detail('n$i'));
+        await db.recordView('n$i', at: base.add(Duration(minutes: i)));
+      }
+      // n0 is the oldest and the only overflow.
+      expect(await db.cachedSong('n0'), isNull, reason: 'oldest evicted');
+      for (var i = 1; i <= kRecentViewsCap; i++) {
+        expect(await db.cachedSong('n$i'), isNotNull, reason: 'n$i retained');
+      }
+    });
+
+    test(
+      're-viewing an old song refreshes its timestamp and spares it',
+      () async {
+        final base = DateTime.utc(2026, 1, 1);
+        // n0 is the oldest. Fill exactly to the cap.
+        for (var i = 0; i < kRecentViewsCap; i++) {
+          await db.cacheSong(_detail('n$i'));
+          await db.recordView('n$i', at: base.add(Duration(minutes: i)));
+        }
+        // Touch n0 again with the newest timestamp so it is no longer the LRU.
+        await db.recordView('n0', at: base.add(const Duration(hours: 10)));
+
+        // Now push one more distinct view over the cap. The evicted one must be
+        // n1 (the new oldest), NOT the just-refreshed n0.
+        await db.cacheSong(_detail('fresh'));
+        await db.recordView('fresh', at: base.add(const Duration(hours: 11)));
+
+        expect(
+          await db.cachedSong('n0'),
+          isNotNull,
+          reason: 'refreshed, spared',
+        );
+        expect(await db.cachedSong('n1'), isNull, reason: 'new LRU evicted');
+        expect(await db.cachedSong('fresh'), isNotNull);
+      },
+    );
+
+    test(
+      'favoriting an already-viewed song shields it from later eviction',
+      () async {
+        final base = DateTime.utc(2026, 1, 1);
+        // n0 viewed first (oldest), then favorited.
+        await db.cacheSong(_detail('n0'));
+        await db.recordView('n0', at: base);
+        await db.addFavorite('n0');
+
+        // Now flood with cap+5 newer non-favorites. n0 must survive because it is
+        // a favorite and so is not counted against (or evicted by) the cap.
+        for (var i = 1; i <= kRecentViewsCap + 5; i++) {
+          await db.cacheSong(_detail('n$i'));
+          await db.recordView('n$i', at: base.add(Duration(minutes: i)));
+        }
+        expect(
+          await db.cachedSong('n0'),
+          isNotNull,
+          reason: 'favorited-after-view song is never evicted',
+        );
+      },
+    );
+
     test('favorited song is never counted against the cap', () async {
       final base = DateTime.utc(2026, 1, 1);
       // 20 non-favorites fill the cap exactly.
@@ -198,6 +278,41 @@ void main() {
       final offlineRemote = _StubRemote(throwOnGetSong: true);
       final repo = OfflineCatalogRepository(remote: offlineRemote, cache: db);
       expect(() => repo.getSong('missing'), throwsA(isA<CatalogException>()));
+    });
+
+    test('write-through: a successful getSong caches and records a view', () async {
+      final remote = _StubRemote(song: _detail('s1', title: 'Fresh'));
+      final repo = OfflineCatalogRepository(remote: remote, cache: db);
+
+      // Nothing cached up front.
+      expect(await db.cachedSong('s1'), isNull);
+
+      final result = await repo.getSong('s1');
+      expect(result?.song.title, 'Fresh');
+      // The song is now cached AND counts as a recent view (so it participates
+      // in the LRU window). Verify the view by checking it is evictable: it is
+      // the lone non-favorite, so adding cap NEWER views evicts it. getSong
+      // recorded s1's view with DateTime.now(), so the flood must be later still.
+      expect(await db.cachedSong('s1'), isNotNull);
+      final base = DateTime.now().add(const Duration(days: 1));
+      for (var i = 0; i < kRecentViewsCap; i++) {
+        await db.cacheSong(_detail('flood$i'));
+        await db.recordView('flood$i', at: base.add(Duration(minutes: i)));
+      }
+      expect(
+        await db.cachedSong('s1'),
+        isNull,
+        reason: 'recorded view made s1 LRU-evictable',
+      );
+    });
+
+    test('a null remote result is not cached and not a view', () async {
+      final remote = _StubRemote(song: null);
+      final repo = OfflineCatalogRepository(remote: remote, cache: db);
+
+      final result = await repo.getSong('nope');
+      expect(result, isNull);
+      expect(await db.cachedSong('nope'), isNull);
     });
   });
 }
