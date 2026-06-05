@@ -47,6 +47,16 @@ jobs:
       - name: Install workspace dependencies
         run: flutter pub get
 
+      # Generated sources (freezed / json_serializable / drift) are gitignored,
+      # so they must be regenerated in CI before any build or analysis.
+      - name: Generate models code
+        working-directory: packages/models
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate data code
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
       # Supabase values are injected at compile time from repo secrets. If the
       # secrets are unset they expand to empty strings, so the build still
       # succeeds (the app runs without a backend) and the workflow is never

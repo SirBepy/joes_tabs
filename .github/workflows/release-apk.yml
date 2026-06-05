@@ -55,6 +55,16 @@ jobs:
       - name: Install workspace dependencies
         run: flutter pub get
 
+      # Generated sources (freezed / json_serializable / drift) are gitignored,
+      # so regenerate them before building.
+      - name: Generate models code
+        working-directory: packages/models
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate data code
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
       # ----------------------------------------------------------------------
       # SIGNED RELEASE BUILD (enable once keystore + secrets exist).
       # Decode the keystore and write key.properties, then build appbundle.
@@ -76,12 +86,15 @@ jobs:
       #     --dart-define=SUPABASE_URL=
       #     --dart-define=SUPABASE_ANON_KEY=
 
+      # The released APK connects to the cloud backend so mobile shares the same
+      # account data as the web app. Secrets are injected at build time; if unset
+      # they expand to empty and the app runs without a backend.
       - name: Build debug APK
         working-directory: apps/app
         run: >
           flutter build apk --debug
-          --dart-define=SUPABASE_URL=
-          --dart-define=SUPABASE_ANON_KEY=
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Rename APK
         run: cp apps/app/build/app/outputs/flutter-apk/app-debug.apk joes-tabs-debug.apk

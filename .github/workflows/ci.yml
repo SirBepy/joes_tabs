@@ -49,6 +49,16 @@ jobs:
         # covers apps/app, packages/models and packages/data.
         run: flutter pub get
 
+      # Generated sources (freezed / json_serializable / drift) are gitignored,
+      # so regenerate them before analyze / test / build.
+      - name: Generate models code
+        working-directory: packages/models
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate data code
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Analyze
         run: flutter analyze
 
