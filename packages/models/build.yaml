@@ -1,0 +1,10 @@
+# Global codegen options for the models package.
+# field_rename: snake makes all json_serializable output use snake_case keys,
+# matching the Postgres columns (song_id, created_at, ...).
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          field_rename: snake
+          explicit_to_json: true
