@@ -1,9 +1,15 @@
 name: Release APK
 
-# Cuts a release when a v* tag is pushed (or via manual dispatch).
-# Today this builds an UNSIGNED debug APK, since no release keystore exists
-# yet. The debug APK is uploaded as a workflow artifact AND attached to the
-# GitHub Release for the tag.
+# Cuts a GitHub Release with a built APK whenever the version in package.json
+# changes. `/commit pushnbump` bumps package.json and pushes to master, so this
+# fires automatically: read the version, and if no `v<version>` tag/release
+# exists yet, build the APK and publish the release (which also creates the tag).
+# A normal push that does not change the version finds the tag already present
+# and skips the build, so only version bumps produce releases.
+#
+# Today this builds an UNSIGNED debug APK (no release keystore yet). It is wired
+# to the cloud Supabase backend so the mobile app shares account data with the
+# web app.
 #
 # WHEN A RELEASE KEYSTORE EXISTS (provided later by Joe):
 #   Add these repository secrets in GitHub > Settings > Secrets and variables
@@ -14,27 +20,55 @@ name: Release APK
 #     KEY_PASSWORD     - key password
 #   For Play Store upload, also add:
 #     PLAY_SERVICE_ACCOUNT_JSON - Google Play service-account JSON
-#
-# No real Supabase secrets are needed to build; placeholder dart-defines are
-# used and the app launches without a backend.
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [master]
   workflow_dispatch:
 
 env:
   FLUTTER_VERSION: "3.38.3"
 
 permissions:
-  # Required so softprops/action-gh-release can create/update the Release.
+  # Required so softprops/action-gh-release can create the tag + Release.
   contents: write
 
 jobs:
-  build-apk:
-    name: Build debug APK and publish release
+  # Decide whether this version still needs a release (gate the heavy build).
+  check:
+    name: Check version
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      should_release: ${{ steps.tag.outputs.exists == 'false' }}
+    steps:
+      - name: Checkout (with tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from package.json
+        id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Does the tag already exist?
+        id: tag
+        run: |
+          if git rev-parse "v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.ver.outputs.version }} already exists - skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No tag for v${{ steps.ver.outputs.version }} yet - will build + release."
+          fi
+
+  release:
+    name: Build APK and publish release
+    needs: check
+    if: needs.check.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,33 +117,38 @@ jobs:
       #   working-directory: apps/app
       #   run: >
       #     flutter build appbundle --release
-      #     --dart-define=SUPABASE_URL=
-      #     --dart-define=SUPABASE_ANON_KEY=
+      #     --build-name=${{ needs.check.outputs.version }}
+      #     --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+      #     --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
       # The released APK connects to the cloud backend so mobile shares the same
       # account data as the web app. Secrets are injected at build time; if unset
-      # they expand to empty and the app runs without a backend.
+      # they expand to empty and the app runs without a backend. The version name
+      # is stamped from package.json so the installed app matches the release tag.
       - name: Build debug APK
         working-directory: apps/app
         run: >
           flutter build apk --debug
+          --build-name=${{ needs.check.outputs.version }}
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Rename APK
-        run: cp apps/app/build/app/outputs/flutter-apk/app-debug.apk joes-tabs-debug.apk
+        run: cp apps/app/build/app/outputs/flutter-apk/app-debug.apk "joes-tabs-${{ needs.check.outputs.version }}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: joes-tabs-debug-apk
-          path: joes-tabs-debug.apk
+          name: joes-tabs-apk
+          path: joes-tabs-${{ needs.check.outputs.version }}.apk
           if-no-files-found: error
 
-      - name: Attach APK to GitHub Release
+      - name: Create release and attach APK
         uses: softprops/action-gh-release@v2.0.8
         with:
-          files: joes-tabs-debug.apk
+          tag_name: v${{ needs.check.outputs.version }}
+          name: v${{ needs.check.outputs.version }}
+          files: joes-tabs-${{ needs.check.outputs.version }}.apk
           generate_release_notes: true
 
       # ----------------------------------------------------------------------

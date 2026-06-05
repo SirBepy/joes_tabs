@@ -19,10 +19,15 @@ pinned to `3.38.3` (stable, carries Dart 3.10.1 to match the workspace SDK
 
 ### `release-apk.yml` - Release APK
 
-- Triggers: pushing a tag matching `v*`, or manual `workflow_dispatch`.
-- Builds an UNSIGNED debug APK (no release keystore yet), uploads it as the
-  `joes-tabs-debug-apk` artifact, and attaches `joes-tabs-debug.apk` to the
-  GitHub Release for the tag.
+- Triggers: push to `master`, or manual `workflow_dispatch`.
+- Version-driven: reads `version` from the root `package.json`. If no
+  `v<version>` tag exists yet, it builds the APK and publishes a GitHub Release
+  `v<version>` (which creates the tag). If the tag already exists (version
+  unchanged), it skips the build. So only a version bump cuts a release.
+- The APK is an UNSIGNED debug build wired to the cloud Supabase backend (so the
+  mobile app shares account data with the web app), version-stamped from
+  `package.json`, uploaded as the `joes-tabs-apk` artifact and attached to the
+  release.
 - Commented scaffolding is included for the signed build and Play Store upload;
   enable it once the keystore and secrets exist (see below).
 
@@ -55,12 +60,16 @@ bootstrap match `index.html` exactly. Nothing extra is committed to `web/`.
 
 ## Cutting a release
 
-1. Commit and push to `master`.
-2. Tag the release and push the tag:
-   - `git tag v0.1.0`
-   - `git push origin v0.1.0`
-3. The Release APK workflow builds the debug APK and creates a GitHub Release
-   with the APK attached.
+Just bump the version and push - the workflow does the rest:
+
+- `/commit pushnbump` bumps `package.json` (e.g. 0.1.0 -> 0.1.1), commits, and
+  pushes to `master`. The Release APK workflow then sees a new version, builds
+  the APK, and publishes the `v<new-version>` GitHub Release with the APK
+  attached and auto-generated notes. The web site redeploys on the same push.
+- A plain `/commit push` (no version change) redeploys the web but creates no
+  release (the version's tag already exists).
+- You can also trigger a build manually via the Actions tab (workflow_dispatch);
+  it still only releases if the current `package.json` version has no tag.
 
 ## Secrets to add later (GitHub > Settings > Secrets and variables > Actions)
 

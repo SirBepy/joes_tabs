@@ -1,0 +1,6 @@
+{
+  "name": "joes_tabs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Version source of record for release tagging. /commit pushnbump bumps this; the release-apk workflow turns each new version into a tagged GitHub Release with a built APK. The Flutter app itself lives under apps/app."
+}
