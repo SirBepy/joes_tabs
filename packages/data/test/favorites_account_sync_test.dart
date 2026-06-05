@@ -34,6 +34,9 @@ class FakeAccountFavoritesRepository implements AccountFavoritesRepository {
       _remote.add(id);
     }
   }
+
+  @override
+  Future<void> removeFavoriteId(String songId) async => _remote.remove(songId);
 }
 
 void main() {

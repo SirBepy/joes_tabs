@@ -47,13 +47,28 @@ jobs:
       - name: Install workspace dependencies
         run: flutter pub get
 
+      # Supabase values are injected at compile time from repo secrets. If the
+      # secrets are unset they expand to empty strings, so the build still
+      # succeeds (the app runs without a backend) and the workflow is never
+      # blocked. The hosted site only has a live backend once both secrets are
+      # set under Settings > Secrets and variables > Actions.
       - name: Build web
         working-directory: apps/app
         run: >
           flutter build web --release
           --base-href=/joes_tabs/
-          --dart-define=SUPABASE_URL=
-          --dart-define=SUPABASE_ANON_KEY=
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      # SPA deep-link fallback. The app uses path-based URL routing, so a direct
+      # load or refresh of a deep link (e.g. /joes_tabs/song/<id>) hits a path
+      # GitHub Pages has no static file for and would normally 404. Pages serves
+      # 404.html for any unknown path, so copying the built index.html to
+      # 404.html lets Flutter's router take over and resolve the route client
+      # side. index.html is copied verbatim, so the baked-in base href and the
+      # real bootstrap stay correct.
+      - name: Add SPA deep-link fallback (404.html)
+        run: cp apps/app/build/web/index.html apps/app/build/web/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

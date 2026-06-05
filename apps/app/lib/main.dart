@@ -49,7 +49,21 @@ Future<void> main() async {
         if (client != null) supabaseClientProvider.overrideWithValue(client),
         appDatabaseProvider.overrideWithValue(db),
         favoritesProvider.overrideWith(
-          (ref) => DriftFavoritesNotifier(db, initial: initialFavorites),
+          (ref) => DriftFavoritesNotifier(
+            db,
+            initial: initialFavorites,
+            // With a live backend, mirror every toggle to the signed-in user's
+            // account in real time (ai_todo 005). The sink reads the latest
+            // auth state on each write via `currentUserProvider`, so it writes
+            // only while signed in and no-ops while anonymous. Without a client
+            // there is no sink, so favorites stay local-only.
+            accountSink: client == null
+                ? null
+                : LiveAccountFavoritesSink(
+                    repository: ref.read(accountFavoritesRepositoryProvider),
+                    isSignedIn: () => ref.read(currentUserProvider) != null,
+                  ),
+          ),
         ),
         // With a live client, the current user is driven by Supabase's auth
         // stream so the greeting + drawer react to real sign-in / sign-out.

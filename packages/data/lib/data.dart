@@ -16,6 +16,7 @@
 library;
 
 export 'src/auth/account_favorites_repository.dart';
+export 'src/auth/account_favorites_sink.dart';
 export 'src/auth/auth_providers.dart';
 export 'src/auth/auth_service.dart';
 export 'src/auth/favorites_account_sync.dart';

@@ -34,4 +34,11 @@ class AccountFavoritesRepository {
           ignoreDuplicates: true,
         );
   }
+
+  /// Removes a single favorite [songId] from the account (idempotent: deleting
+  /// a row that does not exist is a no-op). RLS restricts the delete to the
+  /// signed-in user's own row, so no `user_id` filter is needed.
+  Future<void> removeFavoriteId(String songId) async {
+    await _client.from('user_favorites').delete().eq('song_id', songId);
+  }
 }

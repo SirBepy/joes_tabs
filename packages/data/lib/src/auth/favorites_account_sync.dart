@@ -8,9 +8,19 @@ import 'favorites_merge.dart';
 /// Pragmatic and idempotent (re-running is safe and a no-op once converged):
 ///   * push local-only ids up to `user_favorites`,
 ///   * pull account-only ids down into the local Drift favorites,
-/// leaving the union present in both places. Continuous two-way live sync is a
-/// deliberate follow-up (see .for_bepy/ai_todos/005-favorites-live-sync.md);
-/// this sign-in-time merge is enough for v1.
+/// leaving the union present in both places. Continuous write-through (live
+/// mirroring of each toggle while signed in) is handled separately by
+/// [AccountFavoritesSink] in the favorites notifier; this merge converges the
+/// two stores at the sign-in boundary.
+///
+/// MULTI-ACCOUNT: the merge unions local + account, which is exactly right for
+/// the single-user case (anonymous favorites made before sign-in are preserved
+/// and pushed up, then the account's own set is pulled down). In the rarer
+/// "sign out as A, sign in as B on the same device without an app restart"
+/// case the union would push A's residual local favorites into B's account.
+/// v1 is single-user-first (accounts are optional, spec section 5) and does not
+/// track per-row ownership, so this is an accepted, documented limitation; a
+/// future revision can scope local rows by user id to fully isolate accounts.
 class FavoritesAccountSync {
   FavoritesAccountSync(this._db, this._account);
 

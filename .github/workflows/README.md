@@ -28,10 +28,30 @@ pinned to `3.35.5` (stable, carries Dart 3.10.1 to match the workspace SDK
 
 ### `deploy-web.yml` - Deploy Web (GitHub Pages)
 
-- Triggers: push to `master`, or manual dispatch.
+- Triggers: push to `master`, or manual dispatch. One concurrent deploy
+  (`concurrency: pages`), in-progress deploys are not cancelled.
 - Builds the web app and deploys to GitHub Pages.
-- Needs one-time setup: Settings > Pages > Source = GitHub Actions. Base href is
-  `/joes_tabs/` (project site); change to `/` for a root site.
+- Live site: https://sirbepy.github.io/joes_tabs/ (project site, served under
+  `/joes_tabs/`).
+- Base href is `/joes_tabs/`; change to `/` for a user/org root site.
+
+**One-time manual repo setup (Joe):**
+
+1. Settings > Pages > Build and deployment > Source = **GitHub Actions**. Until
+   this is set, the build step passes but the deploy step fails.
+2. Settings > Secrets and variables > Actions > add repo secrets
+   `SUPABASE_URL` and `SUPABASE_ANON_KEY`. These are injected into the build via
+   `--dart-define` (compile time). If absent, the build still succeeds (empty
+   defines) and the app runs without a backend, but the hosted site has no
+   Supabase backend until both are set. Re-run the workflow after adding them.
+
+**Deep-link fallback:** the app uses path-based URL routing
+(`usePathUrlStrategy`), so routes look like `/joes_tabs/song/<id>`. GitHub Pages
+serves static files only and does no SPA fallback, so a direct load or refresh
+of a deep link would 404. The workflow copies the built `index.html` to
+`404.html`; Pages serves `404.html` for any unknown path, and Flutter's router
+then resolves the route client side. The copy is verbatim, so its base href and
+bootstrap match `index.html` exactly. Nothing extra is committed to `web/`.
 
 ## Cutting a release
 
@@ -63,5 +83,5 @@ Play Store upload (in addition to the above):
 - A web bundle is produced by both `ci.yml` (validation only) and
   `deploy-web.yml` (validation plus deploy).
 - Real Supabase values (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) are never committed
-  and are not required to build; supply them at deploy time if/when a live
-  backend is wired up.
+  and are not required to build. For the hosted Pages site, set them as repo
+  secrets (see the `deploy-web.yml` section) so they are injected at build time.
