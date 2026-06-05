@@ -17,6 +17,10 @@ section screens). These remaining items are lower-traffic or need Joe's input.
 - Chord-swatch dots on saved cards are decorative; derive the real first chords from the
   song's ChordPro tab content (needs a chord list on the catalog model or a parse step).
 - General spacing/pixel polish against each mockup at 390x844.
+- Dark theme: the SectionHeader bar (Settings/Support/etc) and the orange app bar use
+  hardcoded light/cream colors, so in dark mode they stay light while the body darkens.
+  Make those theme-aware (use Theme surface colors) so dark mode is consistent. (Found
+  during live Playwright testing; body re-themes correctly, only these bars lag.)
 
 ## Needs Joe
 - The orange ukulele MASCOT character art (currently a Phosphor placeholder everywhere a
