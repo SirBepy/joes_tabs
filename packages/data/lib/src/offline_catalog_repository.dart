@@ -40,4 +40,7 @@ class OfflineCatalogRepository implements CatalogRepository {
 
   @override
   Future<SongWithTabs?> getSong(String id) => _remote.getSong(id);
+
+  @override
+  Future<List<Instrument>> instruments() => _remote.instruments();
 }

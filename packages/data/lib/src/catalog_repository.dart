@@ -27,6 +27,10 @@ abstract class CatalogRepository {
   /// A single song with its published tabs, or null if the id is unknown or
   /// not publicly visible.
   Future<SongWithTabs?> getSong(String id);
+
+  /// The full instrument lookup table (ukulele, guitar, ...). Used by the UI to
+  /// map a tab's `instrumentId` back to a slug / string count.
+  Future<List<Instrument>> instruments();
 }
 
 /// Thrown when a catalog backend call fails (network, RLS, decode). Wraps the

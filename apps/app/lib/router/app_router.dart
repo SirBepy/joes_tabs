@@ -5,6 +5,7 @@ import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/saved_screen.dart';
+import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/song_detail_screen.dart';
 import '../screens/splash_screen.dart';
@@ -68,6 +69,11 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
       GoRoute(
         path: AppRoutes.register,
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        builder: (context, state) =>
+            SearchScreen(initialQuery: state.uri.queryParameters['q'] ?? ''),
       ),
       GoRoute(
         path: AppRoutes.song,

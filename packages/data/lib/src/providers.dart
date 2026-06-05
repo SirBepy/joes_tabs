@@ -58,3 +58,12 @@ final searchProvider = FutureProvider.family<List<Song>, String>((ref, query) {
 final songProvider = FutureProvider.family<SongWithTabs?, String>((ref, id) {
   return ref.watch(catalogRepositoryProvider).getSong(id);
 });
+
+/// The instrument lookup table, keyed by instrument id, for mapping a tab's
+/// `instrumentId` to its slug / string count in the UI.
+final instrumentsByIdProvider = FutureProvider<Map<String, Instrument>>((
+  ref,
+) async {
+  final list = await ref.watch(catalogRepositoryProvider).instruments();
+  return {for (final i in list) i.id: i};
+});

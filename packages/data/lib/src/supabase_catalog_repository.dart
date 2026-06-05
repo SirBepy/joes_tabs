@@ -95,4 +95,19 @@ class SupabaseCatalogRepository implements CatalogRepository {
       throw CatalogException('Failed to load song $id', e);
     }
   }
+
+  @override
+  Future<List<Instrument>> instruments() async {
+    try {
+      final rows = await _client
+          .from('instruments')
+          .select()
+          .order('string_count', ascending: false);
+      return rows
+          .map((r) => Instrument.fromJson(Map<String, dynamic>.from(r as Map)))
+          .toList();
+    } catch (e) {
+      throw CatalogException('Failed to load instruments', e);
+    }
+  }
 }

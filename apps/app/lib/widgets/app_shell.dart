@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../router/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'app_drawer.dart';
@@ -36,33 +38,37 @@ class AppShell extends StatelessWidget {
   }
 }
 
-/// Placeholder rounded search field in the app bar. Non-functional in plan 07;
-/// plan 08 wires it to [searchProvider].
+/// Rounded search field in the app bar. Tapping it opens the dedicated
+/// [SearchScreen] (`/search`) where the query drives `searchProvider`.
 class _SearchField extends StatelessWidget {
   const _SearchField();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-      ),
-      child: const Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Search tabs',
-              style: TextStyle(color: AppColors.textMuted),
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+      onTap: () => context.push(AppRoutes.search),
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        ),
+        child: const Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Search tabs',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
             ),
-          ),
-          Icon(
-            PhosphorIconsRegular.magnifyingGlass,
-            color: AppColors.textMuted,
-          ),
-        ],
+            Icon(
+              PhosphorIconsRegular.magnifyingGlass,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
       ),
     );
   }

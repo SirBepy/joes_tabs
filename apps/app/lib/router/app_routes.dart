@@ -11,6 +11,11 @@ abstract final class AppRoutes {
   static const String support = '/support';
   static const String login = '/login';
   static const String register = '/register';
+  static const String search = '/search';
+
+  /// Search results for a query, e.g. `/search?q=riptide`.
+  static String searchPath(String query) =>
+      '/search?q=${Uri.encodeQueryComponent(query)}';
 
   /// Song detail, e.g. `/song/abc123`.
   static const String song = '/song/:id';

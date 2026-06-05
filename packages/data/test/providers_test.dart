@@ -7,10 +7,15 @@ import 'package:models/models.dart';
 /// network or a real Supabase client. Records the arguments it was called with
 /// so the family providers can be asserted end to end.
 class FakeCatalogRepository implements CatalogRepository {
-  FakeCatalogRepository({this.songs = const <Song>[], this.songDetail});
+  FakeCatalogRepository({
+    this.songs = const <Song>[],
+    this.songDetail,
+    this.instrumentList = const <Instrument>[],
+  });
 
   final List<Song> songs;
   final SongWithTabs? songDetail;
+  final List<Instrument> instrumentList;
 
   String? lastSearchQuery;
   String? lastSongId;
@@ -36,6 +41,9 @@ class FakeCatalogRepository implements CatalogRepository {
     lastSongId = id;
     return songDetail;
   }
+
+  @override
+  Future<List<Instrument>> instruments() async => instrumentList;
 }
 
 Song _song(String id, String title) => Song(
