@@ -25,6 +25,47 @@ void main() {
     });
   });
 
+  group('verified fingerings', () {
+    // Spot-checks of audited open-position shapes against authoritative charts
+    // (Live Ukulele, UkuTabs, Fender Play, JamPlay). Each is a factual fretting,
+    // not a stylistic choice, so locking them guards against silent data edits.
+    test('ukulele open shapes', () {
+      void uke(String c, List<int> frets) => expect(
+        ChordShapes.lookup(c, ChordShapes.ukulele)!.frets,
+        frets,
+        reason: 'ukulele $c',
+      );
+      uke('C', [0, 0, 0, 3]);
+      uke('G', [0, 2, 3, 2]);
+      uke('D', [2, 2, 2, 0]);
+      uke('D7', [2, 2, 2, 3]);
+      uke('Am', [2, 0, 0, 0]);
+      uke('Em', [0, 4, 3, 2]);
+      uke('E', [4, 4, 4, 2]);
+      uke('A7', [0, 1, 0, 0]);
+      uke('F', [2, 0, 1, 0]);
+      uke('Bb', [3, 2, 1, 1]);
+    });
+
+    test('guitar open shapes', () {
+      void gtr(String c, List<int> frets) => expect(
+        ChordShapes.lookup(c, ChordShapes.guitar)!.frets,
+        frets,
+        reason: 'guitar $c',
+      );
+      gtr('C', [-1, 3, 2, 0, 1, 0]);
+      gtr('G', [3, 2, 0, 0, 0, 3]);
+      gtr('D', [-1, -1, 0, 2, 3, 2]);
+      gtr('Em', [0, 2, 2, 0, 0, 0]);
+      gtr('Em7', [0, 2, 0, 0, 0, 0]);
+      gtr('A', [-1, 0, 2, 2, 2, 0]);
+      gtr('Am', [-1, 0, 2, 2, 1, 0]);
+      gtr('E', [0, 2, 2, 1, 0, 0]);
+      gtr('B7', [-1, 2, 1, 2, 0, 2]);
+      gtr('F', [1, 3, 3, 2, 1, 1]);
+    });
+  });
+
   group('lookup enharmonic', () {
     test('Bb resolves to A# spelling (or vice versa)', () {
       final uke = ChordShapes.lookup('Bb', ChordShapes.ukulele);
