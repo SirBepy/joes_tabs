@@ -30,6 +30,7 @@ supabase/.temp/
 
 # Throwaway verification screenshots
 .for_bepy/screenshots/
+.playwright-mcp/
 
 # Claude Code session/cron scratch
 .claude/
