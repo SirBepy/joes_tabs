@@ -75,6 +75,11 @@ void main() {
 
     expect(find.text('G#'), findsNothing);
 
+    // The controls now live in a bottom sheet behind the faders FAB; open it
+    // before reaching the transpose buttons.
+    await tester.tap(find.byTooltip('Song controls'));
+    await tester.pumpAndSettle();
+
     // Tap the transpose-up control.
     await tester.tap(find.byTooltip('Up a semitone'));
     await tester.pumpAndSettle();

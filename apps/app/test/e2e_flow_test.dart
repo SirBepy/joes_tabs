@@ -124,7 +124,10 @@ void main() {
     expect(find.text('G'), findsWidgets); // chord G in strip + over the lyric
     expect(find.text('G#'), findsNothing); // not transposed yet
 
-    // 3. Transpose up a semitone -> G becomes G# in the rendered sheet.
+    // 3. Open the controls sheet (faders FAB) and transpose up a semitone ->
+    //    G becomes G# in the rendered sheet behind the sheet.
+    await tester.tap(find.byTooltip('Song controls'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Up a semitone'));
     await tester.pumpAndSettle();
     final offset = tester.widget<Text>(
@@ -132,6 +135,11 @@ void main() {
     );
     expect(offset.data, '+1');
     expect(find.text('G#'), findsWidgets);
+
+    // Dismiss the controls sheet (its modal barrier sits over the app bar) so
+    // the favorite heart is tappable again.
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
 
     // 4. Favorite the song -> the heart tooltip flips to "Remove favorite".
     expect(find.byTooltip('Add favorite'), findsOneWidget);
