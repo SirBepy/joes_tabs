@@ -1,4 +1,6 @@
+import 'package:data/data.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -19,7 +21,7 @@ class DrawerDestination {
 /// Order matches the mockup: Home, Trending, Saved Tabs, Chords, Tuner,
 /// Settings; then a divider; a "Support Us" call to action; the mascot; and the
 /// "Log In | Register" account links at the bottom.
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   static final List<DrawerDestination> destinations = [
@@ -52,8 +54,14 @@ class AppDrawer extends StatelessWidget {
     context.go(route);
   }
 
+  Future<void> _logOut(BuildContext context, WidgetRef ref) async {
+    Navigator.of(context).pop(); // close the drawer first
+    await ref.read(authServiceProvider).signOut();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
     return Drawer(
       width: MediaQuery.sizeOf(context).width,
       backgroundColor: AppColors.peach,
@@ -122,20 +130,40 @@ class AppDrawer extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: () => _go(context, AppRoutes.login),
-                    child: const Text('Log In'),
-                  ),
-                  const Text('|', style: TextStyle(color: AppColors.textMuted)),
-                  TextButton(
-                    onPressed: () => _go(context, AppRoutes.register),
-                    child: const Text('Register'),
-                  ),
-                ],
-              ),
+              child: user == null
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => _go(context, AppRoutes.login),
+                          child: const Text('Log In'),
+                        ),
+                        const Text(
+                          '|',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                        TextButton(
+                          onPressed: () => _go(context, AppRoutes.register),
+                          child: const Text('Register'),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          user.email ?? 'Signed in',
+                          style: const TextStyle(
+                            color: AppColors.textDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => _logOut(context, ref),
+                          child: const Text('Log Out'),
+                        ),
+                      ],
+                    ),
             ),
           ],
         ),

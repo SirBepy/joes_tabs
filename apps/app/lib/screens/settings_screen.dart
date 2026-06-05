@@ -1,10 +1,9 @@
+import 'package:data/data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../router/app_routes.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -32,6 +31,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final fontSize = ref.watch(fontSizeProvider);
     final darkMode = ref.watch(darkModeProvider);
     final instrument = ref.watch(defaultInstrumentProvider);
+    final user = ref.watch(currentUserProvider);
 
     return ListView(
       children: [
@@ -120,28 +120,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SnackBar(content: Text('Tag management coming soon.')),
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
-        const Divider(height: 1, color: AppColors.peach),
-        // LOG OUT (mascot confirmation dialog).
-        _Row(
-          label: 'LOG OUT',
-          trailing: const Icon(
-            PhosphorIconsFill.caretRight,
-            color: AppColors.orange,
+        // LOG OUT only makes sense while signed in; anonymous users see nothing.
+        if (user != null) ...[
+          const SizedBox(height: AppSpacing.xl),
+          const Divider(height: 1, color: AppColors.peach),
+          _Row(
+            label: 'LOG OUT',
+            trailing: const Icon(
+              PhosphorIconsFill.caretRight,
+              color: AppColors.orange,
+            ),
+            onTap: () => _confirmLogout(context),
           ),
-          onTap: () => _confirmLogout(context),
-        ),
+        ],
       ],
     );
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final loggedOut = await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => const _LogoutDialog(),
     );
-    if (loggedOut == true && context.mounted) {
-      context.go(AppRoutes.login);
+    if (confirmed != true) return;
+    await ref.read(authServiceProvider).signOut();
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Signed out.')));
     }
   }
 }

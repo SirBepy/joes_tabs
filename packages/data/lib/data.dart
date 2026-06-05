@@ -15,6 +15,11 @@
 /// ```
 library;
 
+export 'src/auth/account_favorites_repository.dart';
+export 'src/auth/auth_providers.dart';
+export 'src/auth/auth_service.dart';
+export 'src/auth/favorites_account_sync.dart';
+export 'src/auth/favorites_merge.dart';
 export 'src/catalog_repository.dart';
 // Expose the Drift cache type (AppDatabase) + companions so the app can wire a
 // persistent favorites store. Generated row classes come along via the part.

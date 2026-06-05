@@ -50,21 +50,53 @@ Future<void> main() async {
         favoritesProvider.overrideWith(
           (ref) => DriftFavoritesNotifier(db, initial: initialFavorites),
         ),
+        // With a live client, the current user is driven by Supabase's auth
+        // stream so the greeting + drawer react to real sign-in / sign-out.
+        // Without one (e.g. missing dart-defines) the default logged-out
+        // provider keeps the app fully navigable in anonymous mode.
+        if (client != null)
+          currentUserProvider.overrideWith(
+            (ref) => ref.watch(authUserStreamProvider).valueOrNull,
+          ),
       ],
-      child: JoesTabsApp(initError: initError),
+      child: JoesTabsApp(initError: initError, hasBackend: client != null),
     ),
   );
 }
 
 /// Root app widget: themed [MaterialApp.router] driven by the go_router config.
-class JoesTabsApp extends StatelessWidget {
-  const JoesTabsApp({super.key, this.initError});
+///
+/// A [ConsumerWidget] so it can listen to [currentUserProvider] and run the
+/// first-sign-in favorites merge (local Drift <-> account) whenever a user
+/// signs in. The merge is best-effort: a failure logs and is swallowed so it
+/// never blocks the UI.
+class JoesTabsApp extends ConsumerWidget {
+  const JoesTabsApp({super.key, this.initError, this.hasBackend = false});
 
   /// Non-null when Supabase failed to initialize (e.g. missing dart-defines).
   final String? initError;
 
+  /// Whether a live Supabase client is wired (auth + account sync available).
+  final bool hasBackend;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (hasBackend) {
+      // Run the account favorites sync on every transition into a signed-in
+      // state (sign-in / restored session). Idempotent, so re-runs are safe.
+      ref.listen<User?>(currentUserProvider, (previous, next) {
+        if (previous?.id != next?.id && next != null) {
+          final sync = FavoritesAccountSync(
+            ref.read(appDatabaseProvider),
+            ref.read(accountFavoritesRepositoryProvider),
+          );
+          sync.run().catchError((Object e) {
+            debugPrint('Favorites account sync failed: $e');
+            return const <String>{};
+          });
+        }
+      });
+    }
     final router = buildRouter();
     return MaterialApp.router(
       title: "Joe's Tabs",

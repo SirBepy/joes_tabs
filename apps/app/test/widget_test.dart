@@ -24,7 +24,8 @@ void main() {
   testWidgets('app shell renders Home with the menu button', (tester) async {
     await _pumpShell(tester);
 
-    expect(find.text('WELCOME BACK'), findsOneWidget);
+    // Anonymous (logged-out) default greeting is the generic 'WELCOME'.
+    expect(find.text('WELCOME'), findsOneWidget);
     expect(find.byTooltip('Menu'), findsOneWidget);
   });
 

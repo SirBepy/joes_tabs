@@ -20,6 +20,13 @@ class HomeScreen extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final trending = ref.watch(trendingProvider);
     final favoriteIds = ref.watch(favoritesProvider);
+    final user = ref.watch(currentUserProvider);
+
+    // Logged in: greet by email (name part). Anonymous: a generic welcome.
+    final greetingTop = user == null ? 'WELCOME' : 'WELCOME BACK';
+    final greetingName = user == null
+        ? 'Tap Log In to sync your tabs'
+        : '${_displayName(user.email)}!';
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -29,9 +36,9 @@ class HomeScreen extends ConsumerWidget {
           child: Center(
             child: Column(
               children: [
-                Text('WELCOME BACK', style: textTheme.headlineMedium),
+                Text(greetingTop, style: textTheme.headlineMedium),
                 Text(
-                  'PLACEHOLDER NAME!',
+                  greetingName,
                   style: textTheme.titleMedium?.copyWith(
                     color: AppColors.textMuted,
                   ),
@@ -68,6 +75,15 @@ class HomeScreen extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Derives a friendly display name from an email: the local part before `@`,
+/// upper-cased to match the mockup's all-caps greeting. Falls back to a generic
+/// label when no email is available.
+String _displayName(String? email) {
+  if (email == null || email.isEmpty) return 'FRIEND';
+  final local = email.split('@').first;
+  return local.toUpperCase();
 }
 
 class _SectionLabel extends StatelessWidget {
