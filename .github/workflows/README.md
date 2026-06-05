@@ -2,7 +2,7 @@
 
 GitHub Actions for Joes Tabs. Nothing runs until the repo is pushed to GitHub;
 once it is, these activate automatically. Default branch is `master`. Flutter is
-pinned to `3.35.5` (stable, carries Dart 3.10.1 to match the workspace SDK
+pinned to `3.38.3` (stable, carries Dart 3.10.1 to match the workspace SDK
 `^3.10.1`).
 
 ## Workflows
@@ -10,7 +10,7 @@ pinned to `3.35.5` (stable, carries Dart 3.10.1 to match the workspace SDK
 ### `ci.yml` - CI
 
 - Triggers: push and pull_request to `master`.
-- Steps: checkout, Java 17 (Temurin), Flutter 3.35.5, `flutter pub get` (single
+- Steps: checkout, Java 17 (Temurin), Flutter 3.38.3, `flutter pub get` (single
   workspace resolve from the repo root), `flutter analyze`, three test suites
   (`flutter test` in `apps/app` and `packages/data`, `dart test` in
   `packages/models`), and `flutter build web`.

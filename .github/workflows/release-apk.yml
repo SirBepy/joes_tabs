@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: "3.35.5"
+  FLUTTER_VERSION: "3.38.3"
 
 permissions:
   # Required so softprops/action-gh-release can create/update the Release.

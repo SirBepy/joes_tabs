@@ -18,7 +18,7 @@ concurrency:
 
 env:
   # Pinned Flutter stable that carries Dart 3.10.1 (workspace sdk: ^3.10.1).
-  FLUTTER_VERSION: "3.35.5"
+  FLUTTER_VERSION: "3.38.3"
 
 jobs:
   build-and-test:
