@@ -71,9 +71,41 @@ app was verified running in a real browser against a live local Supabase backend
   push; origin currently points at the local bare remote.
 - Finalize the app name when you're ready.
 
+## SECOND SESSION (2026-06-05, interactive autopilot) - big feature + design push
+
+Phase A (features), B (design fidelity), C (CI/CD) plus the ad hook. All committed, floor green.
+
+Features added:
+- Content: now 30 public-domain songs / 60 tabs, +14 verified chord shapes (ca4eae9, d366275 earlier).
+- Supabase email AUTH: sign up / in / out, session-driven drawer + greeting, user_favorites
+  table + RLS, local->account favorites merge on sign-in (c5183b9). Live-sync deferred (ai_todo 005).
+- Search polish: instrument filter, empty/no-results states, match highlighting (c42e175).
+- E2E flow test (23b167f). Dark mode theme driven by Settings toggle (4a87240).
+- Live WEB mic pitch detection in the Tuner (autocorrelation), mobile mic deferred (7c9e2c0).
+- Watch-an-ad-to-support: mobile AdMob rewarded ad (TEST ids), web-guarded (c116fca).
+
+Design fidelity (Phase B) vs DesignImages at 390x844:
+- Bundled FREDOKA brand "bubble" font + orange headers across the app (fda39b8).
+- Home restructured (saved card scroller, trending peach panel) (fda39b8).
+- Song screen: controls moved into a floating-button sheet, bubble title (ff6d574).
+- Section screens (Settings/Support/Chords/Tuner/Saved) got a back+title header (0ddc2cb).
+- Remaining polish (splash/auth/TY screens, mascot art, real chord-dot data) -> ai_todo 006.
+
+CI/CD (Phase C): GitHub Actions ci.yml + release-apk.yml + deploy-web.yml (18fb367).
+Activates when the repo is pushed to GitHub. `flutter build apk --debug` builds cleanly locally,
+so the release-APK path is proven. Secrets Joe adds later: KEYSTORE_BASE64, STORE_PASSWORD,
+KEY_ALIAS, KEY_PASSWORD (signed APK), PLAY_SERVICE_ACCOUNT_JSON (Play Store).
+
+Floor after this session: analyze clean, 168 tests pass (models 59 + data 38 + app 71),
+web build + debug APK build both succeed.
+
+Open ai_todos: 002 (dark theme refine - now implemented, can close), 003 (native mic),
+005 (favorites live sync), 006 (design polish + mascot art + font confirm).
+
 ## How to run it next session
 
 1. `supabase start` (repo root) if the local stack isn't up.
 2. From apps/app: `flutter run -d chrome --dart-define-from-file=dart_define.local.json`
    (dart_define.local.json is gitignored and already holds the local URL + key).
+3. Auth works locally (email confirmations disabled in config); sign up with any email/password.
 </content>
