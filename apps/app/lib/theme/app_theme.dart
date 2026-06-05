@@ -65,9 +65,73 @@ abstract final class AppTheme {
     );
   }
 
+  /// The dark counterpart to [light]. Keeps the same orange accent and the
+  /// rounded bubble headings + pill buttons, but on deep warm charcoal-brown
+  /// surfaces with light, readable text. Wireframe-level only.
+  static ThemeData get dark {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: AppColors.orange,
+      primary: AppColors.orange,
+      secondary: AppColors.rust,
+      surface: AppColors.darkSurface,
+      brightness: Brightness.dark,
+    );
+
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+    );
+
+    return base.copyWith(
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.orange,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      textTheme: _textTheme(base.textTheme, bodyColor: AppColors.darkText),
+      cardTheme: CardThemeData(
+        color: AppColors.darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radius),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.orange,
+          foregroundColor: AppColors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.darkCard,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+      ),
+    );
+  }
+
   /// Headings use a heavier, rounded-feeling weight to evoke the brand's
-  /// "bubble" lettering. A custom display font can drop in here later.
-  static TextTheme _textTheme(TextTheme base) {
+  /// "bubble" lettering. A custom display font can drop in here later. The
+  /// orange heading accent is shared across light and dark; only the body text
+  /// color differs (defaults to the light theme's [AppColors.textDark]).
+  static TextTheme _textTheme(TextTheme base, {Color? bodyColor}) {
+    final body = bodyColor ?? AppColors.textDark;
     return base.copyWith(
       displaySmall: base.displaySmall?.copyWith(
         fontWeight: FontWeight.w800,
@@ -80,9 +144,9 @@ abstract final class AppTheme {
       ),
       titleLarge: base.titleLarge?.copyWith(
         fontWeight: FontWeight.w700,
-        color: AppColors.textDark,
+        color: body,
       ),
-      bodyMedium: base.bodyMedium?.copyWith(color: AppColors.textDark),
+      bodyMedium: base.bodyMedium?.copyWith(color: body),
     );
   }
 }

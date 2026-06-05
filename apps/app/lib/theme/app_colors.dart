@@ -24,4 +24,26 @@ abstract final class AppColors {
   static const Color textDark = Color(0xFF3D2B1F);
   static const Color textMuted = Color(0xFF8A7866);
   static const Color white = Color(0xFFFFFFFF);
+
+  // Dark theme palette: keeps the warm orange brand accent but swaps the
+  // peach/cream surfaces for deep warm charcoal-brown tones so the bubble
+  // identity survives in dark mode.
+  // TODO(design): dark palette to be refined with Joe.
+
+  /// Deep warm charcoal-brown app background (dark counterpart to [cream]).
+  static const Color darkBackground = Color(0xFF221A14);
+
+  /// Slightly lifted warm brown surface for panels/sheets (counterpart to
+  /// [peach]).
+  static const Color darkSurface = Color(0xFF2E241C);
+
+  /// Warm brown card fill (counterpart to [cardPeach]).
+  static const Color darkCard = Color(0xFF3A2D22);
+
+  /// Light warm off-white body text for dark surfaces (counterpart to
+  /// [textDark]); keeps chord-sheet text readable.
+  static const Color darkText = Color(0xFFF3E9DD);
+
+  /// Muted warm tan for secondary text on dark surfaces.
+  static const Color darkTextMuted = Color(0xFFB7A48E);
 }

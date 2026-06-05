@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
 import 'state/favorites_provider.dart';
+import 'state/settings_provider.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -98,10 +99,13 @@ class JoesTabsApp extends ConsumerWidget {
       });
     }
     final router = buildRouter();
+    final isDark = ref.watch(darkModeProvider);
     return MaterialApp.router(
       title: "Joe's Tabs",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       routerConfig: router,
       builder: (context, child) {
         if (initError == null) return child ?? const SizedBox.shrink();
