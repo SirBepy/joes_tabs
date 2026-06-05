@@ -56,6 +56,14 @@ tab site.
 | `when-the-saints-go-marching-in.cho` | When the Saints Go Marching In | Traditional gospel, pub. early 1900s | Pre-1929; PD |
 | `swing-low-sweet-chariot.cho` | Swing Low, Sweet Chariot | African-American spiritual, pub. by 1872 | Pre-1929; PD |
 | `wayfaring-stranger.cho` | Wayfaring Stranger | American traditional folk/spiritual, 19th c. | Traditional folk; PD |
+| `aura-lee.cho` | Aura Lee | Words W. W. Fosdick, music George R. Poulton, 1861 | Pre-1929; expired copyright |
+| `oh-my-darling-clementine.cho` | Oh My Darling Clementine | Percy Montrose, pub. 1884 (earlier "Down by the River" 1863) | Pre-1929; expired copyright |
+| `camptown-races.cho` | Camptown Races | Stephen Foster, 1850 | Pre-1929; expired copyright |
+| `shenandoah.cho` | Shenandoah | American traditional folk/sea shanty, pub. by 1882 | Pre-1929; traditional folk; PD |
+| `the-water-is-wide.cho` | The Water Is Wide | English traditional ("O Waly Waly"), collected by Cecil Sharp 1906 | Traditional folk; the trad. composition is PD |
+| `simple-gifts.cho` | Simple Gifts | Shaker hymn by Joseph Brackett, 1848 | Pre-1929; expired copyright |
+| `home-on-the-range.cho` | Home on the Range | Words Brewster Higley, music Daniel Kelley, c. 1872 | Pre-1929; ruled PD (1930s copyright claim invalidated) |
+| `kumbaya.cho` | Kumbaya | African-American spiritual, pub. by 1926 | Pre-1929; traditional spiritual; PD |
 
 ## Notes on "House of the Rising Sun" and "Will the Circle Be Unbroken"
 

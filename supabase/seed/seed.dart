@@ -34,6 +34,14 @@ const Map<String, String> songIds = {
   'when-the-saints-go-marching-in': '49574f80-7ece-5a42-b262-9e9253b4a9d2',
   'swing-low-sweet-chariot': 'd48a88a2-fcc5-5ccd-86a6-cb62fb12b3ea',
   'wayfaring-stranger': 'e1e66834-e8d6-574f-888e-f84b4d2c057e',
+  'aura-lee': '9970b329-2cf0-5a47-95bc-338a4639a9fb',
+  'oh-my-darling-clementine': '1ee8f6d3-8b88-5a7a-ba23-283ed351ea34',
+  'camptown-races': '71c23d6f-2eec-5004-9438-1d9c1bee8991',
+  'shenandoah': '96649ae9-db57-5787-a71b-183d7a659802',
+  'the-water-is-wide': 'a964733b-39a2-51a8-ae45-c09b5b6162d0',
+  'simple-gifts': '11627aa9-edb8-557b-afcb-7ee27a3fd893',
+  'home-on-the-range': '5c277ae3-7f6f-50ff-8809-25b303421d34',
+  'kumbaya': '4b5bcc6e-30bb-5955-ae3c-7c8428a419dc',
 };
 
 /// Deterministic tab UUIDs, keyed by `<instrumentSlug>/<songSlug>`.
@@ -64,6 +72,22 @@ const Map<String, String> tabIds = {
       'abf80463-dee6-5eca-bf64-5f9e8c4c10d5',
   'guitar/swing-low-sweet-chariot': '27bb0a7e-b2cc-5119-84a4-9de57e2d0824',
   'guitar/wayfaring-stranger': '39ef4aa2-8c8b-5756-ac52-9bdd54dda18a',
+  'ukulele/aura-lee': '0cceb494-27a5-5583-8d0d-cd3f3e9e2b43',
+  'ukulele/oh-my-darling-clementine': '1d9fe0b8-0661-546b-9e28-d0eef63f04e1',
+  'ukulele/camptown-races': '0cf436a8-8fac-5775-b284-7e55a3d03c56',
+  'ukulele/shenandoah': '0de44b55-6895-50ab-8382-91f4bb6a2357',
+  'ukulele/the-water-is-wide': '167fe7d9-457e-51c9-886d-eb50d6c793d0',
+  'ukulele/simple-gifts': '150ee04f-2a4d-5840-8b52-3bd2fb1f193e',
+  'ukulele/home-on-the-range': '6aab3ec4-1561-5591-9f82-1c00e276ffba',
+  'ukulele/kumbaya': '4aa9fe54-901c-5ef1-8c1c-88bc79f8e180',
+  'guitar/aura-lee': 'c9277629-8f89-59ab-962f-ab4da6f478e4',
+  'guitar/oh-my-darling-clementine': 'a01c2014-e403-5c68-aca3-93a41686b2ec',
+  'guitar/camptown-races': 'f44f379a-1f5f-5002-bc8a-4648342cda12',
+  'guitar/shenandoah': 'bcca8652-f454-5c81-a77a-6671c9f51a58',
+  'guitar/the-water-is-wide': 'cc679ba9-4f61-5e77-b27f-429f7810933c',
+  'guitar/simple-gifts': 'cbe80f85-7513-59f3-8ab6-2128cb819abf',
+  'guitar/home-on-the-range': '171b2676-ec7e-5cf6-9eac-6e13f8714119',
+  'guitar/kumbaya': 'a0593609-832e-51c8-9468-d1465b7d4f33',
 };
 
 /// Instrument slugs that each song is published for. The ChordPro content is
