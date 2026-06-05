@@ -69,8 +69,8 @@ void main() {
       router.routerDelegate.currentConfiguration.uri.path,
       AppRoutes.tuner,
     );
-    // Tuner placeholder body is shown.
-    expect(find.text('Tuner'), findsOneWidget);
+    // Tuner screen is shown (all-caps brand title).
+    expect(find.text('TUNER'), findsOneWidget);
     // Drawer destinations are no longer visible (drawer closed).
     expect(find.text('Saved Tabs'), findsNothing);
   });

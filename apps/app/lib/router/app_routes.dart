@@ -9,6 +9,9 @@ abstract final class AppRoutes {
   static const String tuner = '/tuner';
   static const String settings = '/settings';
   static const String support = '/support';
+
+  /// Full-screen thank-you confirmation reached after a Support Us action.
+  static const String thankYou = '/ty';
   static const String login = '/login';
   static const String register = '/register';
   static const String search = '/search';

@@ -10,6 +10,7 @@ import '../screens/settings_screen.dart';
 import '../screens/song_detail_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/support_screen.dart';
+import '../screens/thank_you_screen.dart';
 import '../screens/trending_screen.dart';
 import '../screens/tuner_screen.dart';
 import '../widgets/app_shell.dart';
@@ -61,6 +62,10 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
             builder: (context, state) => const SupportScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.thankYou,
+        builder: (context, state) => const ThankYouScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,
