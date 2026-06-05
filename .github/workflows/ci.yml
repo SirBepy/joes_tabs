@@ -1,0 +1,75 @@
+name: CI
+
+# Runs on every push and pull request targeting the default branch.
+# Quality floor: analyze, three test suites, and a web build.
+# No real secrets are available in CI, so the web build uses placeholder
+# dart-defines; the app is designed to launch without a live backend.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned Flutter stable that carries Dart 3.10.1 (workspace sdk: ^3.10.1).
+  FLUTTER_VERSION: "3.35.5"
+
+jobs:
+  build-and-test:
+    name: Analyze, test, build web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java (Temurin 17 for Android tooling)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install workspace dependencies
+        # Native Dart pub workspace: a single resolve from the repo root
+        # covers apps/app, packages/models and packages/data.
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test apps/app
+        working-directory: apps/app
+        run: flutter test
+
+      - name: Test packages/data
+        working-directory: packages/data
+        run: flutter test
+
+      - name: Test packages/models
+        working-directory: packages/models
+        run: dart test
+
+      - name: Build web (placeholder defines, no backend)
+        working-directory: apps/app
+        # SUPABASE_URL / SUPABASE_ANON_KEY are intentionally empty here.
+        # The app tolerates a missing backend at runtime; real values are
+        # supplied at deploy time, not in this build.
+        run: >
+          flutter build web --release
+          --dart-define=SUPABASE_URL=
+          --dart-define=SUPABASE_ANON_KEY=

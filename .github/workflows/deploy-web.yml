@@ -1,0 +1,73 @@
+name: Deploy Web (GitHub Pages)
+
+# Builds the Flutter web app and deploys it to GitHub Pages on push to the
+# default branch.
+#
+# REQUIRES one-time setup by Joe:
+#   GitHub > Settings > Pages > Build and deployment > Source: GitHub Actions.
+# Until Pages is enabled, the deploy step will fail; the build step still
+# validates the web bundle.
+#
+# Base href: GitHub Pages serves project sites under /<repo>/, so the build
+# sets --base-href accordingly. For a user/org root site, change to "/".
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.35.5"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deploy; do not cancel an in-progress deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build web bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install workspace dependencies
+        run: flutter pub get
+
+      - name: Build web
+        working-directory: apps/app
+        run: >
+          flutter build web --release
+          --base-href=/joes_tabs/
+          --dart-define=SUPABASE_URL=
+          --dart-define=SUPABASE_ANON_KEY=
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/app/build/web
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

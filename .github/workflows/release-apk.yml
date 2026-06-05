@@ -1,0 +1,113 @@
+name: Release APK
+
+# Cuts a release when a v* tag is pushed (or via manual dispatch).
+# Today this builds an UNSIGNED debug APK, since no release keystore exists
+# yet. The debug APK is uploaded as a workflow artifact AND attached to the
+# GitHub Release for the tag.
+#
+# WHEN A RELEASE KEYSTORE EXISTS (provided later by Joe):
+#   Add these repository secrets in GitHub > Settings > Secrets and variables
+#   > Actions, then enable the commented-out signed-build steps below:
+#     KEYSTORE_BASE64  - base64 of the upload keystore (.jks)
+#     STORE_PASSWORD   - keystore password
+#     KEY_ALIAS        - key alias
+#     KEY_PASSWORD     - key password
+#   For Play Store upload, also add:
+#     PLAY_SERVICE_ACCOUNT_JSON - Google Play service-account JSON
+#
+# No real Supabase secrets are needed to build; placeholder dart-defines are
+# used and the app launches without a backend.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.35.5"
+
+permissions:
+  # Required so softprops/action-gh-release can create/update the Release.
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build debug APK and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java (Temurin 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install workspace dependencies
+        run: flutter pub get
+
+      # ----------------------------------------------------------------------
+      # SIGNED RELEASE BUILD (enable once keystore + secrets exist).
+      # Decode the keystore and write key.properties, then build appbundle.
+      # ----------------------------------------------------------------------
+      # - name: Decode keystore
+      #   run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > apps/app/android/app/upload-keystore.jks
+      #
+      # - name: Write key.properties
+      #   run: |
+      #     printf 'storeFile=upload-keystore.jks\n' >  apps/app/android/key.properties
+      #     printf 'storePassword=%s\n' "${{ secrets.STORE_PASSWORD }}" >> apps/app/android/key.properties
+      #     printf 'keyAlias=%s\n'      "${{ secrets.KEY_ALIAS }}"      >> apps/app/android/key.properties
+      #     printf 'keyPassword=%s\n'   "${{ secrets.KEY_PASSWORD }}"   >> apps/app/android/key.properties
+      #
+      # - name: Build signed app bundle
+      #   working-directory: apps/app
+      #   run: >
+      #     flutter build appbundle --release
+      #     --dart-define=SUPABASE_URL=
+      #     --dart-define=SUPABASE_ANON_KEY=
+
+      - name: Build debug APK
+        working-directory: apps/app
+        run: >
+          flutter build apk --debug
+          --dart-define=SUPABASE_URL=
+          --dart-define=SUPABASE_ANON_KEY=
+
+      - name: Rename APK
+        run: cp apps/app/build/app/outputs/flutter-apk/app-debug.apk joes-tabs-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: joes-tabs-debug-apk
+          path: joes-tabs-debug.apk
+          if-no-files-found: error
+
+      - name: Attach APK to GitHub Release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          files: joes-tabs-debug.apk
+          generate_release_notes: true
+
+      # ----------------------------------------------------------------------
+      # PLAY STORE UPLOAD (enable once a signed app bundle + service account
+      # exist). Uploads the .aab to the internal track for review.
+      # ----------------------------------------------------------------------
+      # - name: Upload to Google Play (internal track)
+      #   uses: r0adkll/upload-google-play@v1.1.3
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+      #     packageName: com.example.joes_tabs
+      #     releaseFiles: apps/app/build/app/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: completed
