@@ -50,4 +50,19 @@ void main() {
     );
     expect(find.text('-12¢'), findsOneWidget);
   });
+
+  testWidgets('shows the played octave on the note when active', (t) async {
+    await _pump(
+      t,
+      const TunerGauge(
+        centerNote: 'G',
+        cents: 0,
+        octave: 3,
+        zone: TuneZone.green,
+        isInTune: true,
+        active: true,
+      ),
+    );
+    expect(find.text('G3'), findsOneWidget);
+  });
 }

@@ -35,10 +35,15 @@ class TunerGauge extends StatefulWidget {
     required this.zone,
     required this.isInTune,
     required this.active,
+    this.octave = 0,
   });
 
   /// The note the ribbon is centered on (a bare letter, e.g. 'G').
   final String centerNote;
+
+  /// Scientific octave of the note sounding (e.g. 3 for G3); shown as a small
+  /// superscript on the big note. Ignored when 0 / inactive.
+  final int octave;
 
   /// Smoothed signed cents from the target (negative = flat).
   final double cents;
@@ -99,8 +104,24 @@ class _TunerGaugeState extends State<TunerGauge>
                 : 1.0;
             return Transform.scale(scale: scale, child: child);
           },
-          child: Text(
-            widget.centerNote,
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: widget.centerNote),
+                if (widget.active && widget.octave > 0)
+                  TextSpan(
+                    text: '${widget.octave}',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: _muted,
+                      // Raise it to sit as a superscript.
+                      textBaseline: TextBaseline.alphabetic,
+                      height: 2.4,
+                    ),
+                  ),
+              ],
+            ),
             style: TextStyle(
               fontSize: 72,
               fontWeight: FontWeight.w800,
@@ -149,30 +170,36 @@ class _TunerGaugeState extends State<TunerGauge>
                     final dx = -(animCents / 100) * _semitonePx;
                     return Transform.translate(
                       offset: Offset(dx, 0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (final n in notes)
-                            SizedBox(
-                              width: _semitonePx,
-                              child: Center(
-                                child: Text(
-                                  n,
-                                  style: TextStyle(
-                                    fontWeight: n == widget.centerNote
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    fontSize: n.contains('#') ? 13 : 20,
-                                    color: n == widget.centerNote
-                                        ? _ink
-                                        : (n.contains('#')
-                                              ? _muted
-                                              : _ink.withValues(alpha: 0.7)),
+                      // The full chromatic row is wider than the gauge; let it
+                      // overflow its parent (the ClipRRect clips the excess)
+                      // instead of tripping a RenderFlex overflow.
+                      child: OverflowBox(
+                        maxWidth: double.infinity,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final n in notes)
+                              SizedBox(
+                                width: _semitonePx,
+                                child: Center(
+                                  child: Text(
+                                    n,
+                                    style: TextStyle(
+                                      fontWeight: n == widget.centerNote
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      fontSize: n.contains('#') ? 13 : 20,
+                                      color: n == widget.centerNote
+                                          ? _ink
+                                          : (n.contains('#')
+                                                ? _muted
+                                                : _ink.withValues(alpha: 0.7)),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
