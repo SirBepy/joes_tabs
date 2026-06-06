@@ -48,6 +48,7 @@ class TunerEngine {
     this.emaAlpha = 0.25,
     this.inTuneCents = 5,
     this.octaveFoldCents = 600,
+    this.harmonicWindowCents = 100,
   });
 
   /// Equal-tempered frequencies of the active tuning's open strings, in strip
@@ -74,6 +75,12 @@ class TunerEngine {
   /// folded by octaves back toward it (kills 2x/0.5x harmonic errors).
   final double octaveFoldCents;
 
+  /// A reading whose octave-folded distance to the LOCKED string is within this
+  /// many cents is treated as that string (an octave harmonic, or just detuned),
+  /// so harmonics never switch the lock. Kept small (~1 semitone) so a genuinely
+  /// different string is still allowed to take over via [switchMarginCents].
+  final double harmonicWindowCents;
+
   int? _locked;
   double _smoothed = 0;
   int _silent = 0;
@@ -93,7 +100,15 @@ class TunerEngine {
 
   /// Advances one frame. Pass the detected Hz, or null for a silent frame.
   TunerState update(double? hz) {
-    if (hz == null || !hz.isFinite || hz <= 0) {
+    final valid = hz != null && hz.isFinite && hz > 0;
+
+    // An empty tuning can never lock onto anything; stay idle without indexing.
+    if (stringFrequencies.isEmpty) {
+      _hasSignal = valid;
+      return TunerState(hasSignal: valid);
+    }
+
+    if (!valid) {
       _hasSignal = false;
       _silent++;
       if (_silent >= silenceResetFrames) {
@@ -107,10 +122,23 @@ class TunerEngine {
     _hasSignal = true;
     _silent = 0;
 
-    // Nearest-string detection always uses the RAW frequency so a clearly
-    // different string (e.g. A4 while locked on C4) is identified correctly.
-    // Octave folding is applied ONLY when the nearest string IS the locked
-    // string, to fold accidental 2x/0.5x harmonics for accurate cents display.
+    // While locked, first ask: is this reading just the locked string, octave-
+    // folded (a 2x/0.5x harmonic) or merely detuned? Fold it toward the locked
+    // frequency; if it lands within the small harmonic window, keep the lock and
+    // show the folded cents. This stops an octave harmonic from hijacking the
+    // lock, while a genuinely different note (folded distance outside the window)
+    // still falls through to the switch logic below.
+    if (_locked != null) {
+      final lockedFreq = stringFrequencies[_locked!];
+      final foldedCents = centsBetween(_foldOctave(hz, lockedFreq), lockedFreq);
+      if (foldedCents.abs() <= harmonicWindowCents) {
+        _candidate = null;
+        _candidateCount = 0;
+        _smoothed = _smoothed + emaAlpha * (foldedCents - _smoothed);
+        return _state();
+      }
+    }
+
     final nearest = _nearestIndex(hz);
 
     if (_locked == null) {
@@ -129,10 +157,11 @@ class TunerEngine {
       return _state();
     }
 
+    // Locked, and the reading is NOT the locked string's note. Consider a switch
+    // only if a different string is closer by more than the hysteresis margin.
+    final centsToLocked = centsBetween(hz, stringFrequencies[_locked!]);
     if (nearest != _locked) {
-      // Potential switch: the raw pitch is closer to a different string.
       final centsToNearest = centsBetween(hz, stringFrequencies[nearest]);
-      final centsToLocked = centsBetween(hz, stringFrequencies[_locked!]);
       if (centsToNearest.abs() < centsToLocked.abs() - switchMarginCents) {
         if (_candidate == nearest) {
           _candidateCount++;
@@ -142,7 +171,7 @@ class TunerEngine {
         }
         if (_candidateCount >= stabilityFrames) {
           _locked = nearest;
-          _smoothed = centsToNearest;
+          _smoothed = centsToNearest; // snap on a fresh lock (as in acquire)
           _candidate = null;
           _candidateCount = 0;
           return _state();
@@ -151,25 +180,12 @@ class TunerEngine {
         _candidate = null;
         _candidateCount = 0;
       }
-      // While counting toward a switch, also update cents against locked string
-      // (using folded hz so an octave-harmonic doesn't show huge cents error).
-      final hzForCents = _tryFoldOctave(hz, stringFrequencies[_locked!]);
-      final centsToLockedFolded = centsBetween(
-        hzForCents,
-        stringFrequencies[_locked!],
-      );
-      _smoothed = _smoothed + emaAlpha * (centsToLockedFolded - _smoothed);
     } else {
-      // Nearest IS the locked string. Fold octave errors for cents accuracy.
       _candidate = null;
       _candidateCount = 0;
-      final hzForCents = _tryFoldOctave(hz, stringFrequencies[_locked!]);
-      final centsToLocked = centsBetween(
-        hzForCents,
-        stringFrequencies[_locked!],
-      );
-      _smoothed = _smoothed + emaAlpha * (centsToLocked - _smoothed);
     }
+
+    _smoothed = _smoothed + emaAlpha * (centsToLocked - _smoothed);
     return _state();
   }
 
@@ -197,18 +213,6 @@ class TunerEngine {
       f *= 2;
     }
     return f;
-  }
-
-  /// Like [_foldOctave] but only applies the fold if the result actually lands
-  /// within [octaveFoldCents] of [target]. This prevents a genuinely different
-  /// string (e.g. A4 while locked on C4) from being mis-folded into a harmonic
-  /// that re-maps to the locked string, which would block legitimate lock switches.
-  double _tryFoldOctave(double hz, double target) {
-    final folded = _foldOctave(hz, target);
-    if (centsBetween(folded, target).abs() <= octaveFoldCents) {
-      return folded;
-    }
-    return hz;
   }
 
   TunerState _state() {

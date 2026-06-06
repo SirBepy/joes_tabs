@@ -74,7 +74,7 @@ void main() {
   });
 
   test(
-    'switches lock to a clearly different string after silence + restab',
+    'switches lock to a clearly different string after enough stable frames',
     () {
       final e = engine();
       final c4 = ukeFreqs[1];
@@ -100,5 +100,46 @@ void main() {
     final s = e.update(sharpG);
     expect(s.cents, greaterThan(0));
     expect(s.cents, lessThan(17));
+  });
+
+  test('a sustained octave harmonic of the locked string keeps the lock', () {
+    final e = engine();
+    final g4 = ukeFreqs[0];
+    for (var i = 0; i < 3; i++) {
+      e.update(g4);
+    }
+    expect(e.update(g4).lockedIndex, 0);
+    // G5 (the octave harmonic) must NOT switch the lock to A and must read ~0.
+    for (var i = 0; i < 6; i++) {
+      final s = e.update(g4 * 2);
+      expect(
+        s.lockedIndex,
+        0,
+        reason: 'octave harmonic must not hijack the lock',
+      );
+      expect(s.cents.abs(), lessThan(15));
+    }
+  });
+
+  test('does not switch when a neighbor is closer but not past the margin', () {
+    final e = engine();
+    final c4 = ukeFreqs[1];
+    for (var i = 0; i < 3; i++) {
+      e.update(c4);
+    }
+    expect(e.update(c4).lockedIndex, 1);
+    // ~250 cents sharp of C4: nearest becomes E4, but not by switchMarginCents.
+    final sharpC = c4 * 1.155;
+    for (var i = 0; i < 5; i++) {
+      expect(e.update(sharpC).lockedIndex, 1);
+    }
+  });
+
+  test('an empty string list stays idle and never throws', () {
+    final e = TunerEngine(stringFrequencies: <double>[]);
+    for (var i = 0; i < 4; i++) {
+      expect(e.update(440).lockedIndex, isNull);
+    }
+    expect(e.update(440).hasSignal, isTrue);
   });
 }
