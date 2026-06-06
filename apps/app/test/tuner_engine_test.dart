@@ -4,7 +4,6 @@ import 'package:joes_tabs_app/tuner/tuner_engine.dart';
 
 // Ukulele open strings G4 C4 E4 A4.
 final ukeFreqs = openStringFrequencies(['G', 'C', 'E', 'A'], 'ukulele');
-double freqOf(String n, String inst) => openStringFrequencies([n], inst).first;
 
 TunerEngine engine() => TunerEngine(stringFrequencies: ukeFreqs);
 
@@ -141,5 +140,35 @@ void main() {
       expect(e.update(440).lockedIndex, isNull);
     }
     expect(e.update(440).hasSignal, isTrue);
+  });
+
+  test('acquires the right string from a lower octave (octave-invariant)', () {
+    final e = engine();
+    final g2 = ukeFreqs[0] / 4; // two octaves below the open G4 string
+    late TunerState s;
+    for (var i = 0; i < 3; i++) {
+      s = e.update(g2);
+    }
+    expect(s.lockedIndex, 0, reason: 'a low G must still match the G string');
+    expect(s.octave, 2, reason: 'reports the played octave');
+    expect(s.cents.abs(), lessThan(15));
+  });
+
+  test('reports the played octave when it changes on the locked string', () {
+    final e = engine();
+    final g4 = ukeFreqs[0];
+    for (var i = 0; i < 3; i++) {
+      e.update(g4);
+    }
+    expect(e.update(g4).octave, 4);
+    // Drop to G3: same string, octave readout follows the note actually played.
+    final g3 = g4 / 2;
+    late TunerState s;
+    for (var i = 0; i < 4; i++) {
+      s = e.update(g3);
+    }
+    expect(s.lockedIndex, 0);
+    expect(s.octave, 3);
+    expect(s.cents.abs(), lessThan(15));
   });
 }

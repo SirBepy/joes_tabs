@@ -312,6 +312,24 @@ TuneZone tuneZoneForCents(
   return TuneZone.red;
 }
 
+/// An octave-invariant match of [hz] against a string at [stringFreq].
+///
+/// Finds the octave of [stringFreq] nearest [hz] and reports the signed cents to
+/// it (always in (-600, 600]) plus that octave's scientific octave number. This
+/// makes string detection octave-invariant: any G (G2, G3, G4...) matches the G
+/// string and reads near 0 cents, while the [octave] tells the UI which one is
+/// playing. Returns `(cents: 0, octave: 0)` for invalid input.
+({double cents, int octave}) octaveMatch(double hz, double stringFreq) {
+  if (!hz.isFinite || hz <= 0 || !stringFreq.isFinite || stringFreq <= 0) {
+    return (cents: 0, octave: 0);
+  }
+  final k = (math.log(hz / stringFreq) / math.ln2).round();
+  final target = stringFreq * math.pow(2, k);
+  final cents = centsBetween(hz, target);
+  final octave = frequencyToNoteName(target)?.octave ?? 0;
+  return (cents: cents, octave: octave);
+}
+
 /// Chromatic note letters centered on [centerNote] with [perSide] neighbors on
 /// each side, wrapping across the octave (e.g. `chromaticRibbon('C', 1)` =>
 /// `['B','C','C#']`). Returns empty if [centerNote] is not a chromatic letter.
