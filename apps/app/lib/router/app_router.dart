@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/chords_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/saved_screen.dart';
 import '../screens/search_screen.dart';
@@ -62,6 +63,10 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
             builder: (context, state) => const SupportScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: AppRoutes.thankYou,

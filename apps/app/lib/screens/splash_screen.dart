@@ -1,31 +1,39 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../router/app_routes.dart';
+import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
 /// Branded launch screen (per `docs/design/screens/splash-screen.md`). Shown
-/// briefly, then auto-advances to Home.
-class SplashScreen extends StatefulWidget {
+/// briefly, then auto-advances: first-run users (onboarding not complete) go to
+/// the onboarding wizard, returning users go to Home.
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    // Timer-based advance; startup init already happened in main().
+    // Timer-based advance; startup init already happened in main(). The
+    // destination depends on whether onboarding was completed on a prior run.
     _timer = Timer(const Duration(milliseconds: 1500), () {
-      if (mounted) context.go(AppRoutes.home);
+      if (!mounted) return;
+      final onboardingComplete = ref
+          .read(initialAppSettingsProvider)
+          .onboardingComplete;
+      context.go(onboardingComplete ? AppRoutes.home : AppRoutes.onboarding);
     });
   }
 
