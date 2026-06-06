@@ -1,24 +1,28 @@
-/// Non-web (mobile / desktop) microphone tuner stub.
-///
-/// On these platforms we have no live-mic pitch implementation yet, so this
-/// stub reports `unsupported` and the Tuner screen falls back to its
-/// reference-tone behaviour. The pure pitch math in `pitch.dart` is fully
-/// reusable; only the capture layer is missing here.
-///
-/// TODO(device): native mic pitch detection. Wire a real microphone capture
-/// path (e.g. the `record` package's PCM stream, or a platform channel feeding
-/// Float64 frames into estimatePitch) and emit real PitchSample events.
-/// Requires a physical-device test pass, tracked as a separate follow-up.
+/// Native (iOS / Android / desktop) microphone tuner using the `record`
+/// package's PCM16 stream. Web is served by `mic_web.dart` via the conditional
+/// import in `mic_tuner.dart`, so `record` is never compiled into the web build.
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:record/record.dart';
 
 import 'mic_tuner.dart';
+import 'pitch.dart';
 
-/// Stub [MicTuner] used on every non-web platform.
-class _StubMicTuner implements MicTuner {
+const int _sampleRate = 44100;
+// ~46ms of audio per pitch estimate: enough periods for the low guitar E2.
+const int _frameSamples = 2048;
+
+class _RecordMicTuner implements MicTuner {
+  _RecordMicTuner();
+
+  final _recorder = AudioRecorder();
   final _pitches = StreamController<PitchSample>.broadcast();
   final _status = StreamController<MicTunerStatus>.broadcast();
+  StreamSubscription<Uint8List>? _audioSub;
+  final _buffer = <double>[];
 
   @override
   Stream<PitchSample> get pitchStream => _pitches.stream;
@@ -27,26 +31,68 @@ class _StubMicTuner implements MicTuner {
   Stream<MicTunerStatus> get statusStream => _status.stream;
 
   @override
-  bool get isSupported => false;
+  bool get isSupported => true;
 
   @override
   Future<void> start() async {
-    // No native capture yet: announce unsupported so the UI shows the
-    // reference-tone fallback message instead of a spinner.
-    _status.add(MicTunerStatus.unsupported);
+    _status.add(MicTunerStatus.starting);
+    try {
+      if (!await _recorder.hasPermission()) {
+        _status.add(MicTunerStatus.permissionDenied);
+        return;
+      }
+      final stream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: _sampleRate,
+          numChannels: 1,
+        ),
+      );
+      _status.add(MicTunerStatus.listening);
+      _audioSub = stream.listen(
+        _onAudio,
+        onError: (_) {
+          _status.add(MicTunerStatus.unavailable);
+        },
+      );
+    } catch (_) {
+      _status.add(MicTunerStatus.unavailable);
+    }
+  }
+
+  void _onAudio(Uint8List bytes) {
+    // PCM16 little-endian -> normalized doubles in [-1, 1].
+    final view = ByteData.sublistView(bytes);
+    for (var i = 0; i + 1 < bytes.length; i += 2) {
+      _buffer.add(view.getInt16(i, Endian.little) / 32768.0);
+    }
+    while (_buffer.length >= _frameSamples) {
+      final frame = _buffer.sublist(0, _frameSamples);
+      _buffer.removeRange(0, _frameSamples);
+      final hz = estimatePitch(frame, _sampleRate);
+      if (hz != null) _pitches.add(PitchSample(frequencyHz: hz));
+    }
   }
 
   @override
   Future<void> stop() async {
+    await _audioSub?.cancel();
+    _audioSub = null;
+    _buffer.clear();
+    if (await _recorder.isRecording()) {
+      await _recorder.stop();
+    }
     _status.add(MicTunerStatus.idle);
   }
 
   @override
   Future<void> dispose() async {
+    await stop();
+    await _recorder.dispose();
     await _pitches.close();
     await _status.close();
   }
 }
 
 /// Factory used by the conditional import in `mic_tuner.dart`.
-MicTuner createMicTunerImpl() => _StubMicTuner();
+MicTuner createMicTunerImpl() => _RecordMicTuner();
