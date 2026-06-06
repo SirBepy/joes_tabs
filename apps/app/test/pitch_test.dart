@@ -266,4 +266,48 @@ void main() {
       expect(m.cents.abs(), lessThan(1));
     });
   });
+
+  group('centsBetween', () {
+    test('zero when equal', () {
+      expect(centsBetween(440, 440), closeTo(0, 1e-9));
+    });
+    test('one semitone up is +100 cents', () {
+      expect(centsBetween(466.1637615, 440), closeTo(100, 0.5));
+    });
+    test('an octave down is -1200 cents', () {
+      expect(centsBetween(220, 440), closeTo(-1200, 1e-6));
+    });
+    test('non-positive input returns 0', () {
+      expect(centsBetween(0, 440), 0);
+      expect(centsBetween(440, 0), 0);
+    });
+  });
+
+  group('tuneZoneForCents', () {
+    test('green within +/-5', () {
+      expect(tuneZoneForCents(0), TuneZone.green);
+      expect(tuneZoneForCents(5), TuneZone.green);
+      expect(tuneZoneForCents(-5), TuneZone.green);
+    });
+    test('amber between 5 and 15', () {
+      expect(tuneZoneForCents(6), TuneZone.amber);
+      expect(tuneZoneForCents(-15), TuneZone.amber);
+    });
+    test('red beyond 15', () {
+      expect(tuneZoneForCents(16), TuneZone.red);
+      expect(tuneZoneForCents(-40), TuneZone.red);
+    });
+  });
+
+  group('chromaticRibbon', () {
+    test('centers on the given note with perSide neighbors each way', () {
+      expect(chromaticRibbon('G', 2), ['F', 'F#', 'G', 'G#', 'A']);
+    });
+    test('wraps around the octave boundary', () {
+      expect(chromaticRibbon('C', 1), ['B', 'C', 'C#']);
+    });
+    test('unknown note returns empty', () {
+      expect(chromaticRibbon('H', 2), isEmpty);
+    });
+  });
 }

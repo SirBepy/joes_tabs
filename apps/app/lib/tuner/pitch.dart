@@ -288,3 +288,39 @@ double? estimatePitch(
   if (!freq.isFinite || freq < minHz || freq > maxHz) return null;
   return freq;
 }
+
+/// Signed cents from [hz] up to [targetHz] (positive = [hz] is sharp of target).
+/// Returns 0 for non-positive / non-finite input so callers never get NaN.
+double centsBetween(double hz, double targetHz) {
+  if (!hz.isFinite || hz <= 0 || !targetHz.isFinite || targetHz <= 0) return 0;
+  return 1200 * (math.log(hz / targetHz) / math.ln2);
+}
+
+/// How in-tune a reading is, for color-coding the gauge.
+enum TuneZone { green, amber, red }
+
+/// Buckets a signed cents offset: green within +/-[greenCents], amber out to
+/// +/-[amberCents], red beyond. Defaults match the design (5 / 15).
+TuneZone tuneZoneForCents(
+  double cents, {
+  double greenCents = 5,
+  double amberCents = 15,
+}) {
+  final a = cents.abs();
+  if (a <= greenCents) return TuneZone.green;
+  if (a <= amberCents) return TuneZone.amber;
+  return TuneZone.red;
+}
+
+/// Chromatic note letters centered on [centerNote] with [perSide] neighbors on
+/// each side, wrapping across the octave (e.g. `chromaticRibbon('C', 1)` =>
+/// `['B','C','C#']`). Returns empty if [centerNote] is not a chromatic letter.
+List<String> chromaticRibbon(String centerNote, int perSide) {
+  final c = _noteNames.indexOf(centerNote);
+  if (c < 0) return const [];
+  final out = <String>[];
+  for (var i = -perSide; i <= perSide; i++) {
+    out.add(_noteNames[(c + i) % 12]); // Dart % is non-negative for +divisor.
+  }
+  return out;
+}
