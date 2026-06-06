@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Joe's Tabs uses the microphone to tune your ukulele or guitar.</string>
 </dict>
 </plist>
