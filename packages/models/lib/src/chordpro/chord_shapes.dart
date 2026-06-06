@@ -3,6 +3,7 @@
 /// the app turns a [ChordShape] into a fretboard drawing.
 library;
 
+import 'chord_shapes_data.dart';
 import 'transposer.dart';
 
 /// A fretboard fingering for one chord on one instrument.
@@ -31,105 +32,20 @@ class ChordShape {
   int get stringCount => frets.length;
 }
 
-/// Static lookup of common chord shapes for the supported instruments.
+/// Static lookup of chord shapes for the supported instruments.
 ///
-/// The covered set is deliberately broad enough for the seeded public-domain
-/// catalogue (C, D, E, G, A and their common m/7/maj7 variants, plus F, B7,
-/// etc.). [lookup] resolves a chord symbol to a shape, transposing a known base
-/// shape when an exact entry is missing where possible, and returns null when
-/// no diagram is known (the UI then shows a "no diagram" note).
+/// The shape tables ([kUkuleleShapes], [kGuitarShapes]) are GENERATED from the
+/// MIT-licensed `tombatossals/chords-db` dataset by `tool/gen_chord_shapes.dart`
+/// and cover 12 roots x 11 qualities (major, minor, 7, m7, maj7, sus2, sus4, 6,
+/// dim, aug, add9) per instrument. [lookup] resolves a chord symbol to a shape,
+/// normalizing enharmonics and falling back through slash chords, and returns
+/// null when no diagram is known (the UI then shows a "no diagram" note).
 class ChordShapes {
   const ChordShapes._();
 
   /// `slug` values matching the `instruments` table.
   static const String ukulele = 'ukulele';
   static const String guitar = 'guitar';
-
-  // Ukulele (GCEA), strings left-to-right G C E A.
-  static const Map<String, List<int>> _ukulele = {
-    'C': [0, 0, 0, 3],
-    'C7': [0, 0, 0, 1],
-    'Cmaj7': [0, 0, 0, 2],
-    'Cm': [0, 3, 3, 3],
-    'D': [2, 2, 2, 0],
-    'D7': [2, 2, 2, 3],
-    'Dm': [2, 2, 1, 0],
-    'E': [4, 4, 4, 2],
-    'E7': [1, 2, 0, 2],
-    'Em': [0, 4, 3, 2],
-    'F': [2, 0, 1, 0],
-    'F7': [2, 3, 1, 0],
-    'Fm': [1, 0, 1, 3],
-    'G': [0, 2, 3, 2],
-    'G7': [0, 2, 1, 2],
-    'Gm': [0, 2, 3, 1],
-    'A': [2, 1, 0, 0],
-    'A7': [0, 1, 0, 0],
-    'Am': [2, 0, 0, 0],
-    'Am7': [0, 0, 0, 0],
-    'B': [4, 3, 2, 2],
-    'B7': [2, 3, 2, 2],
-    'Bm': [4, 2, 2, 2],
-    'Bb': [3, 2, 1, 1],
-    'A#': [3, 2, 1, 1],
-    'Dm7': [2, 2, 1, 3],
-    'Em7': [0, 2, 0, 2],
-    'Bm7': [2, 2, 2, 2],
-    'Asus2': [2, 4, 5, 2],
-    'Asus4': [2, 2, 0, 0],
-    'Dsus4': [0, 2, 3, 0],
-    'Esus4': [4, 4, 0, 0],
-    'Csus2': [0, 2, 3, 3],
-    'Gsus4': [0, 2, 3, 3],
-    'C6': [0, 0, 0, 0],
-    'G6': [0, 2, 0, 2],
-    'Cadd9': [0, 2, 0, 3],
-    'F#m': [2, 1, 2, 0],
-    'C#m': [1, 2, 0, 0],
-  };
-
-  // Guitar (EADGBE), strings left-to-right low-E A D G B high-E.
-  static const Map<String, List<int>> _guitar = {
-    'C': [-1, 3, 2, 0, 1, 0],
-    'C7': [-1, 3, 2, 3, 1, 0],
-    'Cmaj7': [-1, 3, 2, 0, 0, 0],
-    'Cm': [-1, 3, 5, 5, 4, 3],
-    'D': [-1, -1, 0, 2, 3, 2],
-    'D7': [-1, -1, 0, 2, 1, 2],
-    'Dm': [-1, -1, 0, 2, 3, 1],
-    'E': [0, 2, 2, 1, 0, 0],
-    'E7': [0, 2, 0, 1, 0, 0],
-    'Em': [0, 2, 2, 0, 0, 0],
-    'Em7': [0, 2, 0, 0, 0, 0],
-    'F': [1, 3, 3, 2, 1, 1],
-    'Fmaj7': [-1, -1, 3, 2, 1, 0],
-    'G': [3, 2, 0, 0, 0, 3],
-    'G7': [3, 2, 0, 0, 0, 1],
-    'Gm': [3, 5, 5, 3, 3, 3],
-    'A': [-1, 0, 2, 2, 2, 0],
-    'A7': [-1, 0, 2, 0, 2, 0],
-    'Am': [-1, 0, 2, 2, 1, 0],
-    'Am7': [-1, 0, 2, 0, 1, 0],
-    'B': [-1, 2, 4, 4, 4, 2],
-    'B7': [-1, 2, 1, 2, 0, 2],
-    'Bm': [-1, 2, 4, 4, 3, 2],
-    'Bb': [-1, 1, 3, 3, 3, 1],
-    'A#': [-1, 1, 3, 3, 3, 1],
-    'Dm7': [-1, -1, 0, 2, 1, 1],
-    'Bm7': [-1, 2, 4, 2, 3, 2],
-    'Asus2': [-1, 0, 2, 2, 0, 0],
-    'Asus4': [-1, 0, 2, 2, 3, 0],
-    'Dsus4': [-1, -1, 0, 2, 3, 2],
-    'Esus4': [0, 2, 2, 2, 0, 0],
-    'Csus2': [-1, 3, 0, 0, 3, 3],
-    'Gsus4': [3, 3, 0, 0, 1, 3],
-    'C6': [-1, 3, 2, 2, 1, 3],
-    'G6': [3, 2, 0, 2, 0, 0],
-    'Cadd9': [-1, 3, 2, 0, 3, 0],
-    'Gadd9': [3, 2, 0, 0, 0, 3],
-    'F#m': [2, 4, 4, 2, 2, 2],
-    'C#m': [-1, 4, 6, 6, 5, 4],
-  };
 
   /// All chord names that have a shape for [instrumentSlug], sorted.
   static List<String> namesFor(String instrumentSlug) {
@@ -139,12 +55,12 @@ class ChordShapes {
     return names;
   }
 
-  static Map<String, List<int>>? _mapFor(String instrumentSlug) {
+  static Map<String, ChordShape>? _mapFor(String instrumentSlug) {
     switch (instrumentSlug) {
       case ukulele:
-        return _ukulele;
+        return kUkuleleShapes;
       case guitar:
-        return _guitar;
+        return kGuitarShapes;
       default:
         return null;
     }
@@ -166,7 +82,13 @@ class ChordShapes {
 
     // 1. Exact.
     final exact = map[trimmed];
-    if (exact != null) return ChordShape(name: trimmed, frets: exact);
+    if (exact != null) {
+      return ChordShape(
+        name: trimmed,
+        frets: exact.frets,
+        baseFret: exact.baseFret,
+      );
+    }
 
     // 3. Slash chord -> main chord (try before enharmonic so the displayed name
     // keeps the slash bass).
@@ -174,7 +96,11 @@ class ChordShapes {
     if (slash > 0) {
       final main = lookup(trimmed.substring(0, slash), instrumentSlug);
       if (main != null) {
-        return ChordShape(name: trimmed, frets: main.frets);
+        return ChordShape(
+          name: trimmed,
+          frets: main.frets,
+          baseFret: main.baseFret,
+        );
       }
     }
 
@@ -189,7 +115,11 @@ class ChordShapes {
         for (final spelling in _spellings(idx)) {
           final candidate = map['$spelling$suffix'];
           if (candidate != null) {
-            return ChordShape(name: trimmed, frets: candidate);
+            return ChordShape(
+              name: trimmed,
+              frets: candidate.frets,
+              baseFret: candidate.baseFret,
+            );
           }
         }
       }
