@@ -79,8 +79,12 @@ class _RecordMicTuner implements MicTuner {
     await _audioSub?.cancel();
     _audioSub = null;
     _buffer.clear();
-    if (await _recorder.isRecording()) {
-      await _recorder.stop();
+    try {
+      if (await _recorder.isRecording()) {
+        await _recorder.stop();
+      }
+    } catch (_) {
+      // Plugin unavailable (e.g. unit tests) or already stopped - nothing to do.
     }
     _status.add(MicTunerStatus.idle);
   }
@@ -88,7 +92,11 @@ class _RecordMicTuner implements MicTuner {
   @override
   Future<void> dispose() async {
     await stop();
-    await _recorder.dispose();
+    try {
+      await _recorder.dispose();
+    } catch (_) {
+      // Plugin unavailable (e.g. unit tests) - nothing to dispose.
+    }
     await _pitches.close();
     await _status.close();
   }
