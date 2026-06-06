@@ -162,6 +162,7 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
         TunerGauge(
           centerNote: centerNote,
           cents: _state.cents,
+          octave: _state.octave,
           zone: _state.zone,
           isInTune: _state.isInTune,
           active: active,
@@ -276,23 +277,12 @@ class _StringChip extends StatelessWidget {
             color: AppColors.peach,
             border: Border.all(color: AppColors.orange, width: 2),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                PhosphorIconsFill.speakerHigh,
-                size: 12,
-                color: AppColors.orange,
-              ),
-              const SizedBox(width: 2),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.orange,
-                ),
-              ),
-            ],
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: AppColors.orange,
+            ),
           ),
         ),
       ),
