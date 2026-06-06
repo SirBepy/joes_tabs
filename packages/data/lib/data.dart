@@ -29,5 +29,6 @@ export 'src/env.dart';
 export 'src/mappers.dart';
 export 'src/offline_catalog_repository.dart';
 export 'src/providers.dart';
+export 'src/settings/app_settings_repository.dart';
 export 'src/supabase_catalog_repository.dart';
 export 'src/supabase_init.dart';

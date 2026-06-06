@@ -62,6 +62,27 @@ class RecentViews extends Table {
   Set<Column<Object>> get primaryKey => {songId};
 }
 
+/// Single-row settings table holding persisted user preferences (onboarding
+/// state, theme, instruments, font size). The row is keyed by a fixed [id] of
+/// [kAppSettingsRowId] so there is always exactly one row; reads/writes target
+/// that id. Typed decoding/encoding lives in `AppSettingsRepository`.
+class AppSettings extends Table {
+  IntColumn get id =>
+      integer().withDefault(const Constant(kAppSettingsRowId))();
+  BoolColumn get onboardingComplete =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get themeMode => text().withDefault(const Constant('system'))();
+  TextColumn get instruments =>
+      text().withDefault(const Constant('ukulele,guitar'))();
+  IntColumn get fontSize => integer().withDefault(const Constant(20))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Fixed primary key for the single [AppSettings] row.
+const int kAppSettingsRowId = 0;
+
 /// Maximum number of distinct recently-viewed songs kept cached. Favorites do
 /// not count against this cap and are never evicted.
 const int kRecentViewsCap = 20;
@@ -73,7 +94,9 @@ const int kRecentViewsCap = 20;
 /// [openConnection]. On web, [openConnection] returns an in-memory database (see
 /// connection/connection_web.dart) so the app still runs without the wasm
 /// worker; the in-memory store simply does not survive a page reload.
-@DriftDatabase(tables: [CachedSongs, CachedTabs, Favorites, RecentViews])
+@DriftDatabase(
+  tables: [CachedSongs, CachedTabs, Favorites, RecentViews, AppSettings],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
@@ -81,7 +104,38 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+      await _ensureAppSettingsRow();
+    },
+    onUpgrade: (m, from, to) async {
+      // v1 -> v2: introduce the single-row AppSettings table. Create it only if
+      // it does not already exist so the upgrade is idempotent for any install
+      // state, then seed the default row if absent.
+      if (from < 2) {
+        await m.createTable(appSettings);
+      }
+      await _ensureAppSettingsRow();
+    },
+    beforeOpen: (details) async {
+      // Safety net: guarantee the single settings row exists before any read,
+      // regardless of how the schema got to its current version.
+      await _ensureAppSettingsRow();
+    },
+  );
+
+  /// Inserts the default [AppSettings] row (id [kAppSettingsRowId]) if it is not
+  /// already present. Idempotent; relies on column defaults for every field.
+  Future<void> _ensureAppSettingsRow() async {
+    await into(appSettings).insert(
+      AppSettingsCompanion.insert(id: const Value(kAppSettingsRowId)),
+      mode: InsertMode.insertOrIgnore,
+    );
+  }
 
   // --- Cache reads/writes -------------------------------------------------
 
