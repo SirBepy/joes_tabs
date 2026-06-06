@@ -33,7 +33,10 @@ List<double> karplusStrong(double freq) {
   for (var i = 0; i < total; i++) {
     final cur = buf[idx];
     final next = buf[(idx + 1) % n];
-    final sample = 0.5 * (cur + next) * 0.996; // decay
+    // Karplus-Strong: the two-point average is the string; a gentle per-sample
+    // damping gives a natural ~2s decay. (A larger factor like 0.996 would halve
+    // the amplitude every few ms, collapsing every pitch to the same click.)
+    final sample = 0.5 * (cur + next) * 0.99996;
     out[i] = sample;
     buf[idx] = sample;
     idx = (idx + 1) % n;
