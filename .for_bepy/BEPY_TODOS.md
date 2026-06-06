@@ -13,3 +13,5 @@
 
 ### Visual QA (let's do this together)
 - Review the wireframe screens against DesignImages/ for the final UI polish pass. Brand-level fidelity is in (Fredoka font, orange headers, Home/Song/section screens matched); remaining finer polish + the mascot character art are in ai_todos 006. Screenshots from this session are in .for_bepy/screenshots/.
+- Tune a real ukulele and guitar on a physical iOS + Android device: confirm the mic auto-detects the right string, the gauge slides smoothly, and green/amber/red + the lock glow/haptic feel right.
+- (Optional) Swap the generated Karplus-Strong pluck WAVs in apps/app/assets/tones/ for real CC0 ukulele/guitar single-note recordings if you want a warmer tone.
