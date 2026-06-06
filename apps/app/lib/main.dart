@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
@@ -43,11 +44,31 @@ Future<void> main() async {
     // Cache unavailable: app still runs with non-persistent favorites.
   }
 
+  // Read persisted preferences (theme, instruments, font size) before the first
+  // frame so the providers hydrate from disk. If the read fails, fall back to
+  // safe in-memory defaults (system theme, both instruments, font 20) and let
+  // persistence resume on the next successful write - never block launch on IO.
+  final settingsRepository = AppSettingsRepository(db);
+  AppSettingsRecord initialSettings = const AppSettingsRecord(
+    onboardingComplete: false,
+    themeMode: 'system',
+    instrumentSlugs: [ChordShapes.ukulele, ChordShapes.guitar],
+    fontSize: 20,
+  );
+  try {
+    initialSettings = await settingsRepository.read();
+  } catch (_) {
+    // Settings IO unavailable: app still runs with in-memory defaults.
+  }
+
   runApp(
     ProviderScope(
       overrides: [
         if (client != null) supabaseClientProvider.overrideWithValue(client),
         appDatabaseProvider.overrideWithValue(db),
+        // Seed the persisted-preferences providers with the row read above, so
+        // theme / instruments / font size hydrate from disk on first frame.
+        initialAppSettingsProvider.overrideWithValue(initialSettings),
         favoritesProvider.overrideWith(
           (ref) => DriftFavoritesNotifier(
             db,
@@ -124,13 +145,13 @@ class _JoesTabsAppState extends ConsumerState<JoesTabsApp> {
         }
       });
     }
-    final isDark = ref.watch(darkModeProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: "Joe's Tabs",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: themeMode,
       routerConfig: _router,
       builder: (context, child) {
         if (initError == null) return child ?? const SizedBox.shrink();

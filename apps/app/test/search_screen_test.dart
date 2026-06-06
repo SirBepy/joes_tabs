@@ -5,9 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:joes_tabs_app/router/app_routes.dart';
 import 'package:joes_tabs_app/screens/search_screen.dart';
-import 'package:joes_tabs_app/state/settings_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
+
+import 'support/settings_overrides.dart';
 
 Song _song(String id, String title, {String artist = 'Artist'}) => Song(
   id: id,
@@ -60,7 +61,7 @@ void main() {
       tester,
       overrides: [
         // Default to "all" so the filter bar starts on All.
-        defaultInstrumentProvider.overrideWith((ref) => ChordShapes.ukulele),
+        initialSettingsOverride(),
       ],
     );
 
@@ -77,7 +78,7 @@ void main() {
       tester,
       router: _router(search: const SearchScreen(initialQuery: 'grace')),
       overrides: [
-        defaultInstrumentProvider.overrideWith((ref) => ChordShapes.ukulele),
+        initialSettingsOverride(),
         // Override the filtered provider for the seeded query under the default
         // (ukulele) filter so the results render deterministically.
         searchFilteredProvider((
@@ -103,7 +104,7 @@ void main() {
       tester,
       router: _router(search: const SearchScreen(initialQuery: 'zzz')),
       overrides: [
-        defaultInstrumentProvider.overrideWith((ref) => ChordShapes.ukulele),
+        initialSettingsOverride(),
         searchFilteredProvider((
           query: 'zzz',
           instrumentSlug: ChordShapes.ukulele,
@@ -119,7 +120,7 @@ void main() {
       tester,
       router: _router(search: const SearchScreen(initialQuery: 'boom')),
       overrides: [
-        defaultInstrumentProvider.overrideWith((ref) => ChordShapes.ukulele),
+        initialSettingsOverride(),
         searchFilteredProvider((
           query: 'boom',
           instrumentSlug: ChordShapes.ukulele,
@@ -138,7 +139,7 @@ void main() {
       router: _router(search: const SearchScreen(initialQuery: 'song')),
       overrides: [
         // Start on the default (ukulele) filter: two songs have uke tabs.
-        defaultInstrumentProvider.overrideWith((ref) => ChordShapes.ukulele),
+        initialSettingsOverride(),
         searchFilteredProvider((
           query: 'song',
           instrumentSlug: ChordShapes.ukulele,

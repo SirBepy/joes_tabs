@@ -32,7 +32,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   String _query = '';
 
   /// Active instrument filter slug, or null for "All" (both instruments).
-  /// Seeded from the user's preferred instrument in [initState].
+  /// Seeded from the currently-viewed instrument in [didChangeDependencies].
   String? _instrumentSlug;
   bool _filterInitialized = false;
 
@@ -45,10 +45,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Default the filter to the user's preferred instrument once. Read (not
+    // Default the filter to the currently-viewed instrument once. Read (not
     // watch) so later settings changes don't yank the user's in-screen choice.
     if (!_filterInitialized) {
-      _instrumentSlug = ref.read(defaultInstrumentProvider);
+      _instrumentSlug = ref.read(selectedInstrumentProvider);
       _filterInitialized = true;
     }
   }
@@ -73,6 +73,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final showPicker = ref.watch(showInstrumentPickerProvider);
+    // When the user plays one instrument, hide the All/Ukulele/Guitar filter and
+    // force that single instrument as the result filter.
+    final effectiveSlug = showPicker
+        ? _instrumentSlug
+        : ref.watch(instrumentsProvider).first;
     return Scaffold(
       appBar: AppBar(
         title: TextField(
@@ -95,17 +101,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
       body: Column(
         children: [
-          _InstrumentFilterBar(
-            selected: _instrumentSlug,
-            onChanged: _onFilterChanged,
-          ),
+          if (showPicker)
+            _InstrumentFilterBar(
+              selected: _instrumentSlug,
+              onChanged: _onFilterChanged,
+            ),
           Expanded(
             child: _query.isEmpty
                 ? const EmptyState(
                     message: 'Search by song or artist to find a tab.',
                     icon: PhosphorIconsRegular.magnifyingGlass,
                   )
-                : _Results(query: _query, instrumentSlug: _instrumentSlug),
+                : _Results(query: _query, instrumentSlug: effectiveSlug),
           ),
         ],
       ),

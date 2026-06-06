@@ -9,6 +9,8 @@ import 'package:joes_tabs_app/state/favorites_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
+import 'support/settings_overrides.dart';
+
 /// In-memory catalog the whole flow runs against: a couple of seeded songs with
 /// a published ukulele tab each, so trending, the song detail (chord render +
 /// transpose), and the saved-back-fill all resolve without a network.
@@ -86,6 +88,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // Seed persisted preferences so the settings-backed providers hydrate.
+          initialSettingsOverride(),
           // Real provider graph, fake data source: trending / getSong /
           // instruments all flow through this one repository.
           catalogRepositoryProvider.overrideWithValue(

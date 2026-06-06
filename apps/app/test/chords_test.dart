@@ -7,9 +7,12 @@ import 'package:joes_tabs_app/state/settings_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
+import 'support/settings_overrides.dart';
+
 Future<void> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [initialSettingsOverride()],
       child: MaterialApp(
         theme: AppTheme.light,
         home: const Scaffold(body: ChordsScreen()),
@@ -37,6 +40,7 @@ void main() {
       late WidgetRef capturedRef;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [initialSettingsOverride()],
           child: MaterialApp(
             theme: AppTheme.light,
             home: Scaffold(
@@ -52,7 +56,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(capturedRef.read(defaultInstrumentProvider), ChordShapes.ukulele);
+      expect(capturedRef.read(selectedInstrumentProvider), ChordShapes.ukulele);
 
       // The first ukulele card uses 4 strings; switch to guitar.
       final firstBefore = tester
@@ -63,7 +67,7 @@ void main() {
       await tester.tap(find.text('Guitar'));
       await tester.pump();
 
-      expect(capturedRef.read(defaultInstrumentProvider), ChordShapes.guitar);
+      expect(capturedRef.read(selectedInstrumentProvider), ChordShapes.guitar);
       final firstAfter = tester
           .widgetList<ChordDiagram>(find.byType(ChordDiagram))
           .first;

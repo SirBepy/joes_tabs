@@ -6,6 +6,8 @@ import 'package:joes_tabs_app/screens/song_detail_screen.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
+import 'support/settings_overrides.dart';
+
 SongWithTabs _fakeSong() {
   final now = DateTime.utc(2026);
   return SongWithTabs(
@@ -36,6 +38,7 @@ Future<void> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        initialSettingsOverride(),
         songProvider('s1').overrideWith((ref) async => _fakeSong()),
         // Instruments map empty -> falls back to ukulele shapes; fine for the
         // render assertions.
@@ -98,6 +101,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          initialSettingsOverride(),
           songProvider('missing').overrideWith((ref) async => null),
           instrumentsByIdProvider.overrideWith((ref) async => {}),
         ],

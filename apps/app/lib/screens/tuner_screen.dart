@@ -56,10 +56,14 @@ class TunerScreen extends ConsumerStatefulWidget {
 }
 
 class _TunerScreenState extends ConsumerState<TunerScreen> {
+  /// The instrument whose tuning is shown. When the user plays more than one
+  /// instrument this follows the on-screen toggle ([selectedInstrumentProvider]);
+  /// when they play only one it is forced to that single instrument and the
+  /// toggle is hidden. Kept as local state because string selection and mic
+  /// readings hang off it, but it is re-synced from the providers in [build].
   String _instrument = ChordShapes.ukulele;
   int _selectedString = 0;
   bool _inTune = false;
-  bool _synced = false;
 
   // ---- Live mic state ----
   bool _micMode = false;
@@ -75,16 +79,6 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
   double? _detectedCents;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Seed the instrument from the app-wide default once.
-    if (!_synced) {
-      _instrument = ref.read(defaultInstrumentProvider);
-      _synced = true;
-    }
-  }
-
-  @override
   void dispose() {
     _pitchSub?.cancel();
     _statusSub?.cancel();
@@ -95,13 +89,19 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
   List<String> get _strings => _tunings[_instrument]!;
 
   void _selectInstrument(String slug) {
-    setState(() {
-      _instrument = slug;
-      _selectedString = 0;
-      _inTune = false;
-      _detected = null;
-      _detectedCents = null;
-    });
+    // Drive the shared viewed-instrument state; build() re-syncs [_instrument]
+    // and resets the string selection for the new tuning.
+    ref.read(selectedInstrumentProvider.notifier).state = slug;
+  }
+
+  /// Adopts [slug] as the shown tuning, resetting string + mic state.
+  void _applyInstrument(String slug) {
+    if (_instrument == slug) return;
+    _instrument = slug;
+    _selectedString = 0;
+    _inTune = false;
+    _detected = null;
+    _detectedCents = null;
   }
 
   /// Selecting a string targets it and (reference-tone path) settles it into
@@ -185,6 +185,14 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final showPicker = ref.watch(showInstrumentPickerProvider);
+    // Keep the shown tuning in sync with the shared state: the toggle value when
+    // shown, the single played instrument when hidden.
+    _applyInstrument(
+      showPicker
+          ? ref.watch(selectedInstrumentProvider)
+          : ref.watch(instrumentsProvider).first,
+    );
     final targetNote = _strings[_selectedString];
 
     return Column(
@@ -205,13 +213,14 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: InstrumentToggle(
-            value: _instrument,
-            onChanged: _selectInstrument,
+        if (showPicker)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: InstrumentToggle(
+              value: _instrument,
+              onChanged: _selectInstrument,
+            ),
           ),
-        ),
         const Expanded(
           child: Center(
             child: BrandMascot(size: 200, icon: PhosphorIconsFill.guitar),

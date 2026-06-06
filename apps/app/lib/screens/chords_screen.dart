@@ -12,9 +12,10 @@ import '../widgets/instrument_toggle.dart';
 /// Chord-diagram library (per `docs/design/screens/chords.md`).
 ///
 /// Browsable list of chords grouped by root note, each group a horizontally
-/// scrolling row of [ChordDiagram] cards. An instrument toggle (ukulele /
-/// guitar, bound to [defaultInstrumentProvider]) swaps the whole shape set, and
-/// a search field filters by chord name.
+/// scrolling row of [ChordDiagram] cards. When the user plays more than one
+/// instrument an instrument toggle (bound to [selectedInstrumentProvider]) swaps
+/// the whole shape set; when they play only one the toggle is hidden and that
+/// single instrument is forced. A search field filters by chord name.
 class ChordsScreen extends ConsumerStatefulWidget {
   const ChordsScreen({super.key});
 
@@ -27,7 +28,12 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final instrument = ref.watch(defaultInstrumentProvider);
+    final showPicker = ref.watch(showInstrumentPickerProvider);
+    // When the picker is shown, the toggle drives the viewed instrument. When
+    // hidden, force the single played instrument.
+    final instrument = showPicker
+        ? ref.watch(selectedInstrumentProvider)
+        : ref.watch(instrumentsProvider).first;
     final names = ChordShapes.namesFor(instrument);
 
     final filtered = _query.isEmpty
@@ -52,11 +58,13 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
           child: Row(
             children: [
               const Spacer(),
-              InstrumentToggle(
-                value: instrument,
-                onChanged: (slug) =>
-                    ref.read(defaultInstrumentProvider.notifier).state = slug,
-              ),
+              if (showPicker)
+                InstrumentToggle(
+                  value: instrument,
+                  onChanged: (slug) =>
+                      ref.read(selectedInstrumentProvider.notifier).state =
+                          slug,
+                ),
             ],
           ),
         ),

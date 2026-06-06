@@ -26,6 +26,7 @@ Future<void> showSongControlsSheet(
   required Map<String, Instrument>? instruments,
   required int Function() selectedTab,
   required ValueChanged<int> onTabChanged,
+  bool showInstrumentToggle = true,
   required int Function() transpose,
   required String Function() shownKey,
   required int? Function() capo,
@@ -68,7 +69,7 @@ Future<void> showSongControlsSheet(
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  if (tabs.length > 1) ...[
+                  if (tabs.length > 1 && showInstrumentToggle) ...[
                     _InstrumentToggle(
                       tabs: tabs,
                       instruments: instruments,

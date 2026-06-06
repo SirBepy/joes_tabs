@@ -5,9 +5,12 @@ import 'package:joes_tabs_app/screens/tuner_screen.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
+import 'support/settings_overrides.dart';
+
 Future<void> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [initialSettingsOverride()],
       child: MaterialApp(
         theme: AppTheme.light,
         home: const Scaffold(body: TunerScreen()),

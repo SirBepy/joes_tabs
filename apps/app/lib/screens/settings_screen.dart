@@ -1,7 +1,6 @@
 import 'package:data/data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../ads/ad_service.dart';
@@ -14,10 +13,10 @@ import '../widgets/brand_mascot.dart';
 /// Settings (per `docs/design/screens/settings*.md`).
 ///
 /// Wireframe list of rows: an expandable Font Settings group (size stepper),
-/// a Dark Mode toggle, a Default Instrument selector (the load-bearing
-/// functional control, bound to [defaultInstrumentProvider] and read by the
-/// Chords and Tuner screens), My Tags (placeholder), and a Log Out row that
-/// opens a mascot confirmation dialog.
+/// a 3-way Theme selector (System / Light / Dark, bound to [themeModeProvider]),
+/// an "Instruments I play" multi-select (min one, bound to [instrumentsProvider]
+/// and read app-wide to control picker visibility), My Tags (placeholder), and a
+/// Log Out row that opens a mascot confirmation dialog.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -31,8 +30,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final fontSize = ref.watch(fontSizeProvider);
-    final darkMode = ref.watch(darkModeProvider);
-    final instrument = ref.watch(defaultInstrumentProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final instruments = ref.watch(instrumentsProvider);
     final user = ref.watch(currentUserProvider);
 
     return ListView(
@@ -64,8 +63,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   tooltip: 'Decrease font size',
                   icon: const Icon(PhosphorIconsRegular.minus),
                   onPressed: fontSize > 8
-                      ? () => ref.read(fontSizeProvider.notifier).state =
-                            fontSize - 1
+                      ? () => ref
+                            .read(fontSizeProvider.notifier)
+                            .set(fontSize - 1)
                       : null,
                 ),
                 Text('$fontSize', key: const Key('font-size-value')),
@@ -73,45 +73,118 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   tooltip: 'Increase font size',
                   icon: const Icon(PhosphorIconsRegular.plus),
                   onPressed: fontSize < 40
-                      ? () => ref.read(fontSizeProvider.notifier).state =
-                            fontSize + 1
+                      ? () => ref
+                            .read(fontSizeProvider.notifier)
+                            .set(fontSize + 1)
                       : null,
                 ),
               ],
             ),
           ),
         const Divider(height: 1),
-        // DARK MODE toggle.
-        _Row(
-          label: 'DARK MODE',
-          trailing: Switch(
-            value: darkMode,
-            activeThumbColor: AppColors.orange,
-            onChanged: (v) => ref.read(darkModeProvider.notifier).state = v,
+        // THEME (System / Light / Dark).
+        const Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Text(
+            'THEME',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
+          child: SegmentedButton<ThemeMode>(
+            key: const Key('theme-mode-selector'),
+            segments: const [
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text('System'),
+                icon: Icon(PhosphorIconsRegular.desktop),
+              ),
+              ButtonSegment(
+                value: ThemeMode.light,
+                label: Text('Light'),
+                icon: Icon(PhosphorIconsRegular.sun),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                label: Text('Dark'),
+                icon: Icon(PhosphorIconsRegular.moon),
+              ),
+            ],
+            selected: {themeMode},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) =>
+                ref.read(themeModeProvider.notifier).set(s.first),
           ),
         ),
         const Divider(height: 1),
-        // DEFAULT INSTRUMENT (load-bearing).
-        _Row(
-          label: 'DEFAULT INSTRUMENT',
-          trailing: DropdownButton<String>(
-            key: const Key('default-instrument-dropdown'),
-            value: instrument,
-            underline: const SizedBox.shrink(),
-            items: const [
-              DropdownMenuItem(
-                value: ChordShapes.ukulele,
-                child: Text('Ukulele'),
-              ),
-              DropdownMenuItem(
-                value: ChordShapes.guitar,
-                child: Text('Guitar'),
-              ),
+        // INSTRUMENTS I PLAY (multi-select, min one). Controls picker
+        // visibility app-wide.
+        const Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Text(
+            'INSTRUMENTS I PLAY',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
+          child: Wrap(
+            key: const Key('instruments-multiselect'),
+            spacing: AppSpacing.sm,
+            children: [
+              for (final slug in kSupportedInstrumentSlugs)
+                FilterChip(
+                  key: Key('instrument-chip-$slug'),
+                  label: Text(instrumentDisplayName(slug)),
+                  selected: instruments.contains(slug),
+                  showCheckmark: true,
+                  selectedColor: AppColors.orange,
+                  backgroundColor: AppColors.peach,
+                  labelStyle: TextStyle(
+                    color: instruments.contains(slug)
+                        ? AppColors.white
+                        : AppColors.rust,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  side: BorderSide.none,
+                  onSelected: (selected) {
+                    final notifier = ref.read(instrumentsProvider.notifier);
+                    if (selected) {
+                      notifier.add(slug);
+                    } else {
+                      // Min-one rule: removing the last instrument is a no-op.
+                      notifier.remove(slug);
+                    }
+                  },
+                ),
             ],
-            onChanged: (slug) {
-              if (slug == null) return;
-              ref.read(defaultInstrumentProvider.notifier).state = slug;
-            },
           ),
         ),
         const Divider(height: 1),

@@ -9,6 +9,8 @@ import 'package:joes_tabs_app/screens/settings_screen.dart';
 import 'package:joes_tabs_app/screens/support_screen.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 
+import 'support/settings_overrides.dart';
+
 /// Test double for [AdService]. Records calls and returns a scripted result so
 /// no real ad is ever loaded in tests.
 class FakeAdService implements AdService {
@@ -56,7 +58,10 @@ GoRouter _router(Widget body) {
 Future<void> _pump(WidgetTester tester, Widget body, FakeAdService ad) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [adServiceProvider.overrideWithValue(ad)],
+      overrides: [
+        initialSettingsOverride(),
+        adServiceProvider.overrideWithValue(ad),
+      ],
       child: MaterialApp.router(
         theme: AppTheme.light,
         routerConfig: _router(body),

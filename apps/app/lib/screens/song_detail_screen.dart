@@ -9,6 +9,7 @@ import '../song/chord_diagram.dart';
 import '../song/chord_sheet_view.dart';
 import '../song/song_controls_sheet.dart';
 import '../state/favorites_provider.dart';
+import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/song_tiles.dart';
@@ -89,6 +90,10 @@ class _SongBodyState extends ConsumerState<_SongBody>
   /// Selected tab index among the published tabs.
   int _tabIndex = 0;
 
+  /// When the user plays a single instrument the per-song tab toggle is hidden;
+  /// we seed the shown tab to that instrument's tab once (if the song has one).
+  bool _forcedTabApplied = false;
+
   bool _scrolling = false;
 
   /// Autoscroll speed in logical pixels per second.
@@ -150,11 +155,13 @@ class _SongBodyState extends ConsumerState<_SongBody>
     Map<String, Instrument>? instruments,
     String songKey,
     int? capo,
+    bool showInstrumentToggle,
   ) {
     showSongControlsSheet(
       context,
       tabs: published,
       instruments: instruments,
+      showInstrumentToggle: showInstrumentToggle,
       selectedTab: () => _tabIndex,
       onTabChanged: (i) => _apply(() => _tabIndex = i),
       transpose: () => _transpose,
@@ -185,12 +192,26 @@ class _SongBodyState extends ConsumerState<_SongBody>
       return const EmptyState(message: 'No published tab for this song yet.');
     }
     if (_tabIndex >= published.length) _tabIndex = 0;
-    final tab = published[_tabIndex];
-    final sheet = ChordProParser.parse(tab.content);
 
     // Map each published tab's instrument id to a slug for the toggle + chord
     // diagrams. Falls back to "ukulele" shapes if the lookup is unavailable.
     final instruments = ref.watch(instrumentsByIdProvider).valueOrNull;
+
+    // When the user plays one instrument, hide the per-song tab toggle and force
+    // that instrument's tab (if this song has one) the first time we can resolve
+    // the instrument map.
+    final showInstrumentToggle = ref.watch(showInstrumentPickerProvider);
+    if (!showInstrumentToggle && !_forcedTabApplied && instruments != null) {
+      final wanted = ref.read(instrumentsProvider).first;
+      final match = published.indexWhere(
+        (t) => instruments[t.instrumentId]?.slug == wanted,
+      );
+      if (match >= 0) _tabIndex = match;
+      _forcedTabApplied = true;
+    }
+
+    final tab = published[_tabIndex];
+    final sheet = ChordProParser.parse(tab.content);
     final slug = instruments?[tab.instrumentId]?.slug ?? ChordShapes.ukulele;
     final songKey = sheet.key ?? tab.originalKey;
     final capo = sheet.capo ?? tab.capo;
@@ -240,7 +261,13 @@ class _SongBodyState extends ConsumerState<_SongBody>
         tooltip: 'Song controls',
         backgroundColor: AppColors.orange,
         foregroundColor: AppColors.white,
-        onPressed: () => _openControls(published, instruments, songKey, capo),
+        onPressed: () => _openControls(
+          published,
+          instruments,
+          songKey,
+          capo,
+          showInstrumentToggle,
+        ),
         child: const Icon(PhosphorIconsFill.faders),
       ),
     );
