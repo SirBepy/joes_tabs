@@ -137,7 +137,10 @@ class _TunerScreenState extends ConsumerState<TunerScreen> {
     final centerNote = lockedIndex != null
         ? _strings[lockedIndex]
         : _strings[0];
-    final active = _state.hasSignal && lockedIndex != null;
+    // Active (showing a reading) as long as a string is locked - the reading
+    // stays frozen on screen through the silence after a pluck decays, rather
+    // than blanking the moment the signal drops.
+    final active = lockedIndex != null;
 
     return Column(
       children: [

@@ -56,20 +56,23 @@ void main() {
     expect(s.cents.abs(), lessThan(10));
   });
 
-  test('silence for silenceResetFrames releases the lock', () {
+  test('silence holds the last reading instead of blanking', () {
     final e = engine();
     final e4 = ukeFreqs[2];
     for (var i = 0; i < 3; i++) {
       e.update(e4);
     }
-    expect(e.update(e4).lockedIndex, 2);
-    expect(e.update(null).lockedIndex, 2);
-    for (var i = 0; i < 8; i++) {
-      e.update(null);
+    final locked = e.update(e4);
+    expect(locked.lockedIndex, 2);
+    final heldCents = locked.cents;
+    // Many silent frames: the lock and the last cents persist (no auto-release),
+    // so the gauge can keep showing what it last read after the pluck decays.
+    for (var i = 0; i < 30; i++) {
+      final s = e.update(null);
+      expect(s.lockedIndex, 2, reason: 'last reading must persist in silence');
+      expect(s.cents, heldCents, reason: 'cents frozen at the last value');
+      expect(s.hasSignal, isFalse);
     }
-    final s = e.update(null);
-    expect(s.lockedIndex, isNull);
-    expect(s.hasSignal, isFalse);
   });
 
   test(

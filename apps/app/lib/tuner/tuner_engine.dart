@@ -51,7 +51,6 @@ class TunerEngine {
     required this.stringFrequencies,
     this.stabilityFrames = 3,
     this.switchMarginCents = 120,
-    this.silenceResetFrames = 8,
     this.emaAlpha = 0.25,
     this.inTuneCents = 5,
   });
@@ -68,9 +67,6 @@ class TunerEngine {
   /// be considered for a switch (hysteresis).
   final double switchMarginCents;
 
-  /// Consecutive silent frames that release the lock.
-  final int silenceResetFrames;
-
   /// EMA factor for cents smoothing (higher = snappier, lower = smoother).
   final double emaAlpha;
 
@@ -80,7 +76,6 @@ class TunerEngine {
   int? _locked;
   double _smoothed = 0;
   int _octave = 0;
-  int _silent = 0;
   int? _candidate;
   int _candidateCount = 0;
   bool _hasSignal = false;
@@ -90,7 +85,6 @@ class TunerEngine {
     _locked = null;
     _smoothed = 0;
     _octave = 0;
-    _silent = 0;
     _candidate = null;
     _candidateCount = 0;
     _hasSignal = false;
@@ -107,18 +101,15 @@ class TunerEngine {
     }
 
     if (!valid) {
+      // Silence freezes the display on the last reading instead of blanking it:
+      // a plucked string decays below the mic threshold within a second, and the
+      // player still wants to see what it last read. The lock only ever changes
+      // when a new, louder pitch arrives (via the switch logic below).
       _hasSignal = false;
-      _silent++;
-      if (_silent >= silenceResetFrames) {
-        _locked = null;
-        _candidate = null;
-        _candidateCount = 0;
-      }
       return _state();
     }
 
     _hasSignal = true;
-    _silent = 0;
 
     final nearest = _nearestIndex(hz);
 
