@@ -86,6 +86,17 @@ void main() {
     expect(record.fontSize, 21);
   });
 
+  testWidgets('maximal-chords toggle persists', (tester) async {
+    await _pump(tester);
+    await tester.pumpAndSettle();
+
+    final sw = find.byKey(const Key('maximal-chords-switch'));
+    expect(tester.widget<SwitchListTile>(sw).value, isFalse);
+    await tester.tap(sw);
+    await tester.pumpAndSettle();
+    expect(tester.widget<SwitchListTile>(sw).value, isTrue);
+  });
+
   testWidgets('instrument multi-select adds and removes (min one enforced)', (
     tester,
   ) async {

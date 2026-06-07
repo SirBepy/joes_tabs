@@ -32,6 +32,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final fontSize = ref.watch(fontSizeProvider);
     final themeMode = ref.watch(themeModeProvider);
     final instruments = ref.watch(instrumentsProvider);
+    final maximalChords = ref.watch(maximalChordsProvider);
     final user = ref.watch(currentUserProvider);
 
     return ListView(
@@ -186,6 +187,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
             ],
           ),
+        ),
+        const Divider(height: 1),
+        SwitchListTile(
+          key: const Key('maximal-chords-switch'),
+          value: maximalChords,
+          activeThumbColor: AppColors.orange,
+          title: const Text(
+            'MAXIMAL CHORDS',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+          subtitle: const Text(
+            'Show advanced chord types (9ths, 11ths, altered, etc.)',
+          ),
+          onChanged: (v) => ref.read(maximalChordsProvider.notifier).set(v),
         ),
         const Divider(height: 1),
         // MY TAGS (placeholder, future feature).
