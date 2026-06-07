@@ -49,9 +49,9 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
               if (showPicker)
                 InstrumentToggle(
                   value: instrument,
-                  onChanged: (slug) => ref
-                      .read(selectedInstrumentProvider.notifier)
-                      .state = slug,
+                  onChanged: (slug) =>
+                      ref.read(selectedInstrumentProvider.notifier).state =
+                          slug,
                 ),
             ],
           ),
@@ -96,7 +96,11 @@ class _Tabs extends StatelessWidget {
 }
 
 class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.selected, required this.onTap});
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;

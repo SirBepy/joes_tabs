@@ -27,7 +27,10 @@ class ScrollableChipRow extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xs,
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.xs,
           ),
           child: Text(
             label,

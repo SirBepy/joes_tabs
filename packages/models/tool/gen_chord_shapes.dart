@@ -40,25 +40,51 @@ const List<(String, int)> _roots = [
 /// (our suffix, chords-db suffix, family enum name, label, extended?).
 /// Balanced tier first; extended (maximal-only) after. Order within a family is
 /// the on-screen Type-strip order.
-const List<({String suffix, String db, String family, String label, bool extended})>
-    _catalog = [
+const List<
+  ({String suffix, String db, String family, String label, bool extended})
+>
+_catalog = [
   // Major
   (suffix: '', db: 'major', family: 'major', label: 'Major', extended: false),
   (suffix: 'maj7', db: 'maj7', family: 'major', label: 'maj7', extended: false),
   (suffix: '6', db: '6', family: 'major', label: '6', extended: false),
   (suffix: 'add9', db: 'add9', family: 'major', label: 'add9', extended: false),
   (suffix: 'maj9', db: 'maj9', family: 'major', label: 'maj9', extended: true),
-  (suffix: 'maj11', db: 'maj11', family: 'major', label: 'maj11', extended: true),
-  (suffix: 'maj13', db: 'maj13', family: 'major', label: 'maj13', extended: true),
+  (
+    suffix: 'maj11',
+    db: 'maj11',
+    family: 'major',
+    label: 'maj11',
+    extended: true,
+  ),
+  (
+    suffix: 'maj13',
+    db: 'maj13',
+    family: 'major',
+    label: 'maj13',
+    extended: true,
+  ),
   (suffix: '69', db: '69', family: 'major', label: '6/9', extended: true),
   // Minor
   (suffix: 'm', db: 'minor', family: 'minor', label: 'Minor', extended: false),
   (suffix: 'm7', db: 'm7', family: 'minor', label: 'm7', extended: false),
   (suffix: 'm6', db: 'm6', family: 'minor', label: 'm6', extended: false),
-  (suffix: 'madd9', db: 'madd9', family: 'minor', label: 'madd9', extended: false),
+  (
+    suffix: 'madd9',
+    db: 'madd9',
+    family: 'minor',
+    label: 'madd9',
+    extended: false,
+  ),
   (suffix: 'm9', db: 'm9', family: 'minor', label: 'm9', extended: true),
   (suffix: 'm11', db: 'm11', family: 'minor', label: 'm11', extended: true),
-  (suffix: 'mmaj7', db: 'mmaj7', family: 'minor', label: 'mMaj7', extended: true),
+  (
+    suffix: 'mmaj7',
+    db: 'mmaj7',
+    family: 'minor',
+    label: 'mMaj7',
+    extended: true,
+  ),
   // Dominant
   (suffix: '7', db: '7', family: 'dominant', label: '7', extended: false),
   (suffix: '9', db: '9', family: 'dominant', label: '9', extended: false),
@@ -68,18 +94,72 @@ const List<({String suffix, String db, String family, String label, bool extende
   (suffix: '7b9', db: '7b9', family: 'dominant', label: '7b9', extended: true),
   (suffix: '7#9', db: '7#9', family: 'dominant', label: '7#9', extended: true),
   (suffix: '9b5', db: '9b5', family: 'dominant', label: '9b5', extended: true),
-  (suffix: '7sus4', db: '7sus4', family: 'dominant', label: '7sus4', extended: true),
+  (
+    suffix: '7sus4',
+    db: '7sus4',
+    family: 'dominant',
+    label: '7sus4',
+    extended: true,
+  ),
   // Suspended
-  (suffix: 'sus2', db: 'sus2', family: 'suspended', label: 'sus2', extended: false),
-  (suffix: 'sus4', db: 'sus4', family: 'suspended', label: 'sus4', extended: false),
+  (
+    suffix: 'sus2',
+    db: 'sus2',
+    family: 'suspended',
+    label: 'sus2',
+    extended: false,
+  ),
+  (
+    suffix: 'sus4',
+    db: 'sus4',
+    family: 'suspended',
+    label: 'sus4',
+    extended: false,
+  ),
   // Diminished
-  (suffix: 'dim', db: 'dim', family: 'diminished', label: 'dim', extended: false),
-  (suffix: 'dim7', db: 'dim7', family: 'diminished', label: 'dim7', extended: false),
-  (suffix: 'm7b5', db: 'm7b5', family: 'diminished', label: 'm7b5', extended: false),
+  (
+    suffix: 'dim',
+    db: 'dim',
+    family: 'diminished',
+    label: 'dim',
+    extended: false,
+  ),
+  (
+    suffix: 'dim7',
+    db: 'dim7',
+    family: 'diminished',
+    label: 'dim7',
+    extended: false,
+  ),
+  (
+    suffix: 'm7b5',
+    db: 'm7b5',
+    family: 'diminished',
+    label: 'm7b5',
+    extended: false,
+  ),
   // Augmented
-  (suffix: 'aug', db: 'aug', family: 'augmented', label: 'aug', extended: false),
-  (suffix: 'aug7', db: 'aug7', family: 'augmented', label: 'aug7', extended: false),
-  (suffix: 'aug9', db: 'aug9', family: 'augmented', label: 'aug9', extended: true),
+  (
+    suffix: 'aug',
+    db: 'aug',
+    family: 'augmented',
+    label: 'aug',
+    extended: false,
+  ),
+  (
+    suffix: 'aug7',
+    db: 'aug7',
+    family: 'augmented',
+    label: 'aug7',
+    extended: false,
+  ),
+  (
+    suffix: 'aug9',
+    db: 'aug9',
+    family: 'augmented',
+    label: 'aug9',
+    extended: true,
+  ),
 ];
 
 const Map<String, int> _noteToPc = {
@@ -294,11 +374,7 @@ typedef _Emitted = ({
 
 /// Attempts to resolve [entry] for all 12 roots on [db]; returns true iff every
 /// root resolves without throwing. Used by the completeness pre-pass.
-bool _resolvesAll(
-  _Emitted entry,
-  Map<String, dynamic> db,
-  List<int> openMidi,
-) {
+bool _resolvesAll(_Emitted entry, Map<String, dynamic> db, List<int> openMidi) {
   final pcToGroupKey = _pcToGroupKey(db);
   for (final (root, pc) in _roots) {
     final symbol = '$root${entry.suffix}';
@@ -341,7 +417,14 @@ List<_Emitted> _buildEmitted(
         final db = ukeOk ? guitar : ukulele;
         final midi = ukeOk ? gtrMidi : ukeMidi;
         for (final (root, pc) in _roots) {
-          _resolve(db, midi, pcToGroupKey, pc, entry.db, '$root${entry.suffix}');
+          _resolve(
+            db,
+            midi,
+            pcToGroupKey,
+            pc,
+            entry.db,
+            '$root${entry.suffix}',
+          );
         }
         throw StateError(
           'balanced quality "${entry.label}" (db ${entry.db}) is incomplete '
@@ -389,10 +472,16 @@ String _emitMap(
 
 String _emitQualities(List<_Emitted> emitted) {
   final buf = StringBuffer()
-    ..writeln('// GENERATED by tool/gen_chord_shapes.dart - DO NOT EDIT BY HAND.')
+    ..writeln(
+      '// GENERATED by tool/gen_chord_shapes.dart - DO NOT EDIT BY HAND.',
+    )
     ..writeln('//')
-    ..writeln('// The ordered chord-quality catalog (family, tier, label) used by')
-    ..writeln('// the chord picker. Source: chords-db master table in the generator.')
+    ..writeln(
+      '// The ordered chord-quality catalog (family, tier, label) used by',
+    )
+    ..writeln(
+      '// the chord picker. Source: chords-db master table in the generator.',
+    )
     ..writeln('library;')
     ..writeln()
     ..writeln("import 'chord_catalog.dart';")

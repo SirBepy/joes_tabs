@@ -25,21 +25,24 @@ void main() {
 
   group('coverage: every root x quality resolves', () {
     for (final instrument in instruments) {
-      test('$instrument has all ${roots.length} x ${kChordQualities.length}', () {
-        final expectedStrings = instrument == ChordShapes.guitar ? 6 : 4;
-        for (final r in roots) {
-          for (final q in kChordQualities) {
-            final sym = '$r${q.suffix}';
-            final shape = ChordShapes.lookup(sym, instrument);
-            expect(shape, isNotNull, reason: '$instrument missing $sym');
-            expect(
-              shape!.stringCount,
-              expectedStrings,
-              reason: '$instrument $sym string count',
-            );
+      test(
+        '$instrument has all ${roots.length} x ${kChordQualities.length}',
+        () {
+          final expectedStrings = instrument == ChordShapes.guitar ? 6 : 4;
+          for (final r in roots) {
+            for (final q in kChordQualities) {
+              final sym = '$r${q.suffix}';
+              final shape = ChordShapes.lookup(sym, instrument);
+              expect(shape, isNotNull, reason: '$instrument missing $sym');
+              expect(
+                shape!.stringCount,
+                expectedStrings,
+                reason: '$instrument $sym string count',
+              );
+            }
           }
-        }
-      });
+        },
+      );
     }
   });
 
