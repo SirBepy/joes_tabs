@@ -21,28 +21,15 @@ void main() {
     'A#',
     'B',
   ];
-  const suffixes = [
-    '',
-    'm',
-    '7',
-    'm7',
-    'maj7',
-    'sus2',
-    'sus4',
-    '6',
-    'dim',
-    'aug',
-    'add9',
-  ];
   const instruments = [ChordShapes.ukulele, ChordShapes.guitar];
 
   group('coverage: every root x quality resolves', () {
     for (final instrument in instruments) {
-      test('$instrument has all ${roots.length * suffixes.length}', () {
+      test('$instrument has all ${roots.length} x ${kChordQualities.length}', () {
         final expectedStrings = instrument == ChordShapes.guitar ? 6 : 4;
         for (final r in roots) {
-          for (final s in suffixes) {
-            final sym = '$r$s';
+          for (final q in kChordQualities) {
+            final sym = '$r${q.suffix}';
             final shape = ChordShapes.lookup(sym, instrument);
             expect(shape, isNotNull, reason: '$instrument missing $sym');
             expect(
@@ -79,14 +66,11 @@ void main() {
   });
 
   group('namesFor', () {
-    test('returns 132 sorted names per instrument; empty for unknown', () {
+    test('returns every catalog symbol, sorted; empty for unknown', () {
+      final expectedCount = 12 * kChordQualities.length;
       for (final instrument in instruments) {
         final names = ChordShapes.namesFor(instrument);
-        expect(
-          names.length,
-          roots.length * suffixes.length,
-          reason: instrument,
-        );
+        expect(names.length, expectedCount, reason: instrument);
         final sorted = [...names]..sort();
         expect(names, sorted, reason: '$instrument sorted');
       }
