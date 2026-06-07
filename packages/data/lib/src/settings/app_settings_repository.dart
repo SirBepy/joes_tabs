@@ -14,12 +14,14 @@ class AppSettingsRecord {
     required this.themeMode,
     required this.instrumentSlugs,
     required this.fontSize,
+    required this.maximalChords,
   });
 
   final bool onboardingComplete;
   final String themeMode;
   final List<String> instrumentSlugs;
   final int fontSize;
+  final bool maximalChords;
 }
 
 /// Repository over the single-row [AppSettings] table.
@@ -59,6 +61,7 @@ class AppSettingsRepository {
     String? themeMode,
     List<String>? instrumentSlugs,
     int? fontSize,
+    bool? maximalChords,
   }) async {
     await _ensureRow();
     final companion = AppSettingsCompanion(
@@ -70,6 +73,9 @@ class AppSettingsRepository {
           ? const Value.absent()
           : Value(_encode(instrumentSlugs)),
       fontSize: fontSize == null ? const Value.absent() : Value(fontSize),
+      maximalChords: maximalChords == null
+          ? const Value.absent()
+          : Value(maximalChords),
     );
     await (_db.update(
       _db.appSettings,
@@ -91,6 +97,7 @@ class AppSettingsRepository {
     themeMode: row.themeMode,
     instrumentSlugs: _decode(row.instruments),
     fontSize: row.fontSize,
+    maximalChords: row.maximalChords,
   );
 
   /// Decodes comma-joined slug text into a trimmed, empty-free list.

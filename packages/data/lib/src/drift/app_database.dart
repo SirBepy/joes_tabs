@@ -75,6 +75,8 @@ class AppSettings extends Table {
   TextColumn get instruments =>
       text().withDefault(const Constant('ukulele,guitar'))();
   IntColumn get fontSize => integer().withDefault(const Constant(20))();
+  BoolColumn get maximalChords =>
+      boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -104,7 +106,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -118,6 +120,10 @@ class AppDatabase extends _$AppDatabase {
       // state, then seed the default row if absent.
       if (from < 2) {
         await m.createTable(appSettings);
+      }
+      if (from < 3) {
+        // v2 -> v3: add the maximalChords flag with its default.
+        await m.addColumn(appSettings, appSettings.maximalChords);
       }
       await _ensureAppSettingsRow();
     },

@@ -65,6 +65,12 @@ void main() {
     await emitted;
   });
 
+  test('maximalChords round-trips and defaults false', () async {
+    expect((await repo.read()).maximalChords, isFalse);
+    await repo.update(maximalChords: true);
+    expect((await repo.read()).maximalChords, isTrue);
+  });
+
   // Migration is covered by the onCreate / onUpgrade / beforeOpen idempotency in
   // AppDatabase (insert-if-absent of the single row, create-if-not-exists of the
   // table). The repo has no drift schema-dump migration-test infrastructure, so
