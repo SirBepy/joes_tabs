@@ -37,19 +37,49 @@ const List<(String, int)> _roots = [
   ('B', 11),
 ];
 
-/// (chords-db suffix, our symbol suffix), in display order.
-const List<(String, String)> _qualities = [
-  ('major', ''),
-  ('minor', 'm'),
-  ('7', '7'),
-  ('m7', 'm7'),
-  ('maj7', 'maj7'),
-  ('sus2', 'sus2'),
-  ('sus4', 'sus4'),
-  ('6', '6'),
-  ('dim', 'dim'),
-  ('aug', 'aug'),
-  ('add9', 'add9'),
+/// (our suffix, chords-db suffix, family enum name, label, extended?).
+/// Balanced tier first; extended (maximal-only) after. Order within a family is
+/// the on-screen Type-strip order.
+const List<({String suffix, String db, String family, String label, bool extended})>
+    _catalog = [
+  // Major
+  (suffix: '', db: 'major', family: 'major', label: 'Major', extended: false),
+  (suffix: 'maj7', db: 'maj7', family: 'major', label: 'maj7', extended: false),
+  (suffix: '6', db: '6', family: 'major', label: '6', extended: false),
+  (suffix: 'add9', db: 'add9', family: 'major', label: 'add9', extended: false),
+  (suffix: 'maj9', db: 'maj9', family: 'major', label: 'maj9', extended: true),
+  (suffix: 'maj11', db: 'maj11', family: 'major', label: 'maj11', extended: true),
+  (suffix: 'maj13', db: 'maj13', family: 'major', label: 'maj13', extended: true),
+  (suffix: '69', db: '69', family: 'major', label: '6/9', extended: true),
+  // Minor
+  (suffix: 'm', db: 'minor', family: 'minor', label: 'Minor', extended: false),
+  (suffix: 'm7', db: 'm7', family: 'minor', label: 'm7', extended: false),
+  (suffix: 'm6', db: 'm6', family: 'minor', label: 'm6', extended: false),
+  (suffix: 'madd9', db: 'madd9', family: 'minor', label: 'madd9', extended: false),
+  (suffix: 'm9', db: 'm9', family: 'minor', label: 'm9', extended: true),
+  (suffix: 'm11', db: 'm11', family: 'minor', label: 'm11', extended: true),
+  (suffix: 'mmaj7', db: 'mmaj7', family: 'minor', label: 'mMaj7', extended: true),
+  // Dominant
+  (suffix: '7', db: '7', family: 'dominant', label: '7', extended: false),
+  (suffix: '9', db: '9', family: 'dominant', label: '9', extended: false),
+  (suffix: '11', db: '11', family: 'dominant', label: '11', extended: false),
+  (suffix: '13', db: '13', family: 'dominant', label: '13', extended: false),
+  (suffix: '7b5', db: '7b5', family: 'dominant', label: '7b5', extended: true),
+  (suffix: '7b9', db: '7b9', family: 'dominant', label: '7b9', extended: true),
+  (suffix: '7#9', db: '7#9', family: 'dominant', label: '7#9', extended: true),
+  (suffix: '9b5', db: '9b5', family: 'dominant', label: '9b5', extended: true),
+  (suffix: '7sus4', db: '7sus4', family: 'dominant', label: '7sus4', extended: true),
+  // Suspended
+  (suffix: 'sus2', db: 'sus2', family: 'suspended', label: 'sus2', extended: false),
+  (suffix: 'sus4', db: 'sus4', family: 'suspended', label: 'sus4', extended: false),
+  // Diminished
+  (suffix: 'dim', db: 'dim', family: 'diminished', label: 'dim', extended: false),
+  (suffix: 'dim7', db: 'dim7', family: 'diminished', label: 'dim7', extended: false),
+  (suffix: 'm7b5', db: 'm7b5', family: 'diminished', label: 'm7b5', extended: false),
+  // Augmented
+  (suffix: 'aug', db: 'aug', family: 'augmented', label: 'aug', extended: false),
+  (suffix: 'aug7', db: 'aug7', family: 'augmented', label: 'aug7', extended: false),
+  (suffix: 'aug9', db: 'aug9', family: 'augmented', label: 'aug9', extended: true),
 ];
 
 const Map<String, int> _noteToPc = {
@@ -252,13 +282,101 @@ Map<int, String> _pcToGroupKey(Map<String, dynamic> db) {
   return out;
 }
 
-String _emitMap(String name, Map<String, dynamic> db, List<int> openMidi) {
+/// One quality that survived the completeness check and will be emitted into
+/// both shape maps and the qualities catalog.
+typedef _Emitted = ({
+  String suffix,
+  String db,
+  String family,
+  String label,
+  bool extended,
+});
+
+/// Attempts to resolve [entry] for all 12 roots on [db]; returns true iff every
+/// root resolves without throwing. Used by the completeness pre-pass.
+bool _resolvesAll(
+  _Emitted entry,
+  Map<String, dynamic> db,
+  List<int> openMidi,
+) {
+  final pcToGroupKey = _pcToGroupKey(db);
+  for (final (root, pc) in _roots) {
+    final symbol = '$root${entry.suffix}';
+    try {
+      _resolve(db, openMidi, pcToGroupKey, pc, entry.db, symbol);
+    } catch (_) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Builds the emitted catalog from `_catalog`, preserving order. Balanced
+/// qualities MUST resolve for every root on both instruments (throws on a gap).
+/// Extended qualities are included only when complete; incomplete ones are
+/// dropped with a printed warning so the picker never offers an unrenderable
+/// chord.
+List<_Emitted> _buildEmitted(
+  Map<String, dynamic> ukulele,
+  List<int> ukeMidi,
+  Map<String, dynamic> guitar,
+  List<int> gtrMidi,
+) {
+  final out = <_Emitted>[];
+  for (final c in _catalog) {
+    final entry = (
+      suffix: c.suffix,
+      db: c.db,
+      family: c.family,
+      label: c.label,
+      extended: c.extended,
+    );
+    final ukeOk = _resolvesAll(entry, ukulele, ukeMidi);
+    final gtrOk = _resolvesAll(entry, guitar, gtrMidi);
+    final complete = ukeOk && gtrOk;
+    if (!c.extended) {
+      if (!complete) {
+        // Surface the precise failure for a balanced quality (hard error).
+        final pcToGroupKey = _pcToGroupKey(ukeOk ? guitar : ukulele);
+        final db = ukeOk ? guitar : ukulele;
+        final midi = ukeOk ? gtrMidi : ukeMidi;
+        for (final (root, pc) in _roots) {
+          _resolve(db, midi, pcToGroupKey, pc, entry.db, '$root${entry.suffix}');
+        }
+        throw StateError(
+          'balanced quality "${entry.label}" (db ${entry.db}) is incomplete '
+          'on ${ukeOk ? 'guitar' : 'ukulele'} but no per-root throw surfaced',
+        );
+      }
+      out.add(entry);
+    } else if (complete) {
+      out.add(entry);
+    } else {
+      final missing = <String>[
+        if (!ukeOk) 'ukulele',
+        if (!gtrOk) 'guitar',
+      ].join('+');
+      print(
+        '  DROP extended "${entry.label}" (db ${entry.db}): '
+        'incomplete coverage on $missing',
+      );
+    }
+  }
+  return out;
+}
+
+String _emitMap(
+  String name,
+  Map<String, dynamic> db,
+  List<int> openMidi,
+  List<_Emitted> emitted,
+) {
   final pcToGroupKey = _pcToGroupKey(db);
   final buf = StringBuffer('const Map<String, ChordShape> $name = {\n');
   for (final (root, pc) in _roots) {
-    for (final (dbSuffix, symSuffix) in _qualities) {
-      final symbol = '$root$symSuffix';
-      final shape = _resolve(db, openMidi, pcToGroupKey, pc, dbSuffix, symbol);
+    for (final entry in emitted) {
+      final symbol = '$root${entry.suffix}';
+      final shape = _resolve(db, openMidi, pcToGroupKey, pc, entry.db, symbol);
       buf.writeln(
         "  '$symbol': ChordShape(name: '$symbol', "
         'frets: ${shape.frets}, baseFret: ${shape.baseFret}),',
@@ -266,6 +384,27 @@ String _emitMap(String name, Map<String, dynamic> db, List<int> openMidi) {
     }
   }
   buf.writeln('};');
+  return buf.toString();
+}
+
+String _emitQualities(List<_Emitted> emitted) {
+  final buf = StringBuffer()
+    ..writeln('// GENERATED by tool/gen_chord_shapes.dart - DO NOT EDIT BY HAND.')
+    ..writeln('//')
+    ..writeln('// The ordered chord-quality catalog (family, tier, label) used by')
+    ..writeln('// the chord picker. Source: chords-db master table in the generator.')
+    ..writeln('library;')
+    ..writeln()
+    ..writeln("import 'chord_catalog.dart';")
+    ..writeln()
+    ..writeln('const List<ChordQuality> kChordQualities = [');
+  for (final e in emitted) {
+    buf.writeln(
+      "  ChordQuality(suffix: '${e.suffix}', family: ChordFamily.${e.family}, "
+      "label: '${e.label}', extended: ${e.extended}),",
+    );
+  }
+  buf.writeln('];');
   return buf.toString();
 }
 
@@ -277,7 +416,8 @@ void _diffReport(
 ) {
   final pcToGroupKey = _pcToGroupKey(db);
   final pcOf = {for (final (r, pc) in _roots) r: pc};
-  final symSuffixOf = {for (final (db, sym) in _qualities) db: sym};
+  // Map our display suffix -> chords-db suffix from the master catalog.
+  final symSuffixOf = {for (final c in _catalog) c.db: c.suffix};
   // Reverse: our symbol -> (root, dbSuffix). Build from old keys we can parse.
   print('\n=== $label diff (old audited -> new chords-db) ===');
   var changed = 0;
@@ -339,8 +479,13 @@ void main() {
   final ukeMidi = openMidi(ukulele);
   final gtrMidi = openMidi(guitar);
 
-  final ukeMap = _emitMap('kUkuleleShapes', ukulele, ukeMidi);
-  final gtrMap = _emitMap('kGuitarShapes', guitar, gtrMidi);
+  // Completeness pre-pass: balanced must resolve everywhere (throws on a gap),
+  // extended is kept only when complete on both instruments.
+  print('Building emitted catalog (completeness pre-pass)...');
+  final emitted = _buildEmitted(ukulele, ukeMidi, guitar, gtrMidi);
+
+  final ukeMap = _emitMap('kUkuleleShapes', ukulele, ukeMidi, emitted);
+  final gtrMap = _emitMap('kGuitarShapes', guitar, gtrMidi, emitted);
 
   final out = StringBuffer()
     ..writeln(
@@ -354,7 +499,8 @@ void main() {
     ..writeln('// Regenerate: dart run tool/gen_chord_shapes.dart')
     ..writeln('//')
     ..writeln(
-      '// 12 roots x 11 qualities per instrument. Frets are absolute fret',
+      '// 12 roots x ${emitted.length} qualities per instrument. Frets are '
+      'absolute fret',
     )
     ..writeln(
       '// numbers (0 open, -1 muted); baseFret is the diagram window start.',
@@ -371,10 +517,22 @@ void main() {
     '$dir/lib/src/chordpro/chord_shapes_data.dart',
   ).writeAsStringSync(out.toString());
 
-  final ukeCount = _roots.length * _qualities.length;
+  File(
+    '$dir/lib/src/chordpro/chord_qualities_data.dart',
+  ).writeAsStringSync(_emitQualities(emitted));
+
+  final shapeCount = _roots.length * emitted.length;
+  final balanced = emitted.where((e) => !e.extended).length;
+  final extended = emitted.where((e) => e.extended).length;
   print('OK: wrote lib/src/chordpro/chord_shapes_data.dart');
+  print('OK: wrote lib/src/chordpro/chord_qualities_data.dart');
   print(
-    '  ukulele: $ukeCount shapes, guitar: $ukeCount shapes (all midi-validated)',
+    '  emitted ${emitted.length} qualities '
+    '($balanced balanced + $extended extended)',
+  );
+  print(
+    '  ukulele: $shapeCount shapes, guitar: $shapeCount shapes '
+    '(all midi-validated)',
   );
 
   _diffReport('UKULELE', ukulele, ukeMidi, _oldUkulele);

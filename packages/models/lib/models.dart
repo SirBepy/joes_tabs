@@ -4,6 +4,7 @@
 /// serialization uses snake_case keys to match the DB columns.
 library;
 
+export 'src/chordpro/chord_catalog.dart';
 export 'src/chordpro/chord_sheet.dart';
 export 'src/chordpro/chord_shapes.dart';
 export 'src/chordpro/chordpro_parser.dart';
