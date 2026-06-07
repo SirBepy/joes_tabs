@@ -15,6 +15,7 @@ class ChordDiagram extends StatelessWidget {
     required this.chord,
     required this.instrumentSlug,
     this.width = 64,
+    this.showLabel = true,
   });
 
   /// The chord symbol to draw (e.g. `C`, `Am7`, `G/B`).
@@ -25,6 +26,11 @@ class ChordDiagram extends StatelessWidget {
 
   /// Card width; height is derived from it.
   final double width;
+
+  /// Whether to show the chord name above the fretboard. The library needs it to
+  /// label each card; the picker hides it because the result card already names
+  /// the chord (avoids the repeated title).
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -42,16 +48,18 @@ class ChordDiagram extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            chord,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.orange,
-              fontWeight: FontWeight.bold,
+          if (showLabel) ...[
+            Text(
+              chord,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.orange,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xs),
+          ],
           if (shape == null)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -90,10 +98,7 @@ class _FretboardPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     final dot = Paint()..color = AppColors.orange;
 
-    // Reserve a left gutter for the fret-position number on up-the-neck shapes,
-    // so it sits beside the grid (with a gap) instead of painted over or past it.
-    final gutter = shape.baseFret > 1 ? 20.0 : 0.0;
-    final left = gutter;
+    final left = 0.0;
     final right = size.width;
     final top = 6.0;
     final bottom = size.height - 4.0;
@@ -136,22 +141,22 @@ class _FretboardPainter extends CustomPainter {
       }
     }
 
-    // Fret-position number, set in the left gutter and vertically centred on the
-    // top fret line (the standard chord-chart convention), left-aligned so it
-    // keeps a gap from the grid rather than crowding it.
+    // Fret-position label, set just OFF the top-right of the grid (a small gap to
+    // the right) and aligned to the top fret line. No gutter, so the grid keeps
+    // its full size.
     if (shape.baseFret > 1) {
       final tp = TextPainter(
         text: TextSpan(
-          text: '${shape.baseFret}',
+          text: '${shape.baseFret}fr',
           style: const TextStyle(
             color: AppColors.textMuted,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(0, top - tp.height / 2));
+      tp.paint(canvas, Offset(right + 3, top - tp.height / 2));
     }
   }
 

@@ -125,6 +125,7 @@ class _ResultCard extends StatelessWidget {
             chord: symbol,
             instrumentSlug: instrumentSlug,
             width: 96,
+            showLabel: false,
           ),
         ],
       ),
