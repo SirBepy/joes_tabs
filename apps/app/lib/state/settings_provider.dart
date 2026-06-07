@@ -162,6 +162,25 @@ final fontSizeProvider = NotifierProvider<FontSizeNotifier, int>(
   FontSizeNotifier.new,
 );
 
+/// Persisted "Maximal chords" flag. When true, the chord picker and the
+/// browse-all library show every chords-db quality; when false, only the
+/// balanced set. Seeded from the startup record; [set] writes through to disk
+/// then updates state.
+class MaximalChordsNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(initialAppSettingsProvider).maximalChords;
+
+  Future<void> set(bool value) async {
+    if (value == state) return;
+    await ref.read(appSettingsRepositoryProvider).update(maximalChords: value);
+    state = value;
+  }
+}
+
+final maximalChordsProvider = NotifierProvider<MaximalChordsNotifier, bool>(
+  MaximalChordsNotifier.new,
+);
+
 /// The currently-VIEWED instrument used by the on-screen toggles (Chords, Tuner,
 /// Search filter, Song controls). This is VIEW state, not a saved preference, so
 /// it is intentionally IN-MEMORY only (a session [StateProvider]): switching the

@@ -19,12 +19,14 @@ AppSettingsRecord testSettingsRecord({
   String themeMode = 'system',
   List<String>? instrumentSlugs,
   int fontSize = 20,
+  bool maximalChords = false,
 }) => AppSettingsRecord(
   onboardingComplete: onboardingComplete,
   themeMode: themeMode,
   instrumentSlugs:
       instrumentSlugs ?? const [ChordShapes.ukulele, ChordShapes.guitar],
   fontSize: fontSize,
+  maximalChords: maximalChords,
 );
 
 /// Override that seeds [initialAppSettingsProvider] so the persisted-preference
@@ -34,11 +36,13 @@ Override initialSettingsOverride({
   String themeMode = 'system',
   List<String>? instrumentSlugs,
   int fontSize = 20,
+  bool maximalChords = false,
 }) => initialAppSettingsProvider.overrideWithValue(
   testSettingsRecord(
     onboardingComplete: onboardingComplete,
     themeMode: themeMode,
     instrumentSlugs: instrumentSlugs,
     fontSize: fontSize,
+    maximalChords: maximalChords,
   ),
 );

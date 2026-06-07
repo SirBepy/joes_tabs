@@ -54,6 +54,7 @@ Future<void> main() async {
     themeMode: 'system',
     instrumentSlugs: [ChordShapes.ukulele, ChordShapes.guitar],
     fontSize: 20,
+    maximalChords: false,
   );
   try {
     initialSettings = await settingsRepository.read();

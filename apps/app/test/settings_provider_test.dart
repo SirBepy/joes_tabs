@@ -113,4 +113,25 @@ void main() {
       expect(both.read(showInstrumentPickerProvider), isTrue);
     });
   });
+
+  group('maximalChordsProvider', () {
+    test('defaults to false from the seeded record', () {
+      final c = _container();
+      expect(c.read(maximalChordsProvider), isFalse);
+    });
+
+    test('set(true) updates state and persists', () async {
+      final c = _container();
+      await c.read(maximalChordsProvider.notifier).set(true);
+      expect(c.read(maximalChordsProvider), isTrue);
+      final record = await c.read(appSettingsRepositoryProvider).read();
+      expect(record.maximalChords, isTrue);
+    });
+
+    test('set(false) is a no-op when already false', () async {
+      final c = _container();
+      await c.read(maximalChordsProvider.notifier).set(false);
+      expect(c.read(maximalChordsProvider), isFalse);
+    });
+  });
 }
