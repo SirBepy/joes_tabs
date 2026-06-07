@@ -1,6 +1,13 @@
-/// Presentational tuner gauge: a sliding chromatic note ribbon under a fixed,
-/// color-coded center pointer, with the big target-note letter + cents readout
-/// and an in-tune glow+pulse. Driven entirely by props - no business logic.
+/// Presentational tuner gauge: a continuous chromatic ruler that scrolls under a
+/// fixed, color-coded center pointer, with the big target-note letter + cents
+/// readout and an in-tune glow+pulse. Driven entirely by props - no business
+/// logic.
+///
+/// The ruler is one long chromatic strip (not a fixed window that re-centers), so
+/// moving between notes/strings slides smoothly past the pointer instead of
+/// snapping. Its scroll position is a continuous pitch-class coordinate
+/// (note + cents); octave changes never yank it because position is unwrapped to
+/// the nearest equivalent of the previous position (always the short way around).
 library;
 
 import 'package:flutter/material.dart';
@@ -21,11 +28,27 @@ Color _colorFor(TuneZone z) => switch (z) {
   TuneZone.red => _red,
 };
 
-/// How many chromatic neighbors show on each side of the center note.
-const int _perSide = 3;
+const List<String> _names = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+];
 
 /// Pixels between adjacent semitone labels (one semitone == 100 cents).
 const double _semitonePx = 74;
+
+/// Note labels rendered on each side of the center (window is virtualized, so
+/// this just needs to exceed what is visible).
+const int _windowHalf = 7;
 
 class TunerGauge extends StatefulWidget {
   const TunerGauge({
@@ -38,7 +61,7 @@ class TunerGauge extends StatefulWidget {
     this.octave = 0,
   });
 
-  /// The note the ribbon is centered on (a bare letter, e.g. 'G').
+  /// The note the ruler centers on when in tune (a bare letter, e.g. 'G').
   final String centerNote;
 
   /// Scientific octave of the note sounding (e.g. 3 for G3); shown as a small
@@ -68,10 +91,36 @@ class _TunerGaugeState extends State<TunerGauge>
     duration: const Duration(milliseconds: 300),
   );
 
+  /// Continuous, unwrapped chromatic position the ruler is scrolled to.
+  double? _pos;
+
+  int get _pitchClass => _names.indexOf(widget.centerNote);
+
+  /// Target scroll position = pitch class + cents, chosen as the octave
+  /// equivalent nearest the previous position so a string/octave change slides
+  /// the short way instead of jumping across the ruler.
+  double _resolveTarget() {
+    final pc = _pitchClass;
+    if (pc < 0) return _pos ?? 0;
+    final raw = pc + (widget.active ? widget.cents / 100.0 : 0.0);
+    final prev = _pos;
+    if (prev == null) return raw;
+    var best = raw;
+    var bestDist = (raw - prev).abs();
+    for (final k in const [-24, -12, 12, 24]) {
+      final cand = raw + k;
+      final d = (cand - prev).abs();
+      if (d < bestDist) {
+        bestDist = d;
+        best = cand;
+      }
+    }
+    return best;
+  }
+
   @override
   void didUpdateWidget(TunerGauge old) {
     super.didUpdateWidget(old);
-    // Fire the celebration on the rising edge of in-tune.
     if (widget.isInTune && widget.active && !(old.isInTune && old.active)) {
       _pulse.forward(from: 0);
     }
@@ -86,10 +135,12 @@ class _TunerGaugeState extends State<TunerGauge>
   @override
   Widget build(BuildContext context) {
     final color = widget.active ? _colorFor(widget.zone) : _muted;
-    final notes = chromaticRibbon(widget.centerNote, _perSide);
     final centsLabel = !widget.active
         ? '--'
         : '${widget.cents >= 0 ? '+' : ''}${widget.cents.round()}¢';
+    final target = _resolveTarget();
+    _pos = target;
+    final pc = _pitchClass;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -98,7 +149,6 @@ class _TunerGaugeState extends State<TunerGauge>
         AnimatedBuilder(
           animation: _pulse,
           builder: (context, child) {
-            // Triangle 0->1->0 over 300ms: swell to 1.12x then settle to 1.0.
             final scale = widget.isInTune
                 ? 1 + 0.12 * (1 - (2 * _pulse.value - 1).abs())
                 : 1.0;
@@ -111,11 +161,10 @@ class _TunerGaugeState extends State<TunerGauge>
                 if (widget.active && widget.octave > 0)
                   TextSpan(
                     text: '${widget.octave}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: _muted,
-                      // Raise it to sit as a superscript.
                       textBaseline: TextBaseline.alphabetic,
                       height: 2.4,
                     ),
@@ -141,78 +190,93 @@ class _TunerGaugeState extends State<TunerGauge>
           ),
         ),
         const SizedBox(height: 12),
-        // The gauge: fixed center pointer + sliding ribbon + detent band.
+        // The ruler: a continuous chromatic strip scrolling under a fixed pointer.
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: Container(
             height: 96,
             color: _peach2,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Green detent band marking the +/-5 cent in-tune zone.
-                Container(
-                  width: (2 * 5 / 100) * _semitonePx,
-                  decoration: BoxDecoration(
-                    color: _green.withValues(alpha: 0.12),
-                    border: Border.symmetric(
-                      vertical: BorderSide(
-                        color: _green.withValues(alpha: 0.45),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final centerX = constraints.maxWidth / 2;
+                return Stack(
+                  children: [
+                    // Green detent band marking the +/-5 cent in-tune zone.
+                    Positioned(
+                      left: centerX - (5 / 100) * _semitonePx,
+                      width: (2 * 5 / 100) * _semitonePx,
+                      top: 0,
+                      bottom: 0,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _green.withValues(alpha: 0.12),
+                          border: Border.symmetric(
+                            vertical: BorderSide(
+                              color: _green.withValues(alpha: 0.45),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                // Sliding ribbon: translate by -cents within the semitone.
-                TweenAnimationBuilder<double>(
-                  tween: Tween(end: widget.active ? widget.cents : 0),
-                  duration: const Duration(milliseconds: 90),
-                  builder: (context, animCents, _) {
-                    final dx = -(animCents / 100) * _semitonePx;
-                    return Transform.translate(
-                      offset: Offset(dx, 0),
-                      // The full chromatic row is wider than the gauge; let it
-                      // overflow its parent (the ClipRRect clips the excess)
-                      // instead of tripping a RenderFlex overflow.
-                      child: OverflowBox(
-                        maxWidth: double.infinity,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (final n in notes)
-                              SizedBox(
-                                width: _semitonePx,
-                                child: Center(
-                                  child: Text(
-                                    n,
-                                    style: TextStyle(
-                                      fontWeight: n == widget.centerNote
-                                          ? FontWeight.w800
-                                          : FontWeight.w600,
-                                      fontSize: n.contains('#') ? 13 : 20,
-                                      color: n == widget.centerNote
-                                          ? _ink
-                                          : (n.contains('#')
-                                                ? _muted
-                                                : _ink.withValues(alpha: 0.7)),
-                                    ),
+                    // The scrolling chromatic labels (virtualized window).
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(end: target),
+                      duration: const Duration(milliseconds: 130),
+                      curve: Curves.easeOut,
+                      builder: (context, pos, _) {
+                        final base = pos.round();
+                        final labels = <Widget>[];
+                        for (
+                          var i = base - _windowHalf;
+                          i <= base + _windowHalf;
+                          i++
+                        ) {
+                          final x = centerX + (i - pos) * _semitonePx;
+                          final name = _names[((i % 12) + 12) % 12];
+                          final isSharp = name.contains('#');
+                          final isTarget =
+                              widget.active && pc >= 0 && ((i - pc) % 12) == 0;
+                          labels.add(
+                            Positioned(
+                              left: x - _semitonePx / 2,
+                              width: _semitonePx,
+                              top: 0,
+                              bottom: 0,
+                              child: Center(
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontWeight: isTarget
+                                        ? FontWeight.w800
+                                        : (isSharp
+                                              ? FontWeight.w500
+                                              : FontWeight.w600),
+                                    fontSize: isSharp ? 13 : 20,
+                                    color: isTarget
+                                        ? color
+                                        : (isSharp
+                                              ? _muted
+                                              : _ink.withValues(alpha: 0.55)),
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
+                            ),
+                          );
+                        }
+                        return Stack(children: labels);
+                      },
+                    ),
+                    // Fixed center pointer (downward triangle), colored by zone.
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: CustomPaint(
+                        size: const Size(18, 13),
+                        painter: _PointerPainter(color),
                       ),
-                    );
-                  },
-                ),
-                // Fixed center pointer (downward triangle), colored by zone.
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: CustomPaint(
-                    size: const Size(18, 13),
-                    painter: _PointerPainter(color),
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
