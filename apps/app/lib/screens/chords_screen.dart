@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../song/chord_diagram.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/instrument_toggle.dart';
+import 'chords/chord_library_view.dart';
+import 'chords/chord_picker_view.dart';
 
-/// Chord-diagram library (per `docs/design/screens/chords.md`).
-///
-/// Browsable list of chords grouped by root note, each group a horizontally
-/// scrolling row of [ChordDiagram] cards. When the user plays more than one
-/// instrument an instrument toggle (bound to [selectedInstrumentProvider]) swaps
-/// the whole shape set; when they play only one the toggle is hidden and that
-/// single instrument is forced. A search field filters by chord name.
+/// Chords landing: a "Pick / Browse all" tab host. Pick is the guided picker;
+/// Browse all is the grouped-by-root library. Instrument is resolved the same
+/// way both views need it (forced to the single played instrument, or the
+/// on-screen toggle when more than one is played).
 class ChordsScreen extends ConsumerStatefulWidget {
   const ChordsScreen({super.key});
 
@@ -24,24 +20,14 @@ class ChordsScreen extends ConsumerStatefulWidget {
 }
 
 class _ChordsScreenState extends ConsumerState<ChordsScreen> {
-  String _query = '';
+  bool _browse = false;
 
   @override
   Widget build(BuildContext context) {
     final showPicker = ref.watch(showInstrumentPickerProvider);
-    // When the picker is shown, the toggle drives the viewed instrument. When
-    // hidden, force the single played instrument.
     final instrument = showPicker
         ? ref.watch(selectedInstrumentProvider)
         : ref.watch(instrumentsProvider).first;
-    final names = ChordShapes.namesFor(instrument);
-
-    final filtered = _query.isEmpty
-        ? names
-        : names
-              .where((n) => n.toLowerCase().contains(_query.toLowerCase()))
-              .toList();
-    final grouped = _groupByRoot(filtered);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,135 +39,91 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
             AppSpacing.lg,
             AppSpacing.sm,
           ),
-          // Title now lives in the section header (AppShell); the body keeps
-          // just the instrument toggle, pinned to the right per the mockup.
           child: Row(
             children: [
+              _Tabs(
+                browse: _browse,
+                onChanged: (b) => setState(() => _browse = b),
+              ),
               const Spacer(),
               if (showPicker)
                 InstrumentToggle(
                   value: instrument,
-                  onChanged: (slug) =>
-                      ref.read(selectedInstrumentProvider.notifier).state =
-                          slug,
+                  onChanged: (slug) => ref
+                      .read(selectedInstrumentProvider.notifier)
+                      .state = slug,
                 ),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: TextField(
-            onChanged: (v) => setState(() => _query = v),
-            decoration: InputDecoration(
-              hintText: 'Search chords',
-              prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
-              filled: true,
-              fillColor: AppColors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.sm,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
         Expanded(
-          child: grouped.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No chords match that search.',
-                    style: TextStyle(color: AppColors.textMuted),
-                  ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                  children: [
-                    for (final entry in grouped.entries)
-                      _RootSection(
-                        root: entry.key,
-                        chords: entry.value,
-                        instrument: instrument,
-                      ),
-                  ],
-                ),
+          child: _browse
+              ? ChordLibraryView(instrument: instrument)
+              : ChordPickerView(instrumentSlug: instrument),
         ),
       ],
     );
   }
-
-  /// Groups chord names by their root pitch class label (the leading note plus
-  /// any accidental), preserving a musical order C, C#, D, ...
-  Map<String, List<String>> _groupByRoot(List<String> names) {
-    final groups = <String, List<String>>{};
-    for (final name in names) {
-      final root = _rootOf(name);
-      groups.putIfAbsent(root, () => []).add(name);
-    }
-    final ordered = groups.keys.toList()
-      ..sort((a, b) {
-        final ia = Transposer.noteIndex(a) ?? 99;
-        final ib = Transposer.noteIndex(b) ?? 99;
-        return ia != ib ? ia.compareTo(ib) : a.compareTo(b);
-      });
-    return {for (final k in ordered) k: groups[k]!..sort()};
-  }
-
-  String _rootOf(String chord) {
-    final m = RegExp(r'^([A-Ga-g][#b]*)').firstMatch(chord);
-    return m?.group(1) ?? chord;
-  }
 }
 
-/// One root-note section: a large root label and a horizontal carousel of the
-/// variant diagrams for that root.
-class _RootSection extends StatelessWidget {
-  const _RootSection({
-    required this.root,
-    required this.chords,
-    required this.instrument,
-  });
+class _Tabs extends StatelessWidget {
+  const _Tabs({required this.browse, required this.onChanged});
 
-  final String root;
-  final List<String> chords;
-  final String instrument;
+  final bool browse;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: AppColors.peach,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              root,
-              style: const TextStyle(
-                color: AppColors.orange,
-                fontWeight: FontWeight.w900,
-                fontSize: 28,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          SizedBox(
-            height: 132,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: chords.length,
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-              itemBuilder: (_, i) => ChordDiagram(
-                chord: chords[i],
-                instrumentSlug: instrument,
-                width: 84,
-              ),
-            ),
+          _Tab(label: 'Pick', selected: !browse, onTap: () => onChanged(false)),
+          _Tab(
+            label: 'Browse all',
+            selected: browse,
+            onTap: () => onChanged(true),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.orange : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: selected ? AppColors.white : AppColors.textDark,
+          ),
+        ),
       ),
     );
   }

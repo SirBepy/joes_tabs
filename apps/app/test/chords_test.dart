@@ -23,12 +23,34 @@ Future<void> _pump(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('renders chord diagrams grouped by root', (tester) async {
+  testWidgets('defaults to the Pick tab and toggles to Browse all', (
+    tester,
+  ) async {
     await _pump(tester);
 
-    // The "CHORDS" bubble title now lives in the section header (AppShell),
-    // not the screen body. Here the body is pumped bare, so assert on the body
-    // content it owns: the diagram cards and the root-note section headers.
+    // The guided picker is the default tab: its "Family" strip label is shown
+    // and the library's search field is not yet present.
+    expect(find.text('Family'), findsOneWidget);
+    expect(find.text('Search chords'), findsNothing);
+
+    // Switch to Browse all -> the library search field appears.
+    await tester.tap(find.text('Browse all'));
+    await tester.pump();
+    expect(find.text('Search chords'), findsOneWidget);
+
+    // Switch back to Pick -> the search field is gone again.
+    await tester.tap(find.text('Pick'));
+    await tester.pump();
+    expect(find.text('Search chords'), findsNothing);
+  });
+
+  testWidgets('Browse all renders chord diagrams grouped by root', (
+    tester,
+  ) async {
+    await _pump(tester);
+    await tester.tap(find.text('Browse all'));
+    await tester.pump();
+
     expect(find.byType(ChordDiagram), findsWidgets);
     // The C root section header is present.
     expect(find.text('C'), findsWidgets);
@@ -56,6 +78,10 @@ void main() {
       );
       await tester.pump();
 
+      // Switch to Browse all so chord diagrams are on screen.
+      await tester.tap(find.text('Browse all'));
+      await tester.pump();
+
       expect(capturedRef.read(selectedInstrumentProvider), ChordShapes.ukulele);
 
       // The first ukulele card uses 4 strings; switch to guitar.
@@ -75,8 +101,12 @@ void main() {
     },
   );
 
-  testWidgets('search filters the chord list by name', (tester) async {
+  testWidgets('Browse all search filters the chord list by name', (
+    tester,
+  ) async {
     await _pump(tester);
+    await tester.tap(find.text('Browse all'));
+    await tester.pump();
 
     await tester.enterText(find.byType(TextField), 'Am');
     await tester.pump();
