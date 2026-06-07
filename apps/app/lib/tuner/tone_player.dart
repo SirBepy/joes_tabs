@@ -3,6 +3,8 @@
 /// unit-testable; playback wraps just_audio.
 library;
 
+import 'dart:async';
+
 import 'package:just_audio/just_audio.dart';
 import 'package:models/models.dart';
 
@@ -29,22 +31,40 @@ String? toneAssetFor(String instrument, int stringIndex) {
   return list[stringIndex];
 }
 
-/// Thin wrapper over a single just_audio player for one-shot tone playback.
+/// One-shot reference-tone player.
+///
+/// Each tap gets a FRESH [AudioPlayer]; the previous one is disposed first. A
+/// reused just_audio player is unreliable for back-to-back one-shots on web -
+/// `play()` only completes when the (2s) clip ends, so reusing the same player
+/// mid-clip fails to switch sources and every tap keeps playing the first note.
+/// A fresh player per tap guarantees the correct asset plays from the start.
 class TonePlayer {
-  final AudioPlayer _player = AudioPlayer();
+  AudioPlayer? _current;
 
   /// Plays the tone for [stringIndex] of [instrument] from the start. No-op for
-  /// an out-of-range index. Returns once playback has been kicked off.
+  /// an out-of-range index. Returns once playback has been started (it does not
+  /// wait for the clip to finish).
   Future<void> play(String instrument, int stringIndex) async {
     final asset = toneAssetFor(instrument, stringIndex);
     if (asset == null) return;
-    await _player.setAsset(asset);
-    await _player.seek(Duration.zero);
-    await _player.play();
+    // Stop/free any in-progress tone so this tap starts a clean source.
+    final previous = _current;
+    _current = null;
+    await previous?.dispose();
+    final player = AudioPlayer();
+    _current = player;
+    await player.setAsset(asset);
+    // Start playback but don't block on completion; swallow errors from a tone
+    // that gets disposed by a newer tap.
+    unawaited(player.play().catchError((_) {}));
   }
 
   /// Approximate length of a tone clip; callers use this to time mic resume.
   static const Duration clipDuration = Duration(seconds: 2);
 
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() async {
+    final p = _current;
+    _current = null;
+    await p?.dispose();
+  }
 }
