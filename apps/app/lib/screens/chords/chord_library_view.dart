@@ -8,6 +8,30 @@ import '../../state/settings_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 
+/// Display order for a root's variants in the library: common chords first
+/// (major, minor, then the sevenths), then sixths, ninths/adds, the higher
+/// extensions, suspended, and finally the diminished/augmented colours. The
+/// maximal-only extensions trail at the end (they only appear in maximal mode).
+/// Anything unlisted sorts last. Used instead of an alphabetical sort, which put
+/// `C11`/`C13` ahead of `C6`/`C7`.
+const List<String> _variantOrder = [
+  '', 'm', '7', 'maj7', 'm7', // triads + common sevenths
+  '6', 'm6', // sixths
+  '9', 'm9', 'add9', 'madd9', // ninths / adds
+  '11', 'm11', '13', // higher extensions
+  'sus2', 'sus4', // suspended
+  'dim', 'dim7', 'm7b5', 'aug', 'aug7', // diminished / augmented
+  // Maximal-only tail.
+  'maj9', 'maj11', 'maj13', '69', 'mmaj7', '7sus4', '7b5', '7b9', '7#9', '9b5',
+  'aug9',
+];
+
+int _variantRank(String name) {
+  final suffix = name.replaceFirst(RegExp(r'^[A-G][#b]?'), '');
+  final i = _variantOrder.indexOf(suffix);
+  return i == -1 ? _variantOrder.length : i;
+}
+
 /// Chord-diagram library (per `docs/design/screens/chords.md`).
 ///
 /// Browsable list of chords grouped by root note, each group a horizontally
@@ -107,7 +131,11 @@ class _ChordLibraryViewState extends ConsumerState<ChordLibraryView> {
         final ib = Transposer.noteIndex(b) ?? 99;
         return ia != ib ? ia.compareTo(ib) : a.compareTo(b);
       });
-    return {for (final k in ordered) k: groups[k]!..sort()};
+    return {
+      for (final k in ordered)
+        k: groups[k]!
+          ..sort((a, b) => _variantRank(a).compareTo(_variantRank(b))),
+    };
   }
 
   String _rootOf(String chord) {
