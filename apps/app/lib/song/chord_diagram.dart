@@ -90,7 +90,10 @@ class _FretboardPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     final dot = Paint()..color = AppColors.orange;
 
-    final left = 0.0;
+    // Reserve a left gutter for the fret-position number on up-the-neck shapes,
+    // so it sits beside the grid (with a gap) instead of painted over or past it.
+    final gutter = shape.baseFret > 1 ? 20.0 : 0.0;
+    final left = gutter;
     final right = size.width;
     final top = 6.0;
     final bottom = size.height - 4.0;
@@ -133,16 +136,22 @@ class _FretboardPainter extends CustomPainter {
       }
     }
 
-    // Base-fret label for shapes that start above the nut.
+    // Fret-position number, set in the left gutter and vertically centred on the
+    // top fret line (the standard chord-chart convention), left-aligned so it
+    // keeps a gap from the grid rather than crowding it.
     if (shape.baseFret > 1) {
       final tp = TextPainter(
         text: TextSpan(
-          text: '${shape.baseFret}fr',
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 8),
+          text: '${shape.baseFret}',
+          style: const TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(right + 1, top));
+      tp.paint(canvas, Offset(0, top - tp.height / 2));
     }
   }
 
