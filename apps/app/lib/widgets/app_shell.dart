@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -6,6 +7,13 @@ import '../router/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'app_drawer.dart';
+
+/// Per-route trailing actions for the section header. A section screen registers
+/// its own action widgets here (typically in a post-frame callback during build)
+/// and clears them on dispose, so the [SectionHeader] stays route-agnostic: it
+/// renders whatever the active screen registered, and nothing when the list is
+/// empty. Routes that never set it show no stray action.
+final sectionActionsProvider = StateProvider<List<Widget>>((ref) => const []);
 
 /// Chrome around the main destinations. The top bar is route-dependent:
 ///
@@ -70,7 +78,7 @@ class AppShell extends StatelessWidget {
 /// Implemented as a [PreferredSizeWidget] so it can slot straight into
 /// [Scaffold.appBar]. The back tap is tolerant of being rendered outside a
 /// GoRouter (e.g. a bare widget test) - it simply no-ops there.
-class SectionHeader extends StatelessWidget implements PreferredSizeWidget {
+class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
   const SectionHeader({super.key, required this.title});
 
   final String title;
@@ -79,7 +87,8 @@ class SectionHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(72);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actions = ref.watch(sectionActionsProvider);
     return AppBar(
       backgroundColor: AppColors.cream,
       foregroundColor: AppColors.orange,
@@ -96,6 +105,7 @@ class SectionHeader extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: Text(title, style: Theme.of(context).textTheme.headlineMedium),
       centerTitle: false,
+      actions: actions.isEmpty ? null : actions,
     );
   }
 }

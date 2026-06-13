@@ -1,7 +1,8 @@
 import 'package:data/data.dart';
-import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/material.dart' show IconData, ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// App-wide user preferences, now PERSISTED via the Drift `AppSettings` table
 /// (plan: onboarding + persisted preferences). The notifiers are write-through:
@@ -30,6 +31,22 @@ String instrumentDisplayName(String slug) {
       return 'Guitar';
     default:
       return slug;
+  }
+}
+
+/// Phosphor glyph for an instrument slug, for the icon-based instrument picker.
+IconData instrumentIcon(String slug) {
+  switch (slug) {
+    case ChordShapes.guitar:
+      return PhosphorIconsRegular.guitar;
+    case ChordShapes.ukulele:
+      // No Phosphor ukulele glyph; musicNote stands in until real art exists
+      // (autopilot choice, reversible).
+      return PhosphorIconsRegular.musicNote;
+    default:
+      // No Phosphor ukulele glyph; musicNote stands in until real art exists
+      // (autopilot choice, reversible).
+      return PhosphorIconsRegular.musicNote;
   }
 }
 

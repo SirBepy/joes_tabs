@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
-import '../widgets/instrument_toggle.dart';
+import '../widgets/app_shell.dart';
 import 'chords/chord_library_view.dart';
 import 'chords/chord_picker_view.dart';
 
 /// Chords landing: a "Pick / Browse all" tab host. Pick is the guided picker;
 /// Browse all is the grouped-by-root library. Instrument is resolved the same
 /// way both views need it (forced to the single played instrument, or the
-/// on-screen toggle when more than one is played).
+/// top-bar icon dropdown when more than one is played).
 class ChordsScreen extends ConsumerStatefulWidget {
   const ChordsScreen({super.key});
 
@@ -21,6 +21,38 @@ class ChordsScreen extends ConsumerStatefulWidget {
 
 class _ChordsScreenState extends ConsumerState<ChordsScreen> {
   bool _browse = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Register the instrument picker into the section header's actions slot.
+    // The widget itself is reactive (it watches the providers), so we only need
+    // to register/unregister it with this screen's lifecycle. We register after
+    // the first frame because mutating a provider during build is disallowed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(sectionActionsProvider.notifier).state = const [
+        _InstrumentPickerAction(),
+      ];
+    });
+  }
+
+  @override
+  void deactivate() {
+    // Clear so other section screens show no stray action. Capture the notifier
+    // now (while `ref` is valid) and schedule the reset after this teardown
+    // frame: mutating the provider synchronously here would force the sibling
+    // SectionHeader to rebuild mid-deactivation, which the framework forbids.
+    final actions = ref.read(sectionActionsProvider.notifier);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Best-effort: if the whole ProviderScope was torn down (e.g. app exit)
+      // the controller is already disposed and there is nothing to clear.
+      try {
+        actions.state = const [];
+      } catch (_) {}
+    });
+    super.deactivate();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,21 +71,12 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
             AppSpacing.lg,
             AppSpacing.sm,
           ),
-          child: Row(
-            children: [
-              _Tabs(
-                browse: _browse,
-                onChanged: (b) => setState(() => _browse = b),
-              ),
-              const Spacer(),
-              if (showPicker)
-                InstrumentToggle(
-                  value: instrument,
-                  onChanged: (slug) =>
-                      ref.read(selectedInstrumentProvider.notifier).state =
-                          slug,
-                ),
-            ],
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _Tabs(
+              browse: _browse,
+              onChanged: (b) => setState(() => _browse = b),
+            ),
           ),
         ),
         Expanded(
@@ -61,6 +84,63 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
               ? ChordLibraryView(instrument: instrument)
               : ChordPickerView(instrumentSlug: instrument),
         ),
+      ],
+    );
+  }
+}
+
+/// The top-bar instrument picker for the Chords screen: a single [IconButton]
+/// showing the currently-viewed instrument's icon that opens a popup menu of
+/// `[icon] Name` rows, one per played instrument. Hidden (renders nothing) when
+/// only one instrument is played. Reactive, so the icon tracks the selection.
+class _InstrumentPickerAction extends ConsumerWidget {
+  const _InstrumentPickerAction();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showPicker = ref.watch(showInstrumentPickerProvider);
+    if (!showPicker) return const SizedBox.shrink();
+
+    final instruments = ref.watch(instrumentsProvider);
+    final selected = ref.watch(selectedInstrumentProvider);
+    // Keep the menu in display order regardless of the played-set iteration.
+    final ordered = kSupportedInstrumentSlugs
+        .where(instruments.contains)
+        .toList();
+
+    return PopupMenuButton<String>(
+      tooltip: 'Choose instrument',
+      icon: Icon(instrumentIcon(selected), color: AppColors.orange),
+      onSelected: (slug) =>
+          ref.read(selectedInstrumentProvider.notifier).state = slug,
+      itemBuilder: (context) => [
+        for (final slug in ordered)
+          PopupMenuItem<String>(
+            value: slug,
+            child: Row(
+              children: [
+                Icon(
+                  instrumentIcon(slug),
+                  size: 20,
+                  color: slug == selected
+                      ? AppColors.orange
+                      : AppColors.textDark,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  instrumentDisplayName(slug),
+                  style: TextStyle(
+                    fontWeight: slug == selected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: slug == selected
+                        ? AppColors.orange
+                        : AppColors.textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
