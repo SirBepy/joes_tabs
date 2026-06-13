@@ -11,8 +11,7 @@
 //   dart run tool/gen_chord_shapes.dart
 //
 // It also prints a validation pass (every voicing is checked against the
-// position's shipped `midi` array) and a diff report of how the new voicings
-// differ from the previously hand-audited shapes.
+// position's shipped `midi` array).
 //
 // chords-db stores frets RELATIVE to each position's baseFret; we store ABSOLUTE
 // fret numbers (matching ChordShape), converting with: abs = baseFret + fret - 1
@@ -180,78 +179,6 @@ const Map<String, int> _noteToPc = {
   'A#': 10,
   'Bb': 10,
   'B': 11,
-};
-
-/// Previously hand-audited shapes, kept only to print a diff report so the dev
-/// can eyeball common-chord voicing changes. Frets are absolute, baseFret 1.
-const Map<String, List<int>> _oldUkulele = {
-  'C': [0, 0, 0, 3],
-  'C7': [0, 0, 0, 1],
-  'Cmaj7': [0, 0, 0, 2],
-  'Cm': [0, 3, 3, 3],
-  'D': [2, 2, 2, 0],
-  'D7': [2, 2, 2, 3],
-  'Dm': [2, 2, 1, 0],
-  'E': [4, 4, 4, 2],
-  'E7': [1, 2, 0, 2],
-  'Em': [0, 4, 3, 2],
-  'F': [2, 0, 1, 0],
-  'F7': [2, 3, 1, 0],
-  'Fm': [1, 0, 1, 3],
-  'G': [0, 2, 3, 2],
-  'G7': [0, 2, 1, 2],
-  'Gm': [0, 2, 3, 1],
-  'A': [2, 1, 0, 0],
-  'A7': [0, 1, 0, 0],
-  'Am': [2, 0, 0, 0],
-  'Am7': [0, 0, 0, 0],
-  'B': [4, 3, 2, 2],
-  'B7': [2, 3, 2, 2],
-  'Bm': [4, 2, 2, 2],
-  'Bb': [3, 2, 1, 1],
-  'A#': [3, 2, 1, 1],
-  'Dm7': [2, 2, 1, 3],
-  'Em7': [0, 2, 0, 2],
-  'Bm7': [2, 2, 2, 2],
-  'C6': [0, 0, 0, 0],
-  'G6': [0, 2, 0, 2],
-  'Cadd9': [0, 2, 0, 3],
-  'F#m': [2, 1, 2, 0],
-  'C#m': [1, 2, 0, 0],
-};
-const Map<String, List<int>> _oldGuitar = {
-  'C': [-1, 3, 2, 0, 1, 0],
-  'C7': [-1, 3, 2, 3, 1, 0],
-  'Cmaj7': [-1, 3, 2, 0, 0, 0],
-  'Cm': [-1, 3, 5, 5, 4, 3],
-  'D': [-1, -1, 0, 2, 3, 2],
-  'D7': [-1, -1, 0, 2, 1, 2],
-  'Dm': [-1, -1, 0, 2, 3, 1],
-  'E': [0, 2, 2, 1, 0, 0],
-  'E7': [0, 2, 0, 1, 0, 0],
-  'Em': [0, 2, 2, 0, 0, 0],
-  'Em7': [0, 2, 0, 0, 0, 0],
-  'F': [1, 3, 3, 2, 1, 1],
-  'Fmaj7': [-1, -1, 3, 2, 1, 0],
-  'G': [3, 2, 0, 0, 0, 3],
-  'G7': [3, 2, 0, 0, 0, 1],
-  'Gm': [3, 5, 5, 3, 3, 3],
-  'A': [-1, 0, 2, 2, 2, 0],
-  'A7': [-1, 0, 2, 0, 2, 0],
-  'Am': [-1, 0, 2, 2, 1, 0],
-  'Am7': [-1, 0, 2, 0, 1, 0],
-  'B': [-1, 2, 4, 4, 4, 2],
-  'B7': [-1, 2, 1, 2, 0, 2],
-  'Bm': [-1, 2, 4, 4, 3, 2],
-  'Bb': [-1, 1, 3, 3, 3, 1],
-  'A#': [-1, 1, 3, 3, 3, 1],
-  'Dm7': [-1, -1, 0, 2, 1, 1],
-  'Bm7': [-1, 2, 4, 2, 3, 2],
-  'C6': [-1, 3, 2, 2, 1, 3],
-  'G6': [3, 2, 0, 2, 0, 0],
-  'Cadd9': [-1, 3, 2, 0, 3, 0],
-  'F#m': [2, 4, 4, 2, 2, 2],
-  'C#m': [-1, 4, 6, 6, 5, 4],
 };
 
 int _noteNameToMidi(String s) {
@@ -497,57 +424,6 @@ String _emitQualities(List<_Emitted> emitted) {
   return buf.toString();
 }
 
-void _diffReport(
-  String label,
-  Map<String, dynamic> db,
-  List<int> openMidi,
-  Map<String, List<int>> old,
-) {
-  final pcToGroupKey = _pcToGroupKey(db);
-  final pcOf = {for (final (r, pc) in _roots) r: pc};
-  // Map our display suffix -> chords-db suffix from the master catalog.
-  final symSuffixOf = {for (final c in _catalog) c.db: c.suffix};
-  // Reverse: our symbol -> (root, dbSuffix). Build from old keys we can parse.
-  print('\n=== $label diff (old audited -> new chords-db) ===');
-  var changed = 0;
-  for (final sym in old.keys.toList()..sort()) {
-    final m = RegExp(r'^([A-G][#b]?)(.*)$').firstMatch(sym)!;
-    final root = m.group(1)!;
-    final suffix = m.group(2)!;
-    // Map our display suffix back to a chords-db suffix.
-    final dbSuffix = symSuffixOf.entries
-        .firstWhere(
-          (e) => e.value == suffix,
-          orElse: () => const MapEntry('', ''),
-        )
-        .key;
-    final pc = pcOf[root] ?? _noteToPc[root];
-    if (dbSuffix.isEmpty && suffix.isNotEmpty)
-      continue; // not in our quality set
-    if (pc == null) continue;
-    try {
-      final neu = _resolve(db, openMidi, pcToGroupKey, pc, dbSuffix, sym);
-      final same =
-          neu.baseFret == 1 &&
-          neu.frets.length == old[sym]!.length &&
-          List.generate(
-            neu.frets.length,
-            (i) => neu.frets[i] == old[sym]![i],
-          ).every((b) => b);
-      if (!same) {
-        changed++;
-        print(
-          '  $sym: ${old[sym]} -> ${neu.frets}'
-          '${neu.baseFret > 1 ? ' (baseFret ${neu.baseFret})' : ''}',
-        );
-      }
-    } catch (e) {
-      print('  $sym: ERROR $e');
-    }
-  }
-  print('  ($changed of ${old.length} previously-audited shapes changed)');
-}
-
 void main() {
   // Resolve paths relative to this script so it runs from any cwd.
   final toolDir = File.fromUri(Platform.script).parent.path;
@@ -623,7 +499,4 @@ void main() {
     '  ukulele: $shapeCount shapes, guitar: $shapeCount shapes '
     '(all midi-validated)',
   );
-
-  _diffReport('UKULELE', ukulele, ukeMidi, _oldUkulele);
-  _diffReport('GUITAR', guitar, gtrMidi, _oldGuitar);
 }
