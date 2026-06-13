@@ -3,7 +3,7 @@
 /// Nothing in this file imports `dart:ui` or Flutter, so every function here is
 /// directly unit-testable on the VM. The web mic capture layer
 /// (`mic_web.dart`) feeds PCM frames into [estimatePitch] and the result into
-/// [frequencyToNoteName] / [nearestTargetString] to drive the gauge.
+/// [frequencyToNoteName] to drive the gauge.
 library;
 
 import 'dart:math' as math;
@@ -90,31 +90,6 @@ NoteReading? frequencyToNoteName(double hz) {
 /// Equal-tempered frequency of a MIDI note number.
 double midiToFrequency(int midi) => a4Hz * math.pow(2, (midi - _a4Midi) / 12.0);
 
-/// Result of matching a detected frequency to one open string of an
-/// instrument's tuning.
-class StringMatch {
-  const StringMatch({
-    required this.index,
-    required this.note,
-    required this.targetFrequency,
-    required this.cents,
-  });
-
-  /// Index into the `targetNotes` list that was passed in.
-  final int index;
-
-  /// The matched open-string note label including octave, e.g. `G4`.
-  final String note;
-
-  /// Equal-tempered frequency of the matched string.
-  final double targetFrequency;
-
-  /// Signed cents offset of the detected pitch from this string. Can exceed
-  /// +/-50 because a string match is "nearest of the target set", not "nearest
-  /// chromatic note".
-  final double cents;
-}
-
 /// Standard scientific octaves for the open strings of the supported
 /// instruments. Ukulele uses re-entrant high-G tuning (g4 c4 e4 a4); guitar is
 /// standard E2 A2 D3 G3 B3 E4. Keyed by the bare note letter as used by the
@@ -156,41 +131,6 @@ double noteLetterToFrequency(String letter, int octave) {
   // MIDI = (octave + 1) * 12 + noteIndex.
   final midi = (octave + 1) * 12 + noteIndex;
   return midiToFrequency(midi);
-}
-
-/// Returns which target string the detected pitch [hz] is closest to.
-///
-/// Closeness is measured in cents (log-frequency distance), so it behaves
-/// musically across octaves. [targetNotes] are bare letters in strip order and
-/// [instrument] picks the octave map. Returns `null` for invalid input or an
-/// empty target list.
-StringMatch? nearestTargetString(
-  double hz,
-  List<String> targetNotes,
-  String instrument,
-) {
-  if (!hz.isFinite || hz <= 0 || targetNotes.isEmpty) return null;
-
-  final freqs = openStringFrequencies(targetNotes, instrument);
-  var bestIndex = 0;
-  var bestCents = double.infinity;
-  var bestSignedCents = 0.0;
-
-  for (var i = 0; i < freqs.length; i++) {
-    final cents = 1200 * (math.log(hz / freqs[i]) / math.ln2);
-    if (cents.abs() < bestCents) {
-      bestCents = cents.abs();
-      bestSignedCents = cents;
-      bestIndex = i;
-    }
-  }
-
-  return StringMatch(
-    index: bestIndex,
-    note: targetNotes[bestIndex],
-    targetFrequency: freqs[bestIndex],
-    cents: bestSignedCents,
-  );
 }
 
 /// Estimates the fundamental frequency of a block of PCM [samples] using
@@ -328,17 +268,4 @@ TuneZone tuneZoneForCents(
   final cents = centsBetween(hz, target);
   final octave = frequencyToNoteName(target)?.octave ?? 0;
   return (cents: cents, octave: octave);
-}
-
-/// Chromatic note letters centered on [centerNote] with [perSide] neighbors on
-/// each side, wrapping across the octave (e.g. `chromaticRibbon('C', 1)` =>
-/// `['B','C','C#']`). Returns empty if [centerNote] is not a chromatic letter.
-List<String> chromaticRibbon(String centerNote, int perSide) {
-  final c = _noteNames.indexOf(centerNote);
-  if (c < 0) return const [];
-  final out = <String>[];
-  for (var i = -perSide; i <= perSide; i++) {
-    out.add(_noteNames[(c + i) % 12]); // Dart % is non-negative for +divisor.
-  }
-  return out;
 }

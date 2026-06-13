@@ -122,38 +122,6 @@ void main() {
     });
   });
 
-  group('nearestTargetString', () {
-    const uke = ['G', 'C', 'E', 'A'];
-
-    test('A4 pitch matches the A string, ~0 cents', () {
-      final m = nearestTargetString(440, uke, 'ukulele')!;
-      expect(m.index, 3);
-      expect(m.note, 'A');
-      expect(m.cents.abs(), lessThan(1));
-    });
-
-    test('slightly flat C4 matches C string with negative cents', () {
-      final flatC = 261.63 * math.pow(2, -10 / 1200);
-      final m = nearestTargetString(flatC.toDouble(), uke, 'ukulele')!;
-      expect(m.note, 'C');
-      expect(m.cents, lessThan(0));
-      expect(m.cents, closeTo(-10, 2));
-    });
-
-    test('low E2 picks the low-E guitar string, not the high E4', () {
-      const guitar = ['E', 'A', 'D', 'G', 'B', 'E'];
-      final m = nearestTargetString(82.41, guitar, 'guitar')!;
-      expect(m.index, 0);
-      expect(m.cents.abs(), lessThan(2));
-    });
-
-    test('empty target list or bad input returns null', () {
-      expect(nearestTargetString(440, const [], 'ukulele'), isNull);
-      expect(nearestTargetString(0, uke, 'ukulele'), isNull);
-      expect(nearestTargetString(double.nan, uke, 'ukulele'), isNull);
-    });
-  });
-
   group('estimatePitch', () {
     test('detects A4 (440) within a few cents', () {
       final r = estimatePitch(_sine(440, 44100), 44100)!;
@@ -245,28 +213,6 @@ void main() {
     });
   });
 
-  group('nearestTargetString octave robustness', () {
-    test(
-      'an octave-high A still matches the A string (cents may exceed 50)',
-      () {
-        const uke = ['G', 'C', 'E', 'A'];
-        // 880 Hz (A5) is an octave above the A4 string. It is still nearest the
-        // A string, with ~ +1200 cents (string match is "nearest of the set").
-        final m = nearestTargetString(880, uke, 'ukulele')!;
-        expect(m.note, 'A');
-        expect(m.cents, closeTo(1200, 5));
-      },
-    );
-
-    test('unknown instrument falls back to octave 4 for every string', () {
-      // openStringFrequencies defaults unknown instruments to octave 4.
-      final m = nearestTargetString(440, const ['G', 'C', 'E', 'A'], 'banjo')!;
-      // A at octave 4 is exactly 440, so the A string matches with ~0 cents.
-      expect(m.note, 'A');
-      expect(m.cents.abs(), lessThan(1));
-    });
-  });
-
   group('centsBetween', () {
     test('zero when equal', () {
       expect(centsBetween(440, 440), closeTo(0, 1e-9));
@@ -296,18 +242,6 @@ void main() {
     test('red beyond 15', () {
       expect(tuneZoneForCents(16), TuneZone.red);
       expect(tuneZoneForCents(-40), TuneZone.red);
-    });
-  });
-
-  group('chromaticRibbon', () {
-    test('centers on the given note with perSide neighbors each way', () {
-      expect(chromaticRibbon('G', 2), ['F', 'F#', 'G', 'G#', 'A']);
-    });
-    test('wraps around the octave boundary', () {
-      expect(chromaticRibbon('C', 1), ['B', 'C', 'C#']);
-    });
-    test('unknown note returns empty', () {
-      expect(chromaticRibbon('H', 2), isEmpty);
     });
   });
 }
