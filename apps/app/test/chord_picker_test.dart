@@ -23,15 +23,20 @@ Future<void> _pump(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('composes a chord symbol from the four strips', (tester) async {
+  testWidgets('composes a chord symbol via the family tabs + type list', (
+    tester,
+  ) async {
     await _pump(tester);
 
     // Default is C major: the result card shows the bare root.
     expect(find.text('C'), findsWidgets);
 
-    // Pick the Minor family, then the m7 type -> Cm7.
+    // The default (Major) family list shows no Minor-family chords yet, so the
+    // only "Minor" on screen is the family tab. Tap it to switch families.
     await tester.tap(find.text('Minor'));
     await tester.pumpAndSettle();
+
+    // Now the Minor family's chord rows are listed; tap the m7 row -> Cm7.
     await tester.tap(find.text('m7'));
     await tester.pumpAndSettle();
     expect(find.text('Cm7'), findsWidgets);

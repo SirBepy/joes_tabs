@@ -30,9 +30,9 @@ void main() {
   ) async {
     await _pump(tester);
 
-    // The guided picker is the default tab: its "Family" strip label is shown
-    // and the library's search field is not yet present.
-    expect(find.text('Family'), findsOneWidget);
+    // The guided picker is the default tab: its "Sharp / Flat" strip label is
+    // shown and the library's search field is not yet present.
+    expect(find.text('Sharp / Flat'), findsOneWidget);
     expect(find.text('Search chords'), findsNothing);
 
     // Switch to Browse all -> the library search field appears.

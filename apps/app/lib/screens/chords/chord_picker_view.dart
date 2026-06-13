@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../song/chord_diagram.dart';
 import '../../state/settings_provider.dart';
@@ -8,8 +9,9 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/scrollable_chip_row.dart';
 
-/// Guided chord picker: a live result diagram on top, then four scrollable
-/// strips (Note, sharp/flat, Family, Type). Selection is in-memory view state.
+/// Guided chord picker: a live result diagram on top, then Note + sharp/flat
+/// strips, then a tabbed Family/Type section (a scrollable Family tab bar over a
+/// list of that family's chords). Selection is in-memory view state.
 class ChordPickerView extends ConsumerStatefulWidget {
   const ChordPickerView({super.key, required this.instrumentSlug});
 
@@ -44,6 +46,9 @@ class _ChordPickerViewState extends ConsumerState<ChordPickerView> {
     final maximal = ref.watch(maximalChordsProvider);
     final qualities = qualitiesFor(_family, maximal: maximal);
 
+    // Selection-validity: if the current suffix is not in the active family's
+    // tier (family or maximal-tier changed), snap to that family's first
+    // quality so the result card always reflects a real chord.
     if (!qualities.any((q) => q.suffix == _suffix)) {
       _suffix = qualities.isEmpty ? '' : qualities.first.suffix;
     }
@@ -64,29 +69,181 @@ class _ChordPickerViewState extends ConsumerState<ChordPickerView> {
           selected: _accidental,
           onSelected: (v) => setState(() => _accidental = v),
         ),
-        ScrollableChipRow(
-          label: 'Family',
-          options: [for (final f in ChordFamily.values) f.label],
-          selected: _family.label,
-          onSelected: (label) => setState(() {
-            _family = ChordFamily.values.firstWhere((f) => f.label == label);
-          }),
+        _FamilyTabBar(
+          selected: _family,
+          onSelected: (f) => setState(() => _family = f),
         ),
-        ScrollableChipRow(
-          label: 'Type',
-          options: [for (final q in qualities) q.label],
-          selected: _labelFor(qualities, _suffix),
-          onSelected: (label) => setState(() {
-            _suffix = qualities.firstWhere((q) => q.label == label).suffix;
-          }),
+        const SizedBox(height: AppSpacing.sm),
+        _TypeList(
+          qualities: qualities,
+          selectedSuffix: _suffix,
+          onSelected: (suffix) => setState(() => _suffix = suffix),
         ),
         const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
+}
 
-  String _labelFor(List<ChordQuality> qs, String suffix) =>
-      qs.firstWhere((q) => q.suffix == suffix, orElse: () => qs.first).label;
+/// The Family tabs: a horizontally-scrollable pill strip mirroring the app's
+/// orange/peach pill-tab style (see `_Tabs` in `chords_screen.dart`). Built
+/// picker-local rather than extracted: the host `_Tabs` is a fixed 2-tab,
+/// boolean-driven, non-scrolling row, so sharing would mean genericising both
+/// for no real reuse win.
+class _FamilyTabBar extends StatelessWidget {
+  const _FamilyTabBar({required this.selected, required this.onSelected});
+
+  final ChordFamily selected;
+  final ValueChanged<ChordFamily> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xs),
+        decoration: BoxDecoration(
+          color: AppColors.peach,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final family in ChordFamily.values)
+              _FamilyTab(
+                label: family.label,
+                selected: family == selected,
+                onTap: () => onSelected(family),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyTab extends StatelessWidget {
+  const _FamilyTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.orange : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: selected ? AppColors.white : AppColors.textDark,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The selected family's chords, one tappable row each. Tapping a row sets the
+/// suffix and updates the result card/diagram live. Renders inside the outer
+/// `ListView`, so it lays itself out as a non-scrolling Column.
+class _TypeList extends StatelessWidget {
+  const _TypeList({
+    required this.qualities,
+    required this.selectedSuffix,
+    required this.onSelected,
+  });
+
+  final List<ChordQuality> qualities;
+  final String selectedSuffix;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final q in qualities)
+          _TypeRow(
+            quality: q,
+            selected: q.suffix == selectedSuffix,
+            onTap: () => onSelected(q.suffix),
+          ),
+      ],
+    );
+  }
+}
+
+class _TypeRow extends StatelessWidget {
+  const _TypeRow({
+    required this.quality,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ChordQuality quality;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs / 2,
+      ),
+      child: Material(
+        color: selected ? AppColors.orange : AppColors.cardPeach,
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.radius),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    quality.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: selected ? AppColors.white : AppColors.textDark,
+                    ),
+                  ),
+                ),
+                if (selected)
+                  const Icon(
+                    PhosphorIconsBold.check,
+                    size: 18,
+                    color: AppColors.white,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ResultCard extends StatelessWidget {
