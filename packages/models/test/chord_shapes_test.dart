@@ -152,6 +152,43 @@ void main() {
     });
   });
 
+  group('lookup enharmonic slash chords', () {
+    // A flat-spelled slash chord exercises the recursive seam: the slash branch
+    // re-looks-up the main part, which must itself normalize the enharmonic root.
+    // The bass note is decorative (slash always falls back to the main shape).
+    test(
+      'flat-rooted slash resolves via the main shape on both instruments',
+      () {
+        for (final instrument in instruments) {
+          // Db/F -> Db -> C# shape; bass F is ignored.
+          final dbSlash = ChordShapes.lookup('Db/F', instrument)!;
+          expect(dbSlash.name, 'Db/F', reason: '$instrument keeps slash name');
+          expect(
+            dbSlash.frets,
+            ChordShapes.lookup('C#', instrument)!.frets,
+            reason: '$instrument Db/F resolves to C#',
+          );
+
+          // Bb/D -> Bb -> A# shape.
+          expect(
+            ChordShapes.lookup('Bb/D', instrument)!.frets,
+            ChordShapes.lookup('A#', instrument)!.frets,
+            reason: '$instrument Bb/D resolves to A#',
+          );
+
+          // Enharmonic root carried through a quality suffix: Ebm7/Gb -> D#m7.
+          final ebm7Slash = ChordShapes.lookup('Ebm7/Gb', instrument)!;
+          expect(ebm7Slash.name, 'Ebm7/Gb');
+          expect(
+            ebm7Slash.frets,
+            ChordShapes.lookup('D#m7', instrument)!.frets,
+            reason: '$instrument Ebm7/Gb resolves to D#m7',
+          );
+        }
+      },
+    );
+  });
+
   group('unknown', () {
     test('returns null, does not throw', () {
       expect(ChordShapes.lookup('Xyz9', ChordShapes.ukulele), isNull);
