@@ -111,14 +111,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 1. Home shows the seeded trending list.
+    // 1. Home shows the seeded trending list. The trending panel can sit below
+    //    the fold on the small test surface (the welcome mascot pushes it down,
+    //    and the centered max-width content column makes text wrap taller), so
+    //    scroll it into the lazy ListView's build window before asserting it
+    //    rendered.
     expect(find.text('WELCOME'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Amazing Grace'), 200);
+    await tester.pumpAndSettle();
     expect(find.text('Amazing Grace'), findsOneWidget);
     expect(find.text('Moon River'), findsOneWidget);
 
     // 2. Tap a trending song -> lands on its detail (chord sheet renders).
-    //    The trending panel can sit below the fold on the small test surface
-    //    (the welcome mascot pushes it down), so scroll it into view first.
     await tester.ensureVisible(find.text('Amazing Grace'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Amazing Grace'));

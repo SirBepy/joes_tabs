@@ -8,6 +8,13 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'app_drawer.dart';
 
+/// Maximum width of the centered content column. The app is designed mobile-first
+/// (390x844 mockups); on wide/desktop browsers the body would otherwise stretch
+/// full-bleed. Constraining the body to this width keeps it a centered phone-width
+/// column on desktop. On viewports narrower than this the [ConstrainedBox] does
+/// not bite, so mobile is unchanged. Single-source the value here.
+const double kMaxContentWidth = 600;
+
 /// Per-route trailing actions for the section header. A section screen registers
 /// its own action widgets here (typically in a post-frame callback during build)
 /// and clears them on dispose, so the [SectionHeader] stays route-agnostic: it
@@ -65,7 +72,17 @@ class AppShell extends StatelessWidget {
               ),
               title: const _SearchField(),
             ),
-      body: child,
+      // The app bar (Scaffold.appBar) and the Scaffold background stay full-bleed;
+      // only the routed body content is centered into a phone-width column so wide
+      // desktop windows don't stretch the mobile layout edge to edge. On viewports
+      // narrower than kMaxContentWidth the ConstrainedBox is a no-op, so mobile is
+      // unchanged.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+          child: child,
+        ),
+      ),
     );
   }
 }
