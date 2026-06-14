@@ -4,16 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../router/app_routes.dart';
+import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'app_drawer.dart';
-
-/// Maximum width of the centered content column. The app is designed mobile-first
-/// (390x844 mockups); on wide/desktop browsers the body would otherwise stretch
-/// full-bleed. Constraining the body to this width keeps it a centered phone-width
-/// column on desktop. On viewports narrower than this the [ConstrainedBox] does
-/// not bite, so mobile is unchanged. Single-source the value here.
-const double kMaxContentWidth = 600;
 
 /// Per-route trailing actions for the section header. A section screen registers
 /// its own action widgets here (typically in a post-frame callback during build)
@@ -48,6 +42,17 @@ class AppShell extends StatelessWidget {
     AppRoutes.tuner: 'TUNER',
   };
 
+  /// Griddy routes are capped wider than reading routes so their grid layouts can
+  /// use the available width up to [kPageMaxWidth]; everything else stays a
+  /// centered reading column at [kReadingMaxWidth]. Chords hosts BOTH a reading
+  /// picker and a griddy library, so it caps at [kPageMaxWidth] and the picker
+  /// self-limits its own body width. On viewports narrower than the cap the
+  /// [ConstrainedBox] is a no-op, so mobile (390px) is unchanged either way.
+  static const Set<String> _griddyRoutes = {AppRoutes.saved, AppRoutes.chords};
+
+  static double _maxContentWidthFor(String location) =>
+      _griddyRoutes.contains(location) ? kPageMaxWidth : kReadingMaxWidth;
+
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
@@ -73,13 +78,14 @@ class AppShell extends StatelessWidget {
               title: const _SearchField(),
             ),
       // The app bar (Scaffold.appBar) and the Scaffold background stay full-bleed;
-      // only the routed body content is centered into a phone-width column so wide
-      // desktop windows don't stretch the mobile layout edge to edge. On viewports
-      // narrower than kMaxContentWidth the ConstrainedBox is a no-op, so mobile is
-      // unchanged.
+      // only the routed body content is centered into a capped column so wide
+      // desktop windows don't stretch the mobile layout edge to edge. Reading
+      // routes stay phone-width; griddy routes get a wider cap so their grids can
+      // use the width. On viewports narrower than the cap the ConstrainedBox is a
+      // no-op, so mobile is unchanged.
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+          constraints: BoxConstraints(maxWidth: _maxContentWidthFor(location)),
           child: child,
         ),
       ),

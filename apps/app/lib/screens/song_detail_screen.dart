@@ -10,6 +10,7 @@ import '../song/chord_sheet_view.dart';
 import '../song/song_controls_sheet.dart';
 import '../state/favorites_provider.dart';
 import '../state/settings_provider.dart';
+import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/song_tiles.dart';
@@ -218,44 +219,56 @@ class _SongBodyState extends ConsumerState<_SongBody>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: CustomScrollView(
-        controller: _scroll,
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.md,
-                AppSpacing.lg,
-                0,
+      // Song detail is a reading flow on its OWN route (not shell-capped), so it
+      // would otherwise stretch full-bleed on desktop. Center + cap the scroll
+      // body at kReadingMaxWidth. Below the cap the ConstrainedBox is a no-op, so
+      // mobile (390 < 600) is unchanged.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kReadingMaxWidth),
+          child: CustomScrollView(
+            controller: _scroll,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ChordStrip(
+                        chords: sheet.chordsUsed,
+                        instrumentSlug: slug,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _Header(song: widget.data.song),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+                  ),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ChordStrip(chords: sheet.chordsUsed, instrumentSlug: slug),
-                  const SizedBox(height: AppSpacing.md),
-                  _Header(song: widget.data.song),
-                  const SizedBox(height: AppSpacing.md),
-                ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                  ),
+                  child: ChordSheetView(
+                    sheet: sheet,
+                    transpose: _transpose,
+                    songKey: songKey,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.xl,
-              ),
-              child: ChordSheetView(
-                sheet: sheet,
-                transpose: _transpose,
-                songKey: songKey,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Song controls',

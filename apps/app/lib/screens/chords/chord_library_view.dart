@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../song/chord_diagram.dart';
 import '../../state/settings_provider.dart';
+import '../../theme/app_breakpoints.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 
@@ -176,19 +177,46 @@ class _RootSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          SizedBox(
-            height: 132,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: chords.length,
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-              itemBuilder: (_, i) => ChordDiagram(
-                chord: chords[i],
-                instrumentSlug: instrument,
-                width: 84,
-              ),
-            ),
+          // Dual-path (no mobile regression): below kBreakpointMedium the row is
+          // the untouched horizontal carousel; at/above it the same diagrams wrap
+          // across the available width instead of scrolling off-screen.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < kBreakpointMedium) {
+                return SizedBox(
+                  height: 132,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    itemCount: chords.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(width: AppSpacing.md),
+                    itemBuilder: (_, i) => ChordDiagram(
+                      chord: chords[i],
+                      instrumentSlug: instrument,
+                      width: 84,
+                    ),
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.md,
+                  children: [
+                    for (final chord in chords)
+                      ChordDiagram(
+                        chord: chord,
+                        instrumentSlug: instrument,
+                        width: 96,
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

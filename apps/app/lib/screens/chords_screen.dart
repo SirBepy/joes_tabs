@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../state/settings_provider.dart';
+import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
@@ -80,9 +81,19 @@ class _ChordsScreenState extends ConsumerState<ChordsScreen> {
           ),
         ),
         Expanded(
+          // The Chords route caps at kPageMaxWidth so the Browse-all library can
+          // use the width. The Pick picker is a reading flow, so self-limit it to
+          // kReadingMaxWidth (centered) - below the breakpoint this is a no-op.
           child: _browse
               ? ChordLibraryView(instrument: instrument)
-              : ChordPickerView(instrumentSlug: instrument),
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: kReadingMaxWidth,
+                    ),
+                    child: ChordPickerView(instrumentSlug: instrument),
+                  ),
+                ),
         ),
       ],
     );

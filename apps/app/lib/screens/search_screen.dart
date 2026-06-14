@@ -7,6 +7,7 @@ import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../state/settings_provider.dart';
+import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/song_tiles.dart';
@@ -99,22 +100,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          if (showPicker)
-            _InstrumentFilterBar(
-              selected: _instrumentSlug,
-              onChanged: _onFilterChanged,
-            ),
-          Expanded(
-            child: _query.isEmpty
-                ? const EmptyState(
-                    message: 'Search by song or artist to find a tab.',
-                    icon: PhosphorIconsRegular.magnifyingGlass,
-                  )
-                : _Results(query: _query, instrumentSlug: effectiveSlug),
+      // Search is a separate route (not under the shell), so cap + center its
+      // body here so wide windows do not stretch the griddy results edge to edge.
+      // Below the cap the ConstrainedBox is a no-op, so mobile is unchanged.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kPageMaxWidth),
+          child: Column(
+            children: [
+              if (showPicker)
+                _InstrumentFilterBar(
+                  selected: _instrumentSlug,
+                  onChanged: _onFilterChanged,
+                ),
+              Expanded(
+                child: _query.isEmpty
+                    ? const EmptyState(
+                        message: 'Search by song or artist to find a tab.',
+                        icon: PhosphorIconsRegular.magnifyingGlass,
+                      )
+                    : _Results(query: _query, instrumentSlug: effectiveSlug),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -212,15 +221,43 @@ class _Results extends ConsumerWidget {
           return EmptyState(message: 'No songs found for "$query".');
         }
         final chip = _chipLabel(instrumentSlug);
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          itemCount: songs.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (_, i) => SongListTile(
-            song: songs[i],
-            trailingChip: chip,
-            highlight: query,
-          ),
+        // Dual-path (no mobile regression): below kBreakpointMedium this is the
+        // untouched separated list; at/above it the same SongListTile cards flow
+        // into a width-driven grid.
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < kBreakpointMedium) {
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                itemCount: songs.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (_, i) => SongListTile(
+                  song: songs[i],
+                  trailingChip: chip,
+                  highlight: query,
+                ),
+              );
+            }
+            final columns = gridColumnsForWidth(
+              constraints.maxWidth,
+              minTileWidth: 340,
+            );
+            return GridView.builder(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisSpacing: AppSpacing.sm,
+                crossAxisSpacing: AppSpacing.sm,
+                childAspectRatio: 340 / 88,
+              ),
+              itemCount: songs.length,
+              itemBuilder: (_, i) => SongListTile(
+                song: songs[i],
+                trailingChip: chip,
+                highlight: query,
+              ),
+            );
+          },
         );
       },
     );
