@@ -106,14 +106,23 @@ class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actions = ref.watch(sectionActionsProvider);
+    // The header bar must track the theme so dark mode darkens with the body
+    // instead of staying cream. In light mode these resolve to the exact same
+    // cream/peach tones used before (the light surface is AppColors.cream and
+    // the light divider is AppColors.peach via the surface palette); in dark
+    // mode they fall back to the dark warm surfaces. The orange foreground is
+    // the intentional brand accent and stays in both modes.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final barColor = isDark ? AppColors.darkSurface : AppColors.cream;
+    final borderColor = isDark ? AppColors.darkCard : AppColors.peach;
     return AppBar(
-      backgroundColor: AppColors.cream,
+      backgroundColor: barColor,
       foregroundColor: AppColors.orange,
       elevation: 0,
       scrolledUnderElevation: 0,
       toolbarHeight: 72,
       leadingWidth: 72,
-      shape: const Border(bottom: BorderSide(color: AppColors.peach, width: 1)),
+      shape: Border(bottom: BorderSide(color: borderColor, width: 1)),
       leading: Padding(
         padding: const EdgeInsets.only(left: AppSpacing.md),
         child: _BackCircle(

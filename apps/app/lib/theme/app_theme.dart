@@ -84,9 +84,13 @@ abstract final class AppTheme {
     );
 
     return base.copyWith(
+      // The browse app bar tracks the theme so dark mode darkens with the body
+      // instead of keeping the bright orange band. It uses the same darkSurface
+      // tone as the SectionHeader, so both top bars and the body are consistent
+      // in dark mode. Light mode keeps the orange brand band unchanged.
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.orange,
-        foregroundColor: AppColors.white,
+        backgroundColor: AppColors.darkSurface,
+        foregroundColor: AppColors.darkText,
         elevation: 0,
         centerTitle: true,
       ),
