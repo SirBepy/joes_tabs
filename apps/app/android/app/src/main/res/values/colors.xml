@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches BG in tool/generate_icons.py (splash peach). -->
+    <color name="ic_launcher_background">#FFCE8F</color>
+</resources>
