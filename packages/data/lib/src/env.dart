@@ -23,6 +23,14 @@ class Env {
     'SUPABASE_ANON_KEY',
   );
 
+  /// OAuth client ID of the Google Cloud "Web application" client that Supabase's
+  /// Google provider is configured with. Android's native sign-in requests ID
+  /// tokens for this audience so Supabase accepts them. Public, not a secret.
+  /// Optional: when empty, native Google sign-in is hidden.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
+
   /// True only when both required defines are present and non-empty.
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;

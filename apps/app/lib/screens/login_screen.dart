@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../router/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/google_sign_in_section.dart';
 import 'auth_form_validators.dart';
 
 /// Log In (per `docs/design/screens/log-in-page.md`). Real Supabase email +
@@ -61,6 +62,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Web Google sign-in returns via a full page redirect, so the session shows
+    // up as an auth-state change rather than a completed future.
+    ref.listen<User?>(currentUserProvider, (previous, next) {
+      if (previous == null && next != null) context.go(AppRoutes.home);
+    });
     return Scaffold(
       appBar: AppBar(title: const Text('Log In')),
       body: Form(
@@ -76,6 +82,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            GoogleSignInSection(
+              enabled: !_submitting,
+              onSignedIn: () => context.go(AppRoutes.home),
+              onError: (message) => setState(() => _error = message),
+            ),
             TextFormField(
               key: const Key('login-email'),
               controller: _emailController,

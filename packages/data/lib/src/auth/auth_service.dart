@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Thin wrapper around Supabase's [GoTrueClient] for email/password auth.
+/// Thin wrapper around Supabase's [GoTrueClient] for email/password and Google
+/// auth.
 ///
 /// Kept deliberately small and provider-free so it is trivially mockable in
 /// tests: the app talks to this surface, never to `supabase.auth` directly.
@@ -43,6 +44,27 @@ class AuthService {
     required String password,
   }) {
     return _auth.signInWithPassword(email: email.trim(), password: password);
+  }
+
+  /// Signs in (creating the account on first use) with a Google ID token from
+  /// the platform's native Google sign-in. The token's audience must be one of
+  /// the client IDs configured on Supabase's Google provider.
+  Future<AuthResponse> signInWithGoogleIdToken({
+    required String idToken,
+    String? accessToken,
+  }) {
+    return _auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+  }
+
+  /// Starts the browser-redirect Google OAuth flow (web). The page navigates
+  /// away to Google and comes back to [redirectTo], where Supabase picks the
+  /// session up and [onAuthStateChange] fires.
+  Future<bool> signInWithGoogleRedirect({String? redirectTo}) {
+    return _auth.signInWithOAuth(OAuthProvider.google, redirectTo: redirectTo);
   }
 
   /// Signs the current user out. The app then falls back to anonymous mode,

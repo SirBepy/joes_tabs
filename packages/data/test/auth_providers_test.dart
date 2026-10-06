@@ -61,6 +61,16 @@ class FakeAuthService implements AuthService {
   }) => throw UnimplementedError();
 
   @override
+  Future<AuthResponse> signInWithGoogleIdToken({
+    required String idToken,
+    String? accessToken,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<bool> signInWithGoogleRedirect({String? redirectTo}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> signOut() async => emitSignedOut();
 
   void dispose() => _controller.close();

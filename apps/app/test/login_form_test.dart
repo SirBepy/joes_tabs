@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:joes_tabs_app/auth/google_sign_in_flow.dart';
 import 'package:joes_tabs_app/screens/login_screen.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,6 +35,16 @@ class MockAuthService implements AuthService {
   }) => throw UnimplementedError();
 
   @override
+  Future<AuthResponse> signInWithGoogleIdToken({
+    required String idToken,
+    String? accessToken,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<bool> signInWithGoogleRedirect({String? redirectTo}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> signOut() async {}
 
   @override
@@ -46,7 +57,25 @@ class MockAuthService implements AuthService {
   String? get currentEmail => null;
 }
 
-Future<GoRouter> _pump(WidgetTester tester, MockAuthService auth) async {
+/// Stands in for the platform Google flow; returns a fixed [result].
+class FakeGoogleSignInFlow implements GoogleSignInFlow {
+  FakeGoogleSignInFlow(this.result);
+
+  final GoogleSignInResult result;
+  int calls = 0;
+
+  @override
+  Future<GoogleSignInResult> signIn() async {
+    calls++;
+    return result;
+  }
+}
+
+Future<GoRouter> _pump(
+  WidgetTester tester,
+  MockAuthService auth, {
+  FakeGoogleSignInFlow? google,
+}) async {
   final router = GoRouter(
     initialLocation: '/login',
     routes: [
@@ -63,7 +92,13 @@ Future<GoRouter> _pump(WidgetTester tester, MockAuthService auth) async {
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [authServiceProvider.overrideWithValue(auth)],
+      overrides: [
+        authServiceProvider.overrideWithValue(auth),
+        if (google != null) ...[
+          googleSignInAvailableProvider.overrideWithValue(true),
+          googleSignInFlowProvider.overrideWithValue(google),
+        ],
+      ],
       child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
     ),
   );
@@ -129,5 +164,35 @@ void main() {
     expect(find.text('Invalid login credentials'), findsOneWidget);
     // Stayed on the login screen.
     expect(router.routerDelegate.currentConfiguration.uri.path, '/login');
+  });
+
+  testWidgets('hides the Google button when Google sign-in is unavailable', (
+    tester,
+  ) async {
+    await _pump(tester, MockAuthService());
+
+    expect(find.byKey(const Key('google-sign-in')), findsNothing);
+  });
+
+  testWidgets('Google sign-in routes to home once signed in', (tester) async {
+    final google = FakeGoogleSignInFlow(GoogleSignInResult.signedIn);
+    final router = await _pump(tester, MockAuthService(), google: google);
+
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pumpAndSettle();
+
+    expect(google.calls, 1);
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/');
+  });
+
+  testWidgets('cancelling the Google picker stays on login', (tester) async {
+    final google = FakeGoogleSignInFlow(GoogleSignInResult.cancelled);
+    final router = await _pump(tester, MockAuthService(), google: google);
+
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pumpAndSettle();
+
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/login');
+    expect(find.byKey(const Key('login-error')), findsNothing);
   });
 }
