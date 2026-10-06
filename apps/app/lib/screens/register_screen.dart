@@ -132,7 +132,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             TextButton(
-              onPressed: _submitting ? null : () => context.go(AppRoutes.login),
+              onPressed: _submitting
+                  ? null
+                  : () => context.push(AppRoutes.login),
               child: const Text('Already have an account? Log in'),
             ),
           ],

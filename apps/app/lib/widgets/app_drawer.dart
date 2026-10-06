@@ -54,6 +54,12 @@ class AppDrawer extends ConsumerWidget {
     context.go(route);
   }
 
+  /// Auth screens stack on top of the current page so back returns to it.
+  void _push(BuildContext context, String route) {
+    Navigator.of(context).pop(); // close the drawer first
+    context.push(route);
+  }
+
   Future<void> _logOut(BuildContext context, WidgetRef ref) async {
     Navigator.of(context).pop(); // close the drawer first
     await ref.read(authServiceProvider).signOut();
@@ -135,7 +141,7 @@ class AppDrawer extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextButton(
-                          onPressed: () => _go(context, AppRoutes.login),
+                          onPressed: () => _push(context, AppRoutes.login),
                           child: const Text('Log In'),
                         ),
                         const Text(
@@ -143,7 +149,7 @@ class AppDrawer extends ConsumerWidget {
                           style: TextStyle(color: AppColors.textMuted),
                         ),
                         TextButton(
-                          onPressed: () => _go(context, AppRoutes.register),
+                          onPressed: () => _push(context, AppRoutes.register),
                           child: const Text('Register'),
                         ),
                       ],

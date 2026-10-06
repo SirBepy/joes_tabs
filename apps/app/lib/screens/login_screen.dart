@@ -130,7 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextButton(
               onPressed: _submitting
                   ? null
-                  : () => context.go(AppRoutes.register),
+                  : () => context.push(AppRoutes.register),
               child: const Text("No account? Create one"),
             ),
           ],

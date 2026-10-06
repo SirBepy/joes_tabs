@@ -15,6 +15,7 @@ import '../screens/thank_you_screen.dart';
 import '../screens/trending_screen.dart';
 import '../screens/tuner_screen.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/back_to_home_scope.dart';
 import 'app_routes.dart';
 
 /// Builds the app's [GoRouter].
@@ -22,7 +23,8 @@ import 'app_routes.dart';
 /// A [ShellRoute] wraps the main destinations (Home, Trending, Saved, Chords,
 /// Tuner, Settings, Support) in the shared [AppShell] (top app bar + full-screen
 /// drawer). Splash, auth, and the song detail view sit outside the shell so they
-/// render without the drawer chrome.
+/// render without the drawer chrome. Every page except Splash and Onboarding
+/// sits in a [BackToHomeScope] so system back never closes the app off-Home.
 GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
   return GoRouter(
     initialLocation: initialLocation,
@@ -32,7 +34,10 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
         builder: (context, state) => const SplashScreen(),
       ),
       ShellRoute(
-        builder: (context, state, child) => AppShell(child: child),
+        builder: (context, state, child) => BackToHomeScope(
+          location: state.matchedLocation,
+          child: AppShell(child: child),
+        ),
         routes: [
           GoRoute(
             path: AppRoutes.home,
@@ -70,25 +75,40 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
       ),
       GoRoute(
         path: AppRoutes.thankYou,
-        builder: (context, state) => const ThankYouScreen(),
+        builder: (context, state) => BackToHomeScope(
+          location: state.matchedLocation,
+          child: const ThankYouScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => BackToHomeScope(
+          location: state.matchedLocation,
+          child: const LoginScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) => BackToHomeScope(
+          location: state.matchedLocation,
+          child: const RegisterScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.search,
-        builder: (context, state) =>
-            SearchScreen(initialQuery: state.uri.queryParameters['q'] ?? ''),
+        builder: (context, state) => BackToHomeScope(
+          location: state.matchedLocation,
+          child: SearchScreen(
+            initialQuery: state.uri.queryParameters['q'] ?? '',
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.song,
-        builder: (context, state) =>
-            SongDetailScreen(songId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => BackToHomeScope(
+          location: state.matchedLocation,
+          child: SongDetailScreen(songId: state.pathParameters['id'] ?? ''),
+        ),
       ),
     ],
   );
