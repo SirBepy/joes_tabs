@@ -62,6 +62,6 @@ https://sirbepy.github.io/joes_tabs/
   `.for_bepy/screenshots/` (gitignored).
 
 ## Open follow-ups
-- `.for_bepy/ai_todos/` - design polish (006), native mic (003), and the mascot
+- `.claude/todos/` - design polish (006), native mic (003), and the mascot
   character art (a brand asset Joe will supply; placeholders are Phosphor icons).
 - UI polish vs `DesignImages/` is Joe's taste domain - do it WITH him.
