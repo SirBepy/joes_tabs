@@ -26,6 +26,22 @@ class GoogleSignInFlow {
 
   static Future<void>? _initialized;
 
+  /// Runs [initialize] once per app session. A failed attempt is forgotten so
+  /// the next tap retries, instead of replaying the cached error until restart.
+  @visibleForTesting
+  static Future<void> ensureInitialized(Future<void> Function() initialize) {
+    return _initialized ??= initialize().catchError((
+      Object error,
+      StackTrace stack,
+    ) {
+      _initialized = null;
+      Error.throwWithStackTrace(error, stack);
+    });
+  }
+
+  @visibleForTesting
+  static void resetInitialization() => _initialized = null;
+
   /// Web needs no client ID in the app (Supabase holds it). Android needs the
   /// web client ID as the token audience. iOS is not wired yet: it needs its
   /// own OAuth client plus Info.plist URL-scheme entries.
@@ -44,9 +60,9 @@ class GoogleSignInFlow {
     }
 
     final google = GoogleSignIn.instance;
-    await (_initialized ??= google.initialize(
-      serverClientId: Env.googleWebClientId,
-    ));
+    await ensureInitialized(
+      () => google.initialize(serverClientId: Env.googleWebClientId),
+    );
     final GoogleSignInAccount account;
     try {
       account = await google.authenticate();
