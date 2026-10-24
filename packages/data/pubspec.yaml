@@ -38,3 +38,6 @@ dev_dependencies:
     sdk: flutter
   drift_dev: ^2.31.0
   build_runner: ^2.4.0
+  # MockClient for driving a real SupabaseClient in tests; already resolved
+  # transitively via supabase_flutter.
+  http: ^1.6.0

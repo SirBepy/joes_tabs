@@ -64,12 +64,19 @@ class AuthService {
   }
 
   /// Permanently deletes the signed-in user's account and its server data via
-  /// the `delete_my_account` RPC (`user_favorites` cascades), then drops the
-  /// local session. Local scope because the server-side user is already gone,
-  /// so there is nothing left for a global sign-out to revoke.
+  /// the `delete_my_account` RPC (`user_favorites` cascades), then signs out.
+  ///
+  /// Throws only when the deletion itself fails. signOut clears the local
+  /// session before it calls the server, so an error from that server call
+  /// (the user no longer exists, or the network dropped) must not read as a
+  /// failed deletion and prompt a retry of something that already happened.
   Future<void> deleteAccount() async {
     await _client.rpc<void>('delete_my_account');
-    await _auth.signOut(scope: SignOutScope.local);
+    try {
+      await _auth.signOut();
+    } catch (_) {
+      // Local session is already gone; see the doc comment.
+    }
   }
 
   /// Signs the current user out. The app then falls back to anonymous mode,
