@@ -35,10 +35,8 @@ class MockAuthService implements AuthService {
   }) => throw UnimplementedError();
 
   @override
-  Future<AuthResponse> signInWithGoogleIdToken({
-    required String idToken,
-    String? accessToken,
-  }) => throw UnimplementedError();
+  Future<AuthResponse> signInWithGoogleIdToken({required String idToken}) =>
+      throw UnimplementedError();
 
   @override
   Future<bool> signInWithGoogleRedirect({String? redirectTo}) =>

@@ -49,14 +49,10 @@ class AuthService {
   /// Signs in (creating the account on first use) with a Google ID token from
   /// the platform's native Google sign-in. The token's audience must be one of
   /// the client IDs configured on Supabase's Google provider.
-  Future<AuthResponse> signInWithGoogleIdToken({
-    required String idToken,
-    String? accessToken,
-  }) {
+  Future<AuthResponse> signInWithGoogleIdToken({required String idToken}) {
     return _auth.signInWithIdToken(
       provider: OAuthProvider.google,
       idToken: idToken,
-      accessToken: accessToken,
     );
   }
 
