@@ -1,11 +1,11 @@
 {
-    "name": "joes_tabs_app",
-    "short_name": "joes_tabs_app",
+    "name": "Joe's Tabs",
+    "short_name": "Joe's Tabs",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Ukulele and guitar chord sheets.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
