@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/chords_screen.dart';
@@ -34,10 +35,8 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
         builder: (context, state) => const SplashScreen(),
       ),
       ShellRoute(
-        builder: (context, state, child) => BackToHomeScope(
-          location: state.matchedLocation,
-          child: AppShell(child: child),
-        ),
+        builder: (context, state, child) =>
+            _scoped(state, AppShell(child: child)),
         routes: [
           GoRoute(
             path: AppRoutes.home,
@@ -75,41 +74,35 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
       ),
       GoRoute(
         path: AppRoutes.thankYou,
-        builder: (context, state) => BackToHomeScope(
-          location: state.matchedLocation,
-          child: const ThankYouScreen(),
-        ),
+        builder: (context, state) => _scoped(state, const ThankYouScreen()),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => BackToHomeScope(
-          location: state.matchedLocation,
-          child: const LoginScreen(),
-        ),
+        builder: (context, state) => _scoped(state, const LoginScreen()),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => BackToHomeScope(
-          location: state.matchedLocation,
-          child: const RegisterScreen(),
-        ),
+        builder: (context, state) => _scoped(state, const RegisterScreen()),
       ),
       GoRoute(
         path: AppRoutes.search,
-        builder: (context, state) => BackToHomeScope(
-          location: state.matchedLocation,
-          child: SearchScreen(
-            initialQuery: state.uri.queryParameters['q'] ?? '',
-          ),
+        builder: (context, state) => _scoped(
+          state,
+          SearchScreen(initialQuery: state.uri.queryParameters['q'] ?? ''),
         ),
       ),
       GoRoute(
         path: AppRoutes.song,
-        builder: (context, state) => BackToHomeScope(
-          location: state.matchedLocation,
-          child: SongDetailScreen(songId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => _scoped(
+          state,
+          SongDetailScreen(songId: state.pathParameters['id'] ?? ''),
         ),
       ),
     ],
   );
 }
+
+/// Every route except Splash and Onboarding goes through here, so a new page
+/// can't forget the scope and let system back close the app.
+Widget _scoped(GoRouterState state, Widget child) =>
+    BackToHomeScope(location: state.matchedLocation, child: child);

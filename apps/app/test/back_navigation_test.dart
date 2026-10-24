@@ -88,6 +88,18 @@ void main() {
     expect(_path(router), AppRoutes.home);
   });
 
+  for (final location in [AppRoutes.search, AppRoutes.thankYou]) {
+    testWidgets('back on $location reached with nothing beneath goes Home', (
+      tester,
+    ) async {
+      final router = await _pumpApp(tester, location);
+
+      await _pressBack(tester);
+
+      expect(_path(router), AppRoutes.home);
+    });
+  }
+
   testWidgets('back on an onboarding step returns to the previous step', (
     tester,
   ) async {
