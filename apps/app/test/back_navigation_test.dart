@@ -117,4 +117,28 @@ void main() {
     expect(_path(router), AppRoutes.onboarding);
     expect(find.byKey(const Key('onboarding-get-started')), findsOneWidget);
   });
+
+  for (final (label, route) in [
+    ('Log In', AppRoutes.login),
+    ('Register', AppRoutes.register),
+  ]) {
+    testWidgets('back on $label opened from the drawer returns to the page', (
+      tester,
+    ) async {
+      final router = await _pumpApp(tester, AppRoutes.trending);
+      await tester.tap(find.byTooltip('Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+      expect(_path(router), route);
+
+      await _pressBack(tester);
+
+      // Trending (one of the two drawer hosts) is the origin: back must land
+      // there, not on Home. A route swap instead of a push would fall through
+      // to the Home fallback.
+      expect(_path(router), AppRoutes.trending);
+    });
+  }
 }
