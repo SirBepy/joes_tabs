@@ -1,4 +1,4 @@
-package com.joestabs.joes_tabs_app
+package com.sirbepy.joestabs
 
 import io.flutter.embedding.android.FlutterActivity
 
