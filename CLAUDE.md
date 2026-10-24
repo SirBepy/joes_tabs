@@ -8,6 +8,10 @@ https://sirbepy.github.io/joes_tabs/
 ## Stack
 - Flutter (web/iOS/Android), Riverpod 2 (manual providers, no codegen for
   providers), go_router, Phosphor icons. Dart 3.10.1 / Flutter 3.38.3.
+- `.fvmrc` pins Flutter 3.38.3 (what CI uses), so run local commands as
+  `fvm flutter` / `fvm dart`. A bare `flutter` resolves to the machine's global
+  fvm default, and a newer SDK breaks the app's widget tests (phosphor_flutter
+  extends the now-final `IconData`) while `flutter analyze` still passes.
 - Supabase (Postgres) backend; migrations in `supabase/`. Auth is email-based.
 - Drift for local/offline cache. ChordPro tab format (parser/transposer/chord
   shapes live in `packages/models`).
