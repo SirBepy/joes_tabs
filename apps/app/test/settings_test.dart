@@ -6,8 +6,8 @@ import 'package:joes_tabs_app/screens/settings_screen.dart';
 import 'package:joes_tabs_app/state/settings_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'login_form_test.dart' show testUser;
 import 'support/settings_overrides.dart';
 
 late WidgetRef _ref;
@@ -30,19 +30,11 @@ class _FakeAuthService implements AuthService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-final _user = User(
-  id: 'user-1',
-  appMetadata: const {},
-  userMetadata: const {},
-  aud: 'authenticated',
-  createdAt: '2026-01-01T00:00:00Z',
-);
-
-/// Pumps Settings signed in as [_user] with [auth] behind [authServiceProvider].
+/// Pumps Settings signed in as [testUser] with [auth] behind [authServiceProvider].
 Future<void> _pumpSignedIn(WidgetTester tester, AuthService auth) => _pump(
   tester,
   extraOverrides: [
-    currentUserProvider.overrideWithValue(_user),
+    currentUserProvider.overrideWithValue(testUser),
     authServiceProvider.overrideWithValue(auth),
   ],
 );
