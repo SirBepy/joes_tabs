@@ -6,13 +6,60 @@ import 'package:joes_tabs_app/screens/settings_screen.dart';
 import 'package:joes_tabs_app/state/settings_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support/settings_overrides.dart';
 
 late WidgetRef _ref;
 late AppDatabase _db;
 
-Future<void> _pump(WidgetTester tester, {List<String>? instrumentSlugs}) async {
+/// Records account deletions; every other [AuthService] member is unused here.
+class _FakeAuthService implements AuthService {
+  _FakeAuthService({this.failDelete = false});
+
+  final bool failDelete;
+  int deleteCalls = 0;
+
+  @override
+  Future<void> deleteAccount() async {
+    deleteCalls++;
+    if (failDelete) throw Exception('offline');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+final _user = User(
+  id: 'user-1',
+  appMetadata: const {},
+  userMetadata: const {},
+  aud: 'authenticated',
+  createdAt: '2026-01-01T00:00:00Z',
+);
+
+/// Pumps Settings signed in as [_user] with [auth] behind [authServiceProvider].
+Future<void> _pumpSignedIn(WidgetTester tester, AuthService auth) => _pump(
+  tester,
+  extraOverrides: [
+    currentUserProvider.overrideWithValue(_user),
+    authServiceProvider.overrideWithValue(auth),
+  ],
+);
+
+Future<void> _openDeleteDialog(WidgetTester tester) async {
+  final row = find.byKey(const Key('delete-account-row'));
+  await tester.ensureVisible(row);
+  await tester.pumpAndSettle();
+  await tester.tap(row);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pump(
+  WidgetTester tester, {
+  List<String>? instrumentSlugs,
+  List<Override> extraOverrides = const [],
+}) async {
   _db = inMemoryAppDatabase();
   addTearDown(_db.close);
   await tester.pumpWidget(
@@ -20,6 +67,7 @@ Future<void> _pump(WidgetTester tester, {List<String>? instrumentSlugs}) async {
       overrides: [
         appDatabaseOverride(_db),
         initialSettingsOverride(instrumentSlugs: instrumentSlugs),
+        ...extraOverrides,
       ],
       child: MaterialApp(
         theme: AppTheme.light,
@@ -123,5 +171,59 @@ void main() {
       ChordShapes.ukulele,
       ChordShapes.guitar,
     });
+  });
+
+  testWidgets('Delete Account is hidden while signed out', (tester) async {
+    await _pump(tester);
+
+    expect(find.byKey(const Key('delete-account-row')), findsNothing);
+  });
+
+  testWidgets('cancelling the delete dialog keeps the account', (tester) async {
+    final auth = _FakeAuthService();
+    await _pumpSignedIn(tester, auth);
+
+    await _openDeleteDialog(tester);
+    expect(find.textContaining('Delete your account?'), findsOneWidget);
+    await tester.tap(find.text('NOPE!'));
+    await tester.pumpAndSettle();
+
+    expect(auth.deleteCalls, 0);
+  });
+
+  testWidgets('confirming the delete dialog deletes the account', (
+    tester,
+  ) async {
+    final auth = _FakeAuthService();
+    await _pumpSignedIn(tester, auth);
+
+    await _openDeleteDialog(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text('DELETE ACCOUNT'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(auth.deleteCalls, 1);
+    expect(find.text('Account deleted.'), findsOneWidget);
+  });
+
+  testWidgets('a failed deletion tells the user to retry', (tester) async {
+    final auth = _FakeAuthService(failDelete: true);
+    await _pumpSignedIn(tester, auth);
+
+    await _openDeleteDialog(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text('DELETE ACCOUNT'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(auth.deleteCalls, 1);
+    expect(find.textContaining("Couldn't delete your account"), findsOneWidget);
   });
 }

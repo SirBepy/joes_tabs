@@ -65,6 +65,9 @@ class FakeAuthService implements AuthService {
       throw UnimplementedError();
 
   @override
+  Future<void> deleteAccount() => throw UnimplementedError();
+
+  @override
   Future<bool> signInWithGoogleRedirect({String? redirectTo}) =>
       throw UnimplementedError();
 

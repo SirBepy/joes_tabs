@@ -63,6 +63,15 @@ class AuthService {
     return _auth.signInWithOAuth(OAuthProvider.google, redirectTo: redirectTo);
   }
 
+  /// Permanently deletes the signed-in user's account and its server data via
+  /// the `delete_my_account` RPC (`user_favorites` cascades), then drops the
+  /// local session. Local scope because the server-side user is already gone,
+  /// so there is nothing left for a global sign-out to revoke.
+  Future<void> deleteAccount() async {
+    await _client.rpc<void>('delete_my_account');
+    await _auth.signOut(scope: SignOutScope.local);
+  }
+
   /// Signs the current user out. The app then falls back to anonymous mode,
   /// where local Drift favorites continue to work unchanged.
   Future<void> signOut() => _auth.signOut();

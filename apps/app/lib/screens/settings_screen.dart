@@ -15,8 +15,9 @@ import '../widgets/brand_mascot.dart';
 /// Wireframe list of rows: an expandable Font Settings group (size stepper),
 /// a 3-way Theme selector (System / Light / Dark, bound to [themeModeProvider]),
 /// an "Instruments I play" multi-select (min one, bound to [instrumentsProvider]
-/// and read app-wide to control picker visibility), My Tags (placeholder), and a
-/// Log Out row that opens a mascot confirmation dialog.
+/// and read app-wide to control picker visibility), My Tags (placeholder), and,
+/// while signed in, Log Out and Delete Account rows that each open a mascot
+/// confirmation dialog.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -229,6 +230,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             onTap: () => _confirmLogout(context),
           ),
+          // Google Play requires in-app deletion for apps that create accounts.
+          _Row(
+            key: const Key('delete-account-row'),
+            label: 'DELETE ACCOUNT',
+            trailing: const Icon(
+              PhosphorIconsFill.caretRight,
+              color: AppColors.orange,
+            ),
+            onTap: () => _confirmDeleteAccount(context),
+          ),
         ],
       ],
     );
@@ -267,7 +278,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _confirmLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => const _LogoutDialog(),
+      builder: (_) => const _ConfirmDialog(
+        message: 'Are you sure you want to log out?',
+        confirmLabel: 'LOG OUT',
+      ),
     );
     if (confirmed != true) return;
     await ref.read(authServiceProvider).signOut();
@@ -277,10 +291,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ).showSnackBar(const SnackBar(content: Text('Signed out.')));
     }
   }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    // Captured before the dialog's await so the snackbar never reads a stale
+    // context.
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => const _ConfirmDialog(
+        message:
+            'Delete your account? This permanently removes your account and '
+            'saved favorites from our servers. Favorites on this device stay.',
+        confirmLabel: 'DELETE ACCOUNT',
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(authServiceProvider).deleteAccount();
+      messenger.showSnackBar(const SnackBar(content: Text('Account deleted.')));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Couldn't delete your account. Check your connection and try "
+            'again.',
+          ),
+        ),
+      );
+    }
+  }
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.label, this.trailing, this.onTap});
+  const _Row({super.key, required this.label, this.trailing, this.onTap});
 
   final String label;
   final Widget? trailing;
@@ -302,11 +345,14 @@ class _Row extends StatelessWidget {
   }
 }
 
-/// Log-out confirmation (per `docs/design/screens/settings-1.md`): mascot,
-/// "Are you sure you want to log out?", with a plain LOG OUT confirm and an
-/// orange NOPE! cancel.
-class _LogoutDialog extends StatelessWidget {
-  const _LogoutDialog();
+/// Confirmation dialog in the log-out style of
+/// `docs/design/screens/settings-1.md`: mascot, [message], a plain
+/// [confirmLabel] confirm and an orange NOPE! cancel. Pops true on confirm.
+class _ConfirmDialog extends StatelessWidget {
+  const _ConfirmDialog({required this.message, required this.confirmLabel});
+
+  final String message;
+  final String confirmLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -319,10 +365,10 @@ class _LogoutDialog extends StatelessWidget {
           children: [
             const BrandMascot(size: 96, icon: PhosphorIconsFill.smiley),
             const SizedBox(height: AppSpacing.md),
-            const Text(
-              'Are you sure you want to log out?',
+            Text(
+              message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textDark),
+              style: const TextStyle(color: AppColors.textDark),
             ),
             const SizedBox(height: AppSpacing.lg),
             SizedBox(
@@ -333,9 +379,9 @@ class _LogoutDialog extends StatelessWidget {
                   foregroundColor: AppColors.textDark,
                 ),
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text(
-                  'LOG OUT',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                child: Text(
+                  confirmLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ),
