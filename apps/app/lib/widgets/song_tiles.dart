@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../router/app_routes.dart';
 import '../state/favorites_provider.dart';
+import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
@@ -212,6 +213,56 @@ class _InstrumentChip extends StatelessWidget {
         label,
         style: const TextStyle(color: AppColors.rust, fontSize: 11),
       ),
+    );
+  }
+}
+
+/// A list of [SongListTile]s for Saved and Search. Dual-path, so mobile never
+/// regresses: below [kBreakpointMedium] it is the separated list (dividers and
+/// all); at or above it the same tiles flow into a width-driven grid.
+class SongListOrGrid extends StatelessWidget {
+  const SongListOrGrid({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+  });
+
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+
+  static const double _minTileWidth = 340;
+
+  // SongListTile is a two-line row; at the minimum tile width this ratio keeps
+  // the title, artist, and trailing bookmark from clipping.
+  static const double _tileAspect = _minTileWidth / 88;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < kBreakpointMedium) {
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            itemCount: itemCount,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: itemBuilder,
+          );
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: gridColumnsForWidth(
+              constraints.maxWidth,
+              minTileWidth: _minTileWidth,
+            ),
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            childAspectRatio: _tileAspect,
+          ),
+          itemCount: itemCount,
+          itemBuilder: itemBuilder,
+        );
+      },
     );
   }
 }

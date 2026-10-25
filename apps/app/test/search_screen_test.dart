@@ -7,6 +7,7 @@ import 'package:joes_tabs_app/router/app_routes.dart';
 import 'package:joes_tabs_app/screens/search_screen.dart';
 import 'package:joes_tabs_app/theme/app_colors.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
+import 'package:joes_tabs_app/widgets/song_tiles.dart';
 import 'package:models/models.dart';
 
 import 'support/settings_overrides.dart';
@@ -85,6 +86,38 @@ void main() {
       findsOneWidget,
     );
   });
+
+  for (final (label, size, grid) in [
+    ('compact', const Size(390, 844), false),
+    ('wide', const Size(1100, 900), true),
+  ]) {
+    testWidgets(
+      '$label surface lays results out as a ${grid ? 'grid' : 'list'}',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await _pump(
+          tester,
+          router: _router(search: const SearchScreen(initialQuery: 'song')),
+          overrides: [
+            initialSettingsOverride(),
+            searchFilteredProvider((
+              query: 'song',
+              instrumentSlug: ChordShapes.ukulele,
+            )).overrideWith(
+              (ref) async => [_song('a', 'Song A'), _song('b', 'Song B')],
+            ),
+          ],
+        );
+
+        expect(find.byType(GridView), grid ? findsOneWidget : findsNothing);
+        expect(find.byType(SongListTile), findsNWidgets(2));
+      },
+    );
+  }
 
   testWidgets('results render and are tappable to the song detail', (
     tester,

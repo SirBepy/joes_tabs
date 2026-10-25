@@ -5,8 +5,6 @@ import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../state/favorites_provider.dart';
-import '../theme/app_breakpoints.dart';
-import '../theme/app_spacing.dart';
 import '../widgets/song_tiles.dart';
 
 /// Resolves the favorited song ids to [Song]s for the Saved screen.
@@ -62,37 +60,9 @@ class SavedScreen extends ConsumerWidget {
             icon: PhosphorIconsRegular.bookmarkSimple,
           );
         }
-        // Dual-path (no mobile regression): below kBreakpointMedium this is the
-        // untouched separated list (dividers and all); at/above it the same
-        // SongListTile cards flow into a width-driven grid.
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < kBreakpointMedium) {
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                itemCount: songs.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (_, i) => SongListTile(song: songs[i]),
-              );
-            }
-            final columns = gridColumnsForWidth(
-              constraints.maxWidth,
-              minTileWidth: 340,
-            );
-            return GridView.builder(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                mainAxisSpacing: AppSpacing.sm,
-                crossAxisSpacing: AppSpacing.sm,
-                // SongListTile is a two-line row; this ratio keeps the title,
-                // artist, and trailing bookmark from clipping.
-                childAspectRatio: 340 / 88,
-              ),
-              itemCount: songs.length,
-              itemBuilder: (_, i) => SongListTile(song: songs[i]),
-            );
-          },
+        return SongListOrGrid(
+          itemCount: songs.length,
+          itemBuilder: (_, i) => SongListTile(song: songs[i]),
         );
       },
     );

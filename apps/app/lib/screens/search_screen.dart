@@ -224,43 +224,13 @@ class _Results extends ConsumerWidget {
           return EmptyState(message: 'No songs found for "$query".');
         }
         final chip = _chipLabel(instrumentSlug);
-        // Dual-path (no mobile regression): below kBreakpointMedium this is the
-        // untouched separated list; at/above it the same SongListTile cards flow
-        // into a width-driven grid.
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < kBreakpointMedium) {
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                itemCount: songs.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (_, i) => SongListTile(
-                  song: songs[i],
-                  trailingChip: chip,
-                  highlight: query,
-                ),
-              );
-            }
-            final columns = gridColumnsForWidth(
-              constraints.maxWidth,
-              minTileWidth: 340,
-            );
-            return GridView.builder(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                mainAxisSpacing: AppSpacing.sm,
-                crossAxisSpacing: AppSpacing.sm,
-                childAspectRatio: 340 / 88,
-              ),
-              itemCount: songs.length,
-              itemBuilder: (_, i) => SongListTile(
-                song: songs[i],
-                trailingChip: chip,
-                highlight: query,
-              ),
-            );
-          },
+        return SongListOrGrid(
+          itemCount: songs.length,
+          itemBuilder: (_, i) => SongListTile(
+            song: songs[i],
+            trailingChip: chip,
+            highlight: query,
+          ),
         );
       },
     );
