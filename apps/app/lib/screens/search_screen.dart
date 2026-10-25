@@ -87,6 +87,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           autofocus: widget.initialQuery.isEmpty,
           textInputAction: TextInputAction.search,
           onChanged: _onChanged,
+          // The fill is white in both themes, so the typed text stays dark
+          // instead of inheriting dark mode's light body text.
+          style: const TextStyle(color: AppColors.textDark),
           decoration: InputDecoration(
             hintText: 'Search by song or artist',
             filled: true,

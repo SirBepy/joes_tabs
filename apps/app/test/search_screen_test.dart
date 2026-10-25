@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:joes_tabs_app/router/app_routes.dart';
 import 'package:joes_tabs_app/screens/search_screen.dart';
+import 'package:joes_tabs_app/theme/app_colors.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
@@ -41,12 +42,13 @@ Future<void> _pump(
   WidgetTester tester, {
   required List<Override> overrides,
   GoRouter? router,
+  ThemeData? theme,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp.router(
-        theme: AppTheme.light,
+        theme: theme ?? AppTheme.light,
         routerConfig:
             router ?? _router(search: const SearchScreen(initialQuery: '')),
       ),
@@ -56,6 +58,19 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('dark mode types dark text on the white search field', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      theme: AppTheme.dark,
+      overrides: [initialSettingsOverride()],
+    );
+
+    final field = tester.widget<EditableText>(find.byType(EditableText));
+    expect(field.style.color, AppColors.textDark);
+  });
+
   testWidgets('empty query shows the friendly search prompt', (tester) async {
     await _pump(
       tester,
