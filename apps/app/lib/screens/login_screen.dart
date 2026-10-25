@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../router/app_routes.dart';
+import '../router/auth_navigation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/google_sign_in_section.dart';
@@ -130,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             TextButton(
               onPressed: _submitting
                   ? null
-                  : () => context.push(AppRoutes.register),
+                  : () => toggleAuthScreen(context, AppRoutes.register),
               child: const Text("No account? Create one"),
             ),
           ],

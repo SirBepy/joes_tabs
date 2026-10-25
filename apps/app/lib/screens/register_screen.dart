@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../router/app_routes.dart';
+import '../router/auth_navigation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/google_sign_in_section.dart';
@@ -134,7 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             TextButton(
               onPressed: _submitting
                   ? null
-                  : () => context.push(AppRoutes.login),
+                  : () => toggleAuthScreen(context, AppRoutes.login),
               child: const Text('Already have an account? Log in'),
             ),
           ],

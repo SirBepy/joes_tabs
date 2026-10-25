@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:joes_tabs_app/auth/google_sign_in_flow.dart';
 import 'package:joes_tabs_app/router/app_routes.dart';
 import 'package:joes_tabs_app/screens/login_screen.dart';
+import 'package:joes_tabs_app/screens/register_screen.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -31,6 +32,10 @@ Future<GoRouter> _pumpFromOrigin(
         ),
       ),
       GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginScreen()),
+      GoRoute(
+        path: AppRoutes.register,
+        builder: (_, _) => const RegisterScreen(),
+      ),
     ],
   );
   await tester.pumpWidget(
@@ -51,7 +56,35 @@ Future<GoRouter> _pumpFromOrigin(
   return router;
 }
 
+/// Location of the top page; `uri` alone ignores imperatively pushed pages.
+String _path(GoRouter router) =>
+    router.routerDelegate.currentConfiguration.last.matchedLocation;
+
 void main() {
+  testWidgets('toggling Log In / Register never stacks auth screens', (
+    tester,
+  ) async {
+    final router = await _pumpFromOrigin(tester);
+
+    await tester.tap(find.text('No account? Create one'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Already have an account? Log in'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('No account? Create one'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RegisterScreen), findsOneWidget);
+
+    // Only the Log In that opened this Register sits beneath it.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(_path(router), '/login');
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(_path(router), '/origin');
+    expect(find.text('ORIGIN'), findsOneWidget);
+  });
+
   testWidgets('a Google failure after backing out of Log In is ignored', (
     tester,
   ) async {
