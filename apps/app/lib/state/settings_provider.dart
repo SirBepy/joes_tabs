@@ -39,13 +39,9 @@ IconData instrumentIcon(String slug) {
   switch (slug) {
     case ChordShapes.guitar:
       return PhosphorIconsRegular.guitar;
-    case ChordShapes.ukulele:
-      // No Phosphor ukulele glyph; musicNote stands in until real art exists
-      // (autopilot choice, reversible).
-      return PhosphorIconsRegular.musicNote;
     default:
-      // No Phosphor ukulele glyph; musicNote stands in until real art exists
-      // (autopilot choice, reversible).
+      // Ukulele lands here too: Phosphor has no ukulele glyph, so musicNote
+      // stands in until real art exists.
       return PhosphorIconsRegular.musicNote;
   }
 }
