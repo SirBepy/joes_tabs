@@ -43,9 +43,11 @@ class _GoogleSignInSectionState extends ConsumerState<GoogleSignInSection> {
         widget.onSignedIn();
       }
     } on AuthException catch (e) {
-      widget.onError(e.message);
+      // The parent's onError is a setState, so a failure landing after the
+      // user backed out of the screen must not call it.
+      if (mounted) widget.onError(e.message);
     } catch (_) {
-      widget.onError('Google sign-in failed. Please try again.');
+      if (mounted) widget.onError('Google sign-in failed. Please try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
