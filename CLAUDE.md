@@ -34,8 +34,13 @@ https://sirbepy.github.io/joes_tabs/
   secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY`. The app uses `publishableKey`, so
   `SUPABASE_ANON_KEY` is the `sb_publishable_...` key.
 - Run the seed against either via `supabase/seed/seed.dart`
-  (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Idempotent. Content is
-  public-domain only - NEVER scrape Ultimate Guitar or ToS-protected sites.
+  (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Idempotent. Seeded (`official`)
+  content is public-domain only.
+- Web tabs (spec `docs/superpowers/specs/2026-10-27-web-tabs-design.md`): only
+  pages a user opens, parsed on their device, from the spec's allowlist of sites
+  whose terms don't forbid it. `imported` tabs are readable by signed-in users only.
+  NEVER parse, frame or bulk-fetch Ultimate Guitar or any site whose terms forbid
+  extraction (external links only); NEVER scrape server-side.
 
 ## Conventions
 - Never use the em dash character. Use Phosphor icons, never inline SVG (CustomPaint
