@@ -21,6 +21,12 @@ abstract class Tab with _$Tab {
     required TabSource source,
     required TabStatus status,
     String? authorId,
+
+    /// The page an `imported` tab was parsed from, credited in the viewer.
+    String? sourceUrl,
+
+    /// The [WebTabSite.id] of [sourceUrl]'s site.
+    String? sourceSite,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _Tab;

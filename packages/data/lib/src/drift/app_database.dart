@@ -34,6 +34,8 @@ class CachedTabs extends Table {
   TextColumn get source => text()();
   TextColumn get status => text()();
   TextColumn get authorId => text().nullable()();
+  TextColumn get sourceUrl => text().nullable()();
+  TextColumn get sourceSite => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -106,7 +108,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -124,6 +126,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         // v2 -> v3: add the maximalChords flag with its default.
         await m.addColumn(appSettings, appSettings.maximalChords);
+      }
+      if (from < 4) {
+        // v3 -> v4: source credit for imported web tabs.
+        await m.addColumn(cachedTabs, cachedTabs.sourceUrl);
+        await m.addColumn(cachedTabs, cachedTabs.sourceSite);
       }
       await _ensureAppSettingsRow();
     },
@@ -285,6 +292,8 @@ class AppDatabase extends _$AppDatabase {
     source: tab.source.name,
     status: tab.status.name,
     authorId: Value(tab.authorId),
+    sourceUrl: Value(tab.sourceUrl),
+    sourceSite: Value(tab.sourceSite),
     createdAt: tab.createdAt,
     updatedAt: tab.updatedAt,
   );
@@ -300,6 +309,8 @@ class AppDatabase extends _$AppDatabase {
     source: TabSource.values.byName(row.source),
     status: TabStatus.values.byName(row.status),
     authorId: row.authorId,
+    sourceUrl: row.sourceUrl,
+    sourceSite: row.sourceSite,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   );

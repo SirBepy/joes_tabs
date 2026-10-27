@@ -32,3 +32,4 @@ export 'src/providers.dart';
 export 'src/settings/app_settings_repository.dart';
 export 'src/supabase_catalog_repository.dart';
 export 'src/supabase_init.dart';
+export 'src/web_tabs_repository.dart';

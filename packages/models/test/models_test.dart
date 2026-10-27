@@ -61,6 +61,8 @@ void main() {
       'source': 'official',
       'status': 'published',
       'author_id': '44444444-4444-4444-4444-444444444444',
+      'source_url': 'https://chordie.com/chord.pere/riptide',
+      'source_site': 'chordie',
       'created_at': '2026-05-30T12:00:00.000Z',
       'updated_at': '2026-05-31T08:30:00.000Z',
     };
@@ -75,6 +77,8 @@ void main() {
       expect(tab.source, TabSource.official);
       expect(tab.status, TabStatus.published);
       expect(tab.authorId, fullJson['author_id']);
+      expect(tab.sourceUrl, fullJson['source_url']);
+      expect(tab.sourceSite, 'chordie');
     });
 
     test('toJson round-trips with enum string values', () {
@@ -97,6 +101,8 @@ void main() {
         'source': 'imported',
         'status': 'draft',
         'author_id': null,
+        'source_url': null,
+        'source_site': null,
         'created_at': '2026-05-30T12:00:00.000Z',
         'updated_at': '2026-05-30T12:00:00.000Z',
       };
@@ -142,6 +148,8 @@ void main() {
           'source': 'official',
           'status': 'published',
           'author_id': null,
+          'source_url': null,
+          'source_site': null,
           'created_at': '2026-05-30T12:00:00.000Z',
           'updated_at': '2026-05-30T12:00:00.000Z',
         },
@@ -156,6 +164,8 @@ void main() {
           'source': 'community',
           'status': 'draft',
           'author_id': null,
+          'source_url': null,
+          'source_site': null,
           'created_at': '2026-05-30T12:00:00.000Z',
           'updated_at': '2026-05-30T12:00:00.000Z',
         },

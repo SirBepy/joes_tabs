@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth/auth_providers.dart';
 import 'catalog_repository.dart';
 import 'drift/app_database.dart';
 import 'offline_catalog_repository.dart';
 import 'supabase_catalog_repository.dart';
+import 'web_tabs_repository.dart';
 
 /// Exposes the initialized [SupabaseClient] to the Riverpod graph.
 ///
@@ -60,8 +62,18 @@ final favoriteIdsStreamProvider = StreamProvider<List<String>>((ref) {
   return ref.watch(appDatabaseProvider).watchFavoriteIds();
 });
 
+/// Who is reading the catalog: the signed-in user's id, or null for anon.
+///
+/// Imported web tabs are visible to signed-in users only (RLS), so catalog
+/// results fetched while signed out are stale after sign-in. The catalog
+/// providers below watch this to refetch when it changes.
+final catalogViewerProvider = Provider<String?>(
+  (ref) => ref.watch(currentUserProvider.select((user) => user?.id)),
+);
+
 /// Trending songs for the home view.
 final trendingProvider = FutureProvider<List<Song>>((ref) {
+  ref.watch(catalogViewerProvider);
   return ref.watch(catalogRepositoryProvider).trending();
 });
 
@@ -70,6 +82,7 @@ final songsByInstrumentProvider = FutureProvider.family<List<Song>, String?>((
   ref,
   instrumentSlug,
 ) {
+  ref.watch(catalogViewerProvider);
   return ref
       .watch(catalogRepositoryProvider)
       .listSongs(instrumentSlug: instrumentSlug);
@@ -77,6 +90,7 @@ final songsByInstrumentProvider = FutureProvider.family<List<Song>, String?>((
 
 /// Full-text search results for [query] (blank = default catalog order).
 final searchProvider = FutureProvider.family<List<Song>, String>((ref, query) {
+  ref.watch(catalogViewerProvider);
   return ref.watch(catalogRepositoryProvider).search(query);
 });
 
@@ -91,6 +105,7 @@ final searchFilteredProvider = FutureProvider.family<List<Song>, SearchArgs>((
   ref,
   args,
 ) {
+  ref.watch(catalogViewerProvider);
   return ref
       .watch(catalogRepositoryProvider)
       .searchSongs(args.query, instrumentSlug: args.instrumentSlug);
@@ -98,6 +113,7 @@ final searchFilteredProvider = FutureProvider.family<List<Song>, SearchArgs>((
 
 /// A single song with its published tabs, or null if not found/visible.
 final songProvider = FutureProvider.family<SongWithTabs?, String>((ref, id) {
+  ref.watch(catalogViewerProvider);
   return ref.watch(catalogRepositoryProvider).getSong(id);
 });
 
@@ -108,4 +124,20 @@ final instrumentsByIdProvider = FutureProvider<Map<String, Instrument>>((
 ) async {
   final list = await ref.watch(catalogRepositoryProvider).instruments();
   return {for (final i in list) i.id: i};
+});
+
+/// Web tabs backend (search + import), over the signed-in Supabase session.
+final webTabsRepositoryProvider = Provider<WebTabsRepository>((ref) {
+  return SupabaseWebTabsRepository(ref.watch(supabaseClientProvider));
+});
+
+/// Chord pages on the allowlisted sites for a query. Only meaningful while
+/// signed in: the backend rejects anonymous searches, so the UI shows a sign-in
+/// prompt instead of watching this when [currentUserProvider] is null.
+final webSearchProvider = FutureProvider.family<List<WebSearchResult>, String>((
+  ref,
+  query,
+) {
+  ref.watch(catalogViewerProvider);
+  return ref.watch(webTabsRepositoryProvider).search(query);
 });
