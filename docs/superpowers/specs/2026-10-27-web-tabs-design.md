@@ -36,7 +36,7 @@ users can read.
 
 | Site | Terms | Parse? | Notes |
 | --- | --- | --- | --- |
-| ukulele-tabs.com | Silent (stub T&Cs, French law) | Yes | Chords-over-lyrics in `pre`, chords are `a.chord`. Has Steven Universe. |
+| ukulele-tabs.com | Forbids it. The English terms page is a stub, but the French CGU (`/lang/cgu.html`) art. 3.2 bans reproducing site content "sur quelque support que ce soit" without prior written permission and any extraction of tabs "à des fins non communautaires"; art. 3.3 assigns uploaded tabs to UKULELE-TABS. French law, Strasbourg courts. | Only with their written permission (asked 2026-10-27) | Chords-over-lyrics in `pre`, chords are `a.chord`. Has Steven Universe. |
 | chordie.com | Silent (no terms page) | Yes | Inline `[Am]` in `.chordline`; `.textline` holds headers. |
 | e-chords.com | Silent ("Study, Skill Development, and Scholarship only") | Yes, untested | Behind a Cloudflare challenge that blocks automation; a real WebView should pass. Selector unverified, adapter falls back to the generic `pre` extractor. |
 | ultimate-guitar.com | Forbids copying, derivatives and framing (6.2, 6.4, 14(a)) | No | External link only. |
@@ -101,8 +101,37 @@ Joe then dropped Brave (not worth a card-backed account) and decided:
   entity decoding. Chordie was dropped: fuzzy results and its `/chord.pere/<host>/` pages
   mirror other sites, including excluded ones. E-Chords' robots.txt disallows `/search` and
   `?q=`.
-- **New product direction (to brainstorm next):** position Joe's Tabs as an app for
-  ukulele-tabs.com, use as much of their infrastructure (APIs, data) as possible while still
-  using our Supabase, and pitch it to them when done. First step: research prior art (existing
-  apps/sites doing this, including ukulele-tabs.com's own mobile apps) and what APIs or
-  partner options ukulele-tabs.com offers.
+- **New product direction:** position Joe's Tabs as an app for ukulele-tabs.com, use as much
+  of their infrastructure (APIs, data) as possible while still using our Supabase, and pitch
+  it to them when done.
+
+## Ukulele-tabs.com partnership (brainstorm, 2026-10-27)
+
+Research findings:
+
+- Their French CGU forbids reproduction and extraction without written permission (see the
+  allowlist table), so the shared imported catalog and a server-side search cache both need
+  their permission first. The 7-day server cache decided above is on hold until they answer.
+- No public API, feed, sitemap (`/sitemap.xml` is 404) or partner program. Contact is the form
+  at `/contact-us.html` (subjects include "Advertising" and "Legal question") or
+  `support@ukulele-tabs.com`. The operator is only named "UKULELE-TABS".
+- They already have two apps: Android `com.ukuleletabs` by "Ukulele Wave" (updated 2026, also
+  runs uke-tuner.com) and iOS id1472846984 by Vmlweb LTD (3.2 stars from 63 ratings, "© 2020").
+  No third-party app or open-source project wrapping ukulele-tabs.com turned up, and no record of
+  an indie wrapper app later partnering with a tab site.
+
+Decisions (Joe):
+
+1. **Contact first, build a demo.** Pitch: a completely free, open-source official app, their
+   branding, any ad money stays theirs. Ask for written permission under CGU 3.2 and whether
+   their apps use an API we may use.
+2. **Goal: become their official app** (white-label, aimed at replacing the weak iOS app).
+3. **Pure ukulele-tabs.com client** for the demo: ukulele only, their content, everything else
+   dropped.
+4. **The demo lives on a separate `ut-client` branch** that never reaches `master`. On `develop`
+   the "From the web" section is off behind the `WEB_TABS` compile-time flag, so a push of
+   `develop` ships no ukulele-tabs.com content.
+5. Until permission arrives the demo reads on device only: search fetches their search page from
+   the device, a parsed tab is shown in memory, nothing goes into the shared catalog and nothing
+   is cached server-side. The `import_web_tab` RPC and `imported` RLS stay deployed but unused.
+6. Brave is removed: the `web-search` Edge Function is deleted from the repo and the cloud.

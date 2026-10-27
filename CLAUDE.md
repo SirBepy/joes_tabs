@@ -41,6 +41,12 @@ https://sirbepy.github.io/joes_tabs/
   whose terms don't forbid it. `imported` tabs are readable by signed-in users only.
   NEVER parse, frame or bulk-fetch Ultimate Guitar or any site whose terms forbid
   extraction (external links only); NEVER scrape server-side.
+- Ukulele-tabs.com's French CGU (art. 3.2) forbids reproduction and extraction
+  without written permission, which was requested 2026-10-27. Until they grant it,
+  their content lives only on the `ut-client` demo branch (on-device reading, no
+  shared catalog, no server cache), and `develop`/`master` keep the "From the web"
+  section off via the `WEB_TABS` compile-time flag. The spec's "Ukulele-tabs.com
+  partnership" section has the decisions.
 
 ## Conventions
 - Never use the em dash character. Use Phosphor icons, never inline SVG (CustomPaint
