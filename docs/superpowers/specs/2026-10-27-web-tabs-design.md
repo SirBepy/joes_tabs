@@ -79,8 +79,30 @@ and ukulelehunt.com (PDF only, nothing in the DOM).
 4. Data layer: repository methods, providers, `Tab.sourceUrl` / `sourceSite`.
 5. Search UI section, `WebTabScreen`, source credit in the viewer, widget tests.
 
-## Needs Joe
+## Status and pivot (end of 2026-10-27 session)
 
-- A Brave Search API account (card required, about 1,000 free queries a month) and its
-  key, set as the `BRAVE_API_KEY` Supabase secret.
-- OK before the migration and the Edge Function are deployed to the cloud project.
+Built and committed on `develop` (not pushed): converter + site rules (`529a7b4`),
+migration + SQL test (`2c9cd5c`), Brave `web-search` Edge Function (`2d631c6`), data
+layer (`d26e04b`), Search "From the web" section + `WebTabScreen` + source credit
+(`71cc73b`). The migration and the Brave `web-search` function are deployed to the cloud
+project; `BRAVE_API_KEY` was never set, so web search returns 503 today.
+
+Joe then dropped Brave (not worth a card-backed account) and decided:
+
+- **Search runs on our backend.** The `web-search` Edge Function fetches the site's own
+  search page server-side and stores the results in Supabase, fresh for **7 days**, with a
+  manual "refresh web results" action that bypasses the cache. The Brave code is to be
+  removed (repo and cloud deployment).
+- **Ukulele-tabs.com only, for now.** Spike (2026-10-27): `GET
+  https://www.ukulele-tabs.com/search-uke-chords.html?find=<q>` is allowed by robots.txt,
+  server-rendered, no bot challenge from a residential IP (datacenter IPs untested), capped at
+  50 songs, no pagination. Song links match `/uke-songs/<artist>/<title>-uke-tab-<n>.html`
+  inside `div.song_res`, with a `span.tabtype` of `chrd` / `tab` / `mix`; titles need HTML
+  entity decoding. Chordie was dropped: fuzzy results and its `/chord.pere/<host>/` pages
+  mirror other sites, including excluded ones. E-Chords' robots.txt disallows `/search` and
+  `?q=`.
+- **New product direction (to brainstorm next):** position Joe's Tabs as an app for
+  ukulele-tabs.com, use as much of their infrastructure (APIs, data) as possible while still
+  using our Supabase, and pitch it to them when done. First step: research prior art (existing
+  apps/sites doing this, including ukulele-tabs.com's own mobile apps) and what APIs or
+  partner options ukulele-tabs.com offers.
