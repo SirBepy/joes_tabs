@@ -17,7 +17,7 @@ import 'login_form_test.dart';
 /// Origin screen with a button that pushes Log In, the way the drawer does.
 Future<GoRouter> _pumpFromOrigin(
   WidgetTester tester, {
-  FakeGoogleSignInFlow? google,
+  GoogleSignInFlow? google,
 }) async {
   final router = GoRouter(
     initialLocation: '/origin',
@@ -108,4 +108,89 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(google.calls, 1);
   });
+
+  const hint = 'Sign-in did not complete. Try again or use email.';
+
+  testWidgets('a cancelled Google sign-in shows a quiet hint on Log In', (
+    tester,
+  ) async {
+    await _pumpFromOrigin(
+      tester,
+      google: FakeGoogleSignInFlow(GoogleSignInResult.cancelled),
+    );
+    expect(find.text(hint), findsNothing);
+
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(hint), findsOneWidget);
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('a cancelled Google sign-in shows the hint on Register', (
+    tester,
+  ) async {
+    await _pumpFromOrigin(
+      tester,
+      google: FakeGoogleSignInFlow(GoogleSignInResult.cancelled),
+    );
+    await tester.tap(find.text('No account? Create one'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RegisterScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(hint), findsOneWidget);
+  });
+
+  testWidgets('a signed-in Google result shows no hint', (tester) async {
+    await _pumpFromOrigin(
+      tester,
+      google: FakeGoogleSignInFlow(GoogleSignInResult.signedIn),
+    );
+
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(hint), findsNothing);
+  });
+
+  testWidgets('tapping Google again clears the hint', (tester) async {
+    final gate = Completer<void>();
+    final google = _SequencedGoogleFlow([
+      GoogleSignInResult.cancelled,
+      GoogleSignInResult.signedIn,
+    ], secondGate: gate);
+    await _pumpFromOrigin(tester, google: google);
+
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pumpAndSettle();
+    expect(find.text(hint), findsOneWidget);
+
+    // Second attempt is held open so the cleared state is observable.
+    await tester.tap(find.byKey(const Key('google-sign-in')));
+    await tester.pump();
+    expect(find.text(hint), findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text(hint), findsNothing);
+  });
+}
+
+/// Returns [results] in order; the second call waits on [secondGate].
+class _SequencedGoogleFlow implements GoogleSignInFlow {
+  _SequencedGoogleFlow(this.results, {this.secondGate});
+
+  final List<GoogleSignInResult> results;
+  final Completer<void>? secondGate;
+  int _calls = 0;
+
+  @override
+  Future<GoogleSignInResult> signIn() async {
+    final index = _calls++;
+    if (index == 1) await secondGate?.future;
+    return results[index];
+  }
 }

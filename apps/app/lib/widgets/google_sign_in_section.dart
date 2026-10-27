@@ -34,13 +34,24 @@ class GoogleSignInSection extends ConsumerStatefulWidget {
 class _GoogleSignInSectionState extends ConsumerState<GoogleSignInSection> {
   bool _busy = false;
 
+  /// Shown after any cancel. Google reports a rejected app config (e.g. an
+  /// unregistered signing key) as a cancel too, so a cancel cannot be told
+  /// apart from a real back-out; a muted hint stays harmless for the latter.
+  bool _showCancelHint = false;
+
   Future<void> _signIn() async {
     widget.onError(null);
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _showCancelHint = false;
+    });
     try {
       final result = await ref.read(googleSignInFlowProvider).signIn();
-      if (result == GoogleSignInResult.signedIn && mounted) {
+      if (!mounted) return;
+      if (result == GoogleSignInResult.signedIn) {
         widget.onSignedIn();
+      } else if (result == GoogleSignInResult.cancelled) {
+        setState(() => _showCancelHint = true);
       }
     } on AuthException catch (e) {
       // The parent's onError is a setState, so a failure landing after the
@@ -79,6 +90,21 @@ class _GoogleSignInSectionState extends ConsumerState<GoogleSignInSection> {
             shape: const StadiumBorder(),
           ),
         ),
+        if (_showCancelHint) ...[
+          const SizedBox(height: AppSpacing.sm),
+          // onSurface at reduced alpha rather than AppColors.textMuted, which
+          // is too dark to read on the dark theme's background.
+          Text(
+            'Sign-in did not complete. Try again or use email.',
+            key: const Key('google-cancel-hint'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         const Row(
           children: [
