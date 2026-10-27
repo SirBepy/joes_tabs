@@ -22,6 +22,17 @@ class _FakeAuthService implements AuthService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+final _signedIn = currentUserProvider.overrideWithValue(
+  User(
+    id: 'user-1',
+    appMetadata: const {},
+    userMetadata: const {},
+    aud: 'authenticated',
+    createdAt: '2026-01-01T00:00:00Z',
+    email: 'joe@example.com',
+  ),
+);
+
 /// Pumps the real router at [location] on a [width] x [height] logical surface.
 Future<GoRouter> _pumpApp(
   WidgetTester tester, {
@@ -424,9 +435,55 @@ void main() {
       expect(find.byKey(const Key('account-register')), findsNothing);
 
       await tester.tap(find.byKey(const Key('account-log-out')));
-      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Asks first; nothing is signed out until confirmed.
+      expect(find.text('Are you sure you want to log out?'), findsOneWidget);
+      expect(auth.signOutCalls, 0);
+
+      await tester.tap(find.text('LOG OUT'));
+      await tester.pumpAndSettle();
 
       expect(auth.signOutCalls, 1);
+    });
+
+    testWidgets('signed in: cancelling the log-out dialog keeps the session', (
+      tester,
+    ) async {
+      final auth = _FakeAuthService();
+      await _pumpApp(
+        tester,
+        location: AppRoutes.settings,
+        overrides: [_signedIn, authServiceProvider.overrideWithValue(auth)],
+      );
+
+      await tester.tap(find.byKey(const Key('account-log-out')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('NOPE!'));
+      await tester.pumpAndSettle();
+
+      expect(auth.signOutCalls, 0);
+      expect(find.text('Are you sure you want to log out?'), findsNothing);
+    });
+
+    testWidgets('signed in: there is exactly one log-out control', (
+      tester,
+    ) async {
+      await _pumpApp(
+        tester,
+        location: AppRoutes.settings,
+        overrides: [
+          _signedIn,
+          authServiceProvider.overrideWithValue(_FakeAuthService()),
+        ],
+      );
+      expect(find.byKey(const Key('account-log-out')), findsOneWidget);
+      // The old LOG OUT row sat at the bottom, beside Delete Account.
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('delete-account-row')),
+        200,
+      );
+      expect(find.text('LOG OUT'), findsNothing);
     });
 
     testWidgets('Support Us row opens the Support page', (tester) async {
@@ -441,6 +498,49 @@ void main() {
 
       expect(_path(router), AppRoutes.support);
       expect(find.text('SUPPORT US'), findsOneWidget);
+    });
+  });
+
+  group('Home sign-in card and Trending link', () {
+    testWidgets('signed out: Log In and Register push their screens', (
+      tester,
+    ) async {
+      final router = await _pumpApp(tester);
+
+      await tester.tap(find.byKey(const Key('home-cta-log-in')));
+      await tester.pumpAndSettle();
+      expect(_path(router), AppRoutes.login);
+
+      await _pressBack(tester);
+      await tester.tap(find.byKey(const Key('home-cta-register')));
+      await tester.pumpAndSettle();
+      expect(_path(router), AppRoutes.register);
+    });
+
+    testWidgets('signed in: Home has no sign-in card', (tester) async {
+      await _pumpApp(tester, overrides: [_signedIn]);
+
+      expect(find.byKey(const Key('home-login-cta')), findsNothing);
+    });
+
+    testWidgets('SEE ALL opens Trending on top of Home and back returns', (
+      tester,
+    ) async {
+      final router = await _pumpApp(tester);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('home-trending-see-all')),
+        200,
+      );
+
+      await tester.tap(find.byKey(const Key('home-trending-see-all')));
+      await tester.pumpAndSettle();
+      expect(_path(router), AppRoutes.trending);
+      expect(find.byType(NavigationBar), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(_path(router), AppRoutes.home);
+      expect(find.byKey(const Key('home-trending-see-all')), findsOneWidget);
     });
   });
 }

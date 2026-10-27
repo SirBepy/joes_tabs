@@ -18,9 +18,9 @@ import '../widgets/brand_mascot.dart';
 /// Wireframe list of rows: an expandable Font Settings group (size stepper),
 /// a 3-way Theme selector (System / Light / Dark, bound to [themeModeProvider]),
 /// an "Instruments I play" multi-select (min one, bound to [instrumentsProvider]
-/// and read app-wide to control picker visibility), My Tags (placeholder), and,
-/// while signed in, Log Out and Delete Account rows that each open a mascot
-/// confirmation dialog.
+/// and read app-wide to control picker visibility), My Tags (placeholder), an
+/// Account section whose Log Out opens a mascot confirmation dialog, and, while
+/// signed in, a Delete Account row that opens the same kind of dialog.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -38,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final instruments = ref.watch(instrumentsProvider);
     final maximalChords = ref.watch(maximalChordsProvider);
     final user = ref.watch(currentUserProvider);
+    final palette = context.palette;
 
     return ListView(
       children: [
@@ -90,8 +91,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         const Divider(height: 1),
         // THEME (System / Light / Dark).
-        const Padding(
-          padding: EdgeInsets.fromLTRB(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
             AppSpacing.md,
             AppSpacing.lg,
@@ -99,10 +100,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: Text(
             'THEME',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textDark,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
           ),
         ),
         Padding(
@@ -140,8 +138,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const Divider(height: 1),
         // INSTRUMENTS I PLAY (multi-select, min one). Controls picker
         // visibility app-wide.
-        const Padding(
-          padding: EdgeInsets.fromLTRB(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
             AppSpacing.md,
             AppSpacing.lg,
@@ -149,10 +147,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: Text(
             'INSTRUMENTS I PLAY',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textDark,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
           ),
         ),
         Padding(
@@ -173,7 +168,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   selected: instruments.contains(slug),
                   showCheckmark: true,
                   selectedColor: AppColors.orange,
-                  backgroundColor: AppColors.peach,
+                  backgroundColor: palette.chip,
                   labelStyle: TextStyle(
                     color: instruments.contains(slug)
                         ? AppColors.white
@@ -199,12 +194,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           key: const Key('maximal-chords-switch'),
           value: maximalChords,
           activeThumbColor: AppColors.orange,
-          title: const Text(
+          title: Text(
             'MAXIMAL CHORDS',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textDark,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
           ),
           subtitle: const Text(
             'Show advanced chord types (9ths, 11ths, altered, etc.)',
@@ -224,18 +216,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // the row is disabled with a caption, since AdMob has no web support.
         _buildWatchAdRow(),
         const _SupportUsRow(),
-        // LOG OUT only makes sense while signed in; anonymous users see nothing.
+        // Log out lives in the Account section; only deletion is down here.
         if (user != null) ...[
           const SizedBox(height: AppSpacing.xl),
-          const Divider(height: 1, color: AppColors.peach),
-          _Row(
-            label: 'LOG OUT',
-            trailing: const Icon(
-              PhosphorIconsFill.caretRight,
-              color: AppColors.orange,
-            ),
-            onTap: () => _confirmLogout(context),
-          ),
+          Divider(height: 1, color: palette.divider),
           // Google Play requires in-app deletion for apps that create accounts.
           _Row(
             key: const Key('delete-account-row'),
@@ -256,20 +240,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildWatchAdRow() {
     final adService = ref.watch(adServiceProvider);
     final supported = adService.isSupported;
+    final palette = context.palette;
 
     return ListTile(
       key: const Key('watch-ad-row'),
       enabled: supported,
       leading: Icon(
         PhosphorIconsFill.megaphone,
-        color: supported ? AppColors.orange : AppColors.textDark,
+        color: supported ? AppColors.orange : palette.ink,
       ),
-      title: const Text(
+      title: Text(
         'WATCH AN AD TO SUPPORT US',
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: AppColors.textDark,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
       ),
       subtitle: supported
           ? null
@@ -279,23 +261,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
       onTap: supported ? () => runWatchAdFlow(context, adService) : null,
     );
-  }
-
-  Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => const _ConfirmDialog(
-        message: 'Are you sure you want to log out?',
-        confirmLabel: 'LOG OUT',
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(authServiceProvider).signOut();
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signed out.')));
-    }
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
@@ -326,6 +291,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
   }
+}
+
+/// Asks before signing out, so a stray tap on Log Out never drops the session.
+Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+  // Captured before the dialog's await so the snackbar never reads a stale
+  // context.
+  final messenger = ScaffoldMessenger.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (_) => const _ConfirmDialog(
+      message: 'Are you sure you want to log out?',
+      confirmLabel: 'LOG OUT',
+    ),
+  );
+  if (confirmed != true) return;
+  await ref.read(authServiceProvider).signOut();
+  messenger.showSnackBar(const SnackBar(content: Text('Signed out.')));
 }
 
 /// Account entry points: Log In and Register while signed out, the email and a
@@ -388,7 +370,7 @@ class _AccountSection extends ConsumerWidget {
                 ),
                 TextButton(
                   key: const Key('account-log-out'),
-                  onPressed: () => ref.read(authServiceProvider).signOut(),
+                  onPressed: () => _confirmLogout(context, ref),
                   child: const Text('Log Out'),
                 ),
               ],
@@ -437,9 +419,9 @@ class _Row extends StatelessWidget {
       onTap: onTap,
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w700,
-          color: AppColors.textDark,
+          color: context.palette.ink,
         ),
       ),
       trailing: trailing,
@@ -458,8 +440,9 @@ class _ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Dialog(
-      backgroundColor: AppColors.cardPeach,
+      backgroundColor: palette.card,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -470,12 +453,13 @@ class _ConfirmDialog extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textDark),
+              style: TextStyle(color: palette.ink),
             ),
             const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: TextButton(
+                // White with forced dark text stays readable on both themes.
                 style: TextButton.styleFrom(
                   backgroundColor: AppColors.white,
                   foregroundColor: AppColors.textDark,

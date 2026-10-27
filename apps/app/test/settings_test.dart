@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:joes_tabs_app/screens/settings_screen.dart';
 import 'package:joes_tabs_app/state/settings_provider.dart';
+import 'package:joes_tabs_app/theme/app_palette.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
@@ -52,6 +53,7 @@ Future<void> _pump(
   WidgetTester tester, {
   List<String>? instrumentSlugs,
   List<Override> extraOverrides = const [],
+  ThemeData? theme,
 }) async {
   _db = inMemoryAppDatabase();
   addTearDown(_db.close);
@@ -63,7 +65,7 @@ Future<void> _pump(
         ...extraOverrides,
       ],
       child: MaterialApp(
-        theme: AppTheme.light,
+        theme: theme ?? AppTheme.light,
         home: Scaffold(
           body: Consumer(
             builder: (context, ref, _) {
@@ -218,5 +220,49 @@ void main() {
 
     expect(auth.deleteCalls, 1);
     expect(find.textContaining("Couldn't delete your account"), findsOneWidget);
+  });
+
+  group('dark palette', () {
+    testWidgets('headings, chips and rows resolve the dark tokens', (
+      tester,
+    ) async {
+      await _pump(tester, theme: AppTheme.dark);
+      await tester.pumpAndSettle();
+
+      Color? ink(String text) =>
+          tester.widget<Text>(find.text(text)).style?.color;
+      expect(ink('THEME'), AppPalette.dark.ink);
+      expect(ink('INSTRUMENTS I PLAY'), AppPalette.dark.ink);
+      expect(ink('MAXIMAL CHORDS'), AppPalette.dark.ink);
+      expect(ink('FONT SETTINGS'), AppPalette.dark.ink);
+      final chip = tester.widget<FilterChip>(
+        find.byKey(const Key('instrument-chip-ukulele')),
+      );
+      expect(chip.backgroundColor, AppPalette.dark.chip);
+    });
+
+    testWidgets('the log-out dialog sits on the dark card with ink text', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        theme: AppTheme.dark,
+        extraOverrides: [
+          currentUserProvider.overrideWithValue(testUser),
+          authServiceProvider.overrideWithValue(_FakeAuthService()),
+        ],
+      );
+      await tester.tap(find.byKey(const Key('account-log-out')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Dialog>(find.byType(Dialog)).backgroundColor,
+        AppPalette.dark.card,
+      );
+      final message = tester.widget<Text>(
+        find.text('Are you sure you want to log out?'),
+      );
+      expect(message.style?.color, AppPalette.dark.ink);
+    });
   });
 }

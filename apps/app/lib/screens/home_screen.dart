@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../router/app_routes.dart';
 import '../state/favorites_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/brand_mascot.dart';
 import '../widgets/song_tiles.dart';
@@ -27,9 +28,8 @@ class HomeScreen extends ConsumerWidget {
 
     // Logged in: greet by email (name part). Anonymous: a generic welcome.
     final greetingTop = user == null ? 'WELCOME' : 'WELCOME BACK';
-    final greetingName = user == null
-        ? 'Tap Log In to sync your tabs'
-        : '${_displayName(user.email)}!';
+    // Signed out has no subtitle: the sign-in card below carries the prompt.
+    final greetingName = user == null ? null : '${_displayName(user.email)}!';
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -40,12 +40,17 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               children: [
                 Text(greetingTop, style: textTheme.headlineMedium),
-                Text(
-                  greetingName,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: AppColors.orange.withValues(alpha: 0.6),
+                if (greetingName != null)
+                  Text(
+                    greetingName,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: AppColors.orange.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
+                if (user == null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  const _SignInCard(),
+                ],
                 const SizedBox(height: AppSpacing.md),
                 // Brand mascot placeholder (orange ukulele character TBD).
                 const BrandMascot(size: 140),
@@ -57,11 +62,22 @@ class HomeScreen extends ConsumerWidget {
         _SectionLabel(
           'SAVED TABS',
           // "ALL SAVED TABS >" link routes to the full saved list.
-          trailing: _AllSavedLink(),
+          trailing: const _SectionLink(
+            label: 'ALL SAVED TABS',
+            route: AppRoutes.saved,
+            push: true,
+          ),
         ),
         _SavedRow(favoriteIds: favoriteIds, trending: trending),
         const SizedBox(height: AppSpacing.lg),
-        const _SectionLabel('TRENDING'),
+        const _SectionLabel(
+          'TRENDING',
+          trailing: _SectionLink(
+            key: Key('home-trending-see-all'),
+            label: 'SEE ALL',
+            route: AppRoutes.trending,
+          ),
+        ),
         trending.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(AppSpacing.xl),
@@ -94,19 +110,19 @@ class _TrendingPanel extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.cardPeach,
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
       ),
       child: Column(
         children: [
           for (var i = 0; i < songs.length; i++) ...[
             if (i > 0)
-              const Divider(
+              Divider(
                 height: 1,
                 thickness: 1,
                 indent: AppSpacing.lg,
                 endIndent: AppSpacing.lg,
-                color: AppColors.peach,
+                color: context.palette.divider,
               ),
             SongListTile(song: songs[i]),
           ],
@@ -116,23 +132,32 @@ class _TrendingPanel extends StatelessWidget {
   }
 }
 
-/// The "ALL SAVED TABS >" navigation link shown to the right of the SAVED TABS
-/// section header.
-class _AllSavedLink extends StatelessWidget {
+/// A "LABEL >" navigation link pinned to the right of a section header.
+/// Saved is a sibling tab, so it is pushed; Trending is nested under Home, so
+/// `go` stacks it on Home and back pops to Home.
+class _SectionLink extends StatelessWidget {
+  const _SectionLink({
+    super.key,
+    required this.label,
+    required this.route,
+    this.push = false,
+  });
+
+  final String label;
+  final String route;
+  final bool push;
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-      onTap: () => context.push(AppRoutes.saved),
+      onTap: () => push ? context.push(route) : context.go(route),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'ALL SAVED TABS',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(label, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(width: AppSpacing.xs),
             const Icon(
               PhosphorIconsRegular.caretRight,
@@ -141,6 +166,58 @@ class _AllSavedLink extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Signed-out prompt under the greeting: why to sign in plus Log In / Register.
+class _SignInCard extends StatelessWidget {
+  const _SignInCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      key: const Key('home-login-cta'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(AppSpacing.radius),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Log in to sync your saved tabs across devices.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: palette.ink, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  key: const Key('home-cta-log-in'),
+                  onPressed: () => context.push(AppRoutes.login),
+                  child: const Text('Log In'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: OutlinedButton(
+                  key: const Key('home-cta-register'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.orange,
+                    side: const BorderSide(color: AppColors.orange),
+                  ),
+                  onPressed: () => context.push(AppRoutes.register),
+                  child: const Text('Register'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
