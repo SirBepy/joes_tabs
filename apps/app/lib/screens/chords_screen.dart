@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
 import 'chords/chord_library_view.dart';
@@ -135,7 +136,7 @@ class _InstrumentPickerAction extends ConsumerWidget {
                   size: 20,
                   color: slug == selected
                       ? AppColors.orange
-                      : AppColors.textDark,
+                      : context.palette.ink,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
@@ -146,7 +147,7 @@ class _InstrumentPickerAction extends ConsumerWidget {
                         : FontWeight.w500,
                     color: slug == selected
                         ? AppColors.orange
-                        : AppColors.textDark,
+                        : context.palette.ink,
                   ),
                 ),
               ],
@@ -168,7 +169,7 @@ class _Tabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.peach,
+        color: context.palette.chip,
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
       child: Row(
@@ -216,7 +217,7 @@ class _Tab extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: selected ? AppColors.white : AppColors.textDark,
+            color: selected ? AppColors.white : context.palette.ink,
           ),
         ),
       ),

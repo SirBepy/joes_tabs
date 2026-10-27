@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../tuner/mic_tuner.dart';
 import '../tuner/pitch.dart';
@@ -227,8 +228,8 @@ class _StatusLine extends StatelessWidget {
       case MicTunerStatus.listening:
         return Text(
           active ? 'Hold steady...' : 'Listening... play a string',
-          style: const TextStyle(
-            color: AppColors.textMuted,
+          style: TextStyle(
+            color: context.palette.mutedInk,
             fontWeight: FontWeight.w700,
           ),
         );
@@ -247,8 +248,8 @@ class _Friendly extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: AppColors.textMuted,
+        style: TextStyle(
+          color: context.palette.mutedInk,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -277,7 +278,7 @@ class _StringChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.peach,
+            color: context.palette.chip,
             border: Border.all(color: AppColors.orange, width: 2),
           ),
           child: Text(

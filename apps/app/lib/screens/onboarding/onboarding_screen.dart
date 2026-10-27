@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../router/app_routes.dart';
 import '../../state/settings_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/brand_mascot.dart';
 
@@ -90,7 +91,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildSteps(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Column(
           children: [
@@ -147,7 +147,7 @@ class _ProgressDots extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: i == current ? AppColors.orange : AppColors.peach,
+              color: i == current ? AppColors.orange : context.palette.chip,
             ),
           ),
       ],
@@ -180,10 +180,10 @@ class _WelcomeStep extends StatelessWidget {
             ).textTheme.displaySmall?.copyWith(fontSize: 44, height: 1.0),
           ),
           const SizedBox(height: AppSpacing.md),
-          const Text(
+          Text(
             'Chord sheets for ukulele and guitar, made simple.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted),
+            style: TextStyle(color: context.palette.mutedInk),
           ),
           const SizedBox(height: AppSpacing.xl),
           SizedBox(
@@ -229,10 +229,10 @@ class _InstrumentStep extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
+          Text(
             'Pick at least one. You can change this later in Settings.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted),
+            style: TextStyle(color: context.palette.mutedInk),
           ),
           const SizedBox(height: AppSpacing.xl),
           for (final slug in kSupportedInstrumentSlugs) ...[
@@ -273,7 +273,7 @@ class _InstrumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.orange : AppColors.cardPeach,
+      color: selected ? AppColors.orange : context.palette.card,
       borderRadius: BorderRadius.circular(AppSpacing.radius),
       child: InkWell(
         key: Key('onboarding-instrument-$slug'),
@@ -296,7 +296,7 @@ class _InstrumentCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 18,
-                  color: selected ? AppColors.white : AppColors.textDark,
+                  color: selected ? AppColors.white : context.palette.ink,
                 ),
               ),
               const Spacer(),
@@ -345,11 +345,11 @@ class _AccountStep extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
+          Text(
             'Sign in to keep your saved tabs across devices, '
             'or skip and start playing right away.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted),
+            style: TextStyle(color: context.palette.mutedInk),
           ),
           const SizedBox(height: AppSpacing.xl),
           ElevatedButton(

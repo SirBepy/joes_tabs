@@ -12,12 +12,15 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_palette.dart';
 import 'pitch.dart';
 
 // Tuner zone colors (design spec; tweakable later with Joe).
 const Color _green = Color(0xFF3FA34D);
 const Color _amber = Color(0xFFE8B23C);
 const Color _red = Color(0xFFD9534F);
+// Light-theme ruler tones, kept off the shared palette because they differ
+// slightly from textDark/peach; dark mode takes the palette instead.
 const Color _ink = Color(0xFF3A2E27);
 const Color _muted = Color(0xFFB8A99D);
 const Color _peach2 = Color(0xFFF6E2D4);
@@ -135,6 +138,9 @@ class _TunerGaugeState extends State<TunerGauge>
   @override
   Widget build(BuildContext context) {
     final color = widget.active ? _colorFor(widget.zone) : _muted;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final trackColor = isDark ? context.palette.chip : _peach2;
+    final inkColor = isDark ? context.palette.ink : _ink;
     final centsLabel = !widget.active
         ? '--'
         : '${widget.cents >= 0 ? '+' : ''}${widget.cents.round()}¢';
@@ -195,7 +201,7 @@ class _TunerGaugeState extends State<TunerGauge>
           borderRadius: BorderRadius.circular(14),
           child: Container(
             height: 96,
-            color: _peach2,
+            color: trackColor,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final centerX = constraints.maxWidth / 2;
@@ -256,7 +262,9 @@ class _TunerGaugeState extends State<TunerGauge>
                                         ? color
                                         : (isSharp
                                               ? _muted
-                                              : _ink.withValues(alpha: 0.55)),
+                                              : inkColor.withValues(
+                                                  alpha: 0.55,
+                                                )),
                                   ),
                                 ),
                               ),

@@ -6,6 +6,7 @@ import '../ads/ad_service.dart';
 import '../ads/watch_ad_action.dart';
 import '../router/app_routes.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/brand_mascot.dart';
 
@@ -27,10 +28,10 @@ class SupportScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
-          const Text(
+          Text(
             'If you find our app useful and would love to support us you can '
             'do so here! Thank you!\n\nWith love, Joe.',
-            style: TextStyle(color: AppColors.textDark),
+            style: TextStyle(color: context.palette.ink),
           ),
           const SizedBox(height: AppSpacing.lg),
           const Expanded(child: Center(child: BrandMascot(size: 200))),
@@ -39,7 +40,7 @@ class SupportScreen extends ConsumerWidget {
             child: TextButton(
               key: const Key('watch-ad-button'),
               style: TextButton.styleFrom(
-                backgroundColor: AppColors.peach,
+                backgroundColor: context.palette.chip,
                 foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(
@@ -60,12 +61,12 @@ class SupportScreen extends ConsumerWidget {
             ),
           ),
           if (!adsSupported)
-            const Padding(
-              padding: EdgeInsets.only(top: AppSpacing.xs),
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
               child: Text(
                 'Available on the mobile app',
-                key: Key('watch-ad-web-note'),
-                style: TextStyle(color: AppColors.textDark, fontSize: 12),
+                key: const Key('watch-ad-web-note'),
+                style: TextStyle(color: context.palette.ink, fontSize: 12),
               ),
             ),
           const SizedBox(height: AppSpacing.sm),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/brand_mascot.dart';
 
@@ -18,7 +19,7 @@ class ThankYouScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.peach,
+      backgroundColor: context.palette.chip,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => context.go('/'),
@@ -53,6 +54,8 @@ class ThankYouScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSpacing.radius),
                   ),
                   child: const Text(
+                    // The bubble stays white in both themes, so its text must
+                    // stay dark rather than follow palette.ink.
                     'Glad to have you here!',
                     style: TextStyle(color: AppColors.textDark),
                   ),
@@ -60,9 +63,9 @@ class ThankYouScreen extends StatelessWidget {
                 const SizedBox(height: AppSpacing.lg),
                 const BrandMascot(size: 200, icon: PhosphorIconsFill.guitar),
                 const SizedBox(height: AppSpacing.xl),
-                const Text(
+                Text(
                   'Tap anywhere to continue',
-                  style: TextStyle(color: AppColors.textMuted),
+                  style: TextStyle(color: context.palette.mutedInk),
                 ),
               ],
             ),

@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/song_tiles.dart';
 
@@ -92,9 +93,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           style: const TextStyle(color: AppColors.textDark),
           decoration: InputDecoration(
             hintText: 'Search by song or artist',
+            // Hint and icon take the muted light-theme tone explicitly so dark
+            // mode's pale input colours do not wash out on the white fill.
+            hintStyle: const TextStyle(color: AppColors.textMuted),
             filled: true,
             fillColor: AppColors.white,
-            prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+            prefixIcon: const Icon(
+              PhosphorIconsRegular.magnifyingGlass,
+              color: AppColors.textMuted,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
               borderSide: BorderSide.none,
@@ -191,7 +198,7 @@ class _FilterChoice extends StatelessWidget {
       onSelected: (_) => onTap(),
       showCheckmark: false,
       selectedColor: AppColors.orange,
-      backgroundColor: AppColors.peach,
+      backgroundColor: context.palette.chip,
       labelStyle: TextStyle(
         color: selected ? AppColors.white : AppColors.rust,
         fontWeight: FontWeight.w600,

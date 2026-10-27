@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../song/chord_diagram.dart';
 import '../../state/settings_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/scrollable_chip_row.dart';
 
@@ -104,7 +105,7 @@ class _FamilyTabBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.xs),
         decoration: BoxDecoration(
-          color: AppColors.peach,
+          color: context.palette.chip,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         ),
         child: Row(
@@ -153,7 +154,7 @@ class _FamilyTab extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: selected ? AppColors.white : AppColors.textDark,
+            color: selected ? AppColors.white : context.palette.ink,
           ),
         ),
       ),
@@ -210,7 +211,7 @@ class _TypeRow extends StatelessWidget {
         vertical: AppSpacing.xs / 2,
       ),
       child: Material(
-        color: selected ? AppColors.orange : AppColors.cardPeach,
+        color: selected ? AppColors.orange : context.palette.card,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppSpacing.radius),
@@ -227,7 +228,7 @@ class _TypeRow extends StatelessWidget {
                     quality.label,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: selected ? AppColors.white : AppColors.textDark,
+                      color: selected ? AppColors.white : context.palette.ink,
                     ),
                   ),
                 ),
@@ -263,7 +264,7 @@ class _ResultCard extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.cardPeach,
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
       ),
       child: Row(

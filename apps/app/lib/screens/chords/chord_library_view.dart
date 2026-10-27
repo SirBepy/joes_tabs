@@ -7,6 +7,7 @@ import '../../song/chord_diagram.dart';
 import '../../state/settings_provider.dart';
 import '../../theme/app_breakpoints.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 
 /// Display order for a root's variants in the library: common chords first
@@ -78,9 +79,16 @@ class _ChordLibraryViewState extends ConsumerState<ChordLibraryView> {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: TextField(
             onChanged: (v) => setState(() => _query = v),
+            style: const TextStyle(color: AppColors.textDark),
             decoration: InputDecoration(
               hintText: 'Search chords',
-              prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+              // White fill in both themes: dark text, hint and icon so dark
+              // mode's pale input colours stay readable (matches Search).
+              hintStyle: const TextStyle(color: AppColors.textMuted),
+              prefixIcon: const Icon(
+                PhosphorIconsRegular.magnifyingGlass,
+                color: AppColors.textMuted,
+              ),
               filled: true,
               fillColor: AppColors.white,
               border: OutlineInputBorder(
@@ -96,10 +104,10 @@ class _ChordLibraryViewState extends ConsumerState<ChordLibraryView> {
         const SizedBox(height: AppSpacing.sm),
         Expanded(
           child: grouped.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No chords match that search.',
-                    style: TextStyle(color: AppColors.textMuted),
+                    style: TextStyle(color: context.palette.mutedInk),
                   ),
                 )
               : ListView(
