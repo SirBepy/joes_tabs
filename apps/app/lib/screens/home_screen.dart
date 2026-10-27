@@ -61,9 +61,10 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.lg),
         _SectionLabel(
           'SAVED TABS',
-          // "ALL SAVED TABS >" link routes to the full saved list.
+          // "SEE ALL >" link routes to the full saved list.
           trailing: const _SectionLink(
-            label: 'ALL SAVED TABS',
+            key: Key('home-saved-see-all'),
+            label: 'SEE ALL',
             route: AppRoutes.saved,
             push: true,
           ),
@@ -250,7 +251,7 @@ class _SectionLabel extends StatelessWidget {
         AppSpacing.sm,
       ),
       child: Row(
-        // Title at the start, optional link (e.g. "ALL SAVED TABS >") pinned to
+        // Title at the start, optional link (e.g. "SEE ALL >") pinned to
         // the opposite end so the two are not cramped together.
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

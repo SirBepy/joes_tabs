@@ -523,6 +523,26 @@ void main() {
       expect(find.byKey(const Key('home-login-cta')), findsNothing);
     });
 
+    testWidgets(
+      'saved and trending rows both say SEE ALL; saved opens /saved',
+      (tester) async {
+        final router = await _pumpApp(tester);
+        await tester.scrollUntilVisible(
+          find.byKey(const Key('home-trending-see-all')),
+          200,
+        );
+
+        expect(find.text('SEE ALL'), findsNWidgets(2));
+        expect(find.textContaining('ALL SAVED TABS'), findsNothing);
+
+        await tester.ensureVisible(find.byKey(const Key('home-saved-see-all')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('home-saved-see-all')));
+        await tester.pumpAndSettle();
+        expect(_path(router), AppRoutes.saved);
+      },
+    );
+
     testWidgets('SEE ALL opens Trending on top of Home and back returns', (
       tester,
     ) async {

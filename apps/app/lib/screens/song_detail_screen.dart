@@ -34,17 +34,23 @@ class SongDetailScreen extends ConsumerWidget {
     final async = ref.watch(songProvider(songId));
     final isFav = ref.watch(isFavoriteProvider(songId));
 
+    // Light: the theme's orange bar with white title/icons. Dark: the theme's
+    // brown bar (like every other screen), so brand orange is the accent
+    // instead of the background.
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.orange,
-        foregroundColor: AppColors.white,
-        title: const Text('Joes Tabs'),
+        title: Text(
+          'Joes Tabs',
+          style: dark ? const TextStyle(color: AppColors.orange) : null,
+        ),
         actions: [
           IconButton(
             tooltip: isFav ? 'Remove favorite' : 'Add favorite',
             icon: Icon(
               isFav ? PhosphorIconsFill.heart : PhosphorIconsRegular.heart,
-              color: isFav ? AppColors.white : null,
+              color: isFav ? (dark ? AppColors.orange : AppColors.white) : null,
             ),
             onPressed: () =>
                 ref.read(favoritesProvider.notifier).toggle(songId),

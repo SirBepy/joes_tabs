@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Tab;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:joes_tabs_app/screens/song_detail_screen.dart';
+import 'package:joes_tabs_app/theme/app_colors.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:models/models.dart';
 
@@ -34,7 +35,7 @@ SongWithTabs _fakeSong() {
   );
 }
 
-Future<void> _pump(WidgetTester tester) async {
+Future<void> _pump(WidgetTester tester, {ThemeData? theme}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -45,7 +46,7 @@ Future<void> _pump(WidgetTester tester) async {
         instrumentsByIdProvider.overrideWith((ref) async => {}),
       ],
       child: MaterialApp(
-        theme: AppTheme.light,
+        theme: theme ?? AppTheme.light,
         home: const SongDetailScreen(songId: 's1'),
       ),
     ),
@@ -53,7 +54,36 @@ Future<void> _pump(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// The AppBar paints its resolved background on its own Material.
+Color? _appBarColor(WidgetTester tester) => tester
+    .widget<Material>(
+      find
+          .descendant(of: find.byType(AppBar), matching: find.byType(Material))
+          .first,
+    )
+    .color;
+
+Color? _titleColor(WidgetTester tester) =>
+    tester.widget<Text>(find.text('Joes Tabs')).style?.color;
+
 void main() {
+  testWidgets('light theme keeps the orange app bar', (tester) async {
+    await _pump(tester, theme: AppTheme.light);
+
+    expect(_appBarColor(tester), AppColors.orange);
+    expect(_titleColor(tester), isNull);
+  });
+
+  testWidgets('dark theme uses the dark bar with an orange title', (
+    tester,
+  ) async {
+    await _pump(tester, theme: AppTheme.dark);
+
+    expect(_appBarColor(tester), AppColors.darkSurface);
+    expect(_appBarColor(tester), isNot(AppColors.orange));
+    expect(_titleColor(tester), AppColors.orange);
+  });
+
   testWidgets('renders the parsed chord sheet (title, lyric, chords)', (
     tester,
   ) async {
