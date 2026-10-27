@@ -13,6 +13,9 @@ dependencies:
   models:
     path: ../models
   supabase_flutter: ^2.8.0
+  # On-device fetch of ukulele-tabs.com's search page (web tabs), and
+  # MockClient for driving a real SupabaseClient in tests.
+  http: ^1.6.0
   flutter_riverpod: ^2.6.1
   # Local-first offline cache (plan 09). drift_flutter bundles the native
   # sqlite3 libraries for mobile/desktop via build hooks (no EOL
@@ -38,6 +41,3 @@ dev_dependencies:
     sdk: flutter
   drift_dev: ^2.31.0
   build_runner: ^2.4.0
-  # MockClient for driving a real SupabaseClient in tests; already resolved
-  # transitively via supabase_flutter.
-  http: ^1.6.0

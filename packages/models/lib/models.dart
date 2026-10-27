@@ -15,4 +15,5 @@ export 'src/song.dart';
 export 'src/song_with_tabs.dart';
 export 'src/tab.dart';
 export 'src/web/chords_over_lyrics.dart';
+export 'src/web/ukulele_tabs_search.dart';
 export 'src/web/web_tab_sites.dart';

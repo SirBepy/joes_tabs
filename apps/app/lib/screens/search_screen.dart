@@ -226,7 +226,9 @@ class _Results extends ConsumerWidget {
     final results = ref.watch(
       searchFilteredProvider((query: query, instrumentSlug: instrumentSlug)),
     );
-    final web = _WebResults(query: query);
+    final web = ref.watch(webTabsEnabledProvider)
+        ? _WebResults(query: query)
+        : null;
     return results.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) =>
@@ -236,7 +238,7 @@ class _Results extends ConsumerWidget {
           return ListView(
             children: [
               EmptyState(message: 'No songs found for "$query".'),
-              web,
+              ?web,
             ],
           );
         }
@@ -270,8 +272,8 @@ class _Results extends ConsumerWidget {
 }
 
 /// "From the web": chord pages on the allowlisted sites, below the catalog.
-/// Signed-in only (the search API is metered and imported tabs are visible to
-/// signed-in users only), so signed-out users get a sign-in prompt instead.
+/// Signed-in only (imported tabs are visible to signed-in users only), so
+/// signed-out users get a sign-in prompt instead.
 class _WebResults extends ConsumerWidget {
   const _WebResults({required this.query});
 
@@ -366,7 +368,10 @@ class _WebResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parsed = parseWebTabTitle(result.title);
+    final artist = result.artist;
+    final parsed = artist != null
+        ? (title: result.title, artist: artist)
+        : parseWebTabTitle(result.title);
     final external = result.songId == null && !_readsInApp;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

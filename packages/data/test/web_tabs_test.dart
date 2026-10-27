@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:data/data.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -73,49 +77,78 @@ class _FakeWebTabs implements WebTabsRepository {
 }
 
 void main() {
-  group('parseWebSearchResponse', () {
-    test('keeps allowlisted results and resolves their site', () {
-      final results = parseWebSearchResponse({
-        'results': [
-          {
-            'title': 'Love Like You',
-            'url': 'https://ukulele-tabs.com/love.html',
-            'description': 'chords',
-          },
-          {
-            'title': 'UG',
-            'url': 'https://tabs.ultimate-guitar.com/tab/x',
-            'description': '',
-          },
-        ],
-      });
-      expect(results.map((r) => r.site), [
-        WebTabSite.ukuleleTabs,
-        WebTabSite.ultimateGuitar,
-      ]);
-      expect(results.first.title, 'Love Like You');
+  group('ukuleleTabsSearchResults', () {
+    const page = '''
+<div class="song_res"><span class="tabtype chrd">chords</span> <a href="/uke-songs/a/love-like-you-uke-tab-1.html">Love Like You</a> - <em><a class="parenth" href="/a.html">Rebecca Sugar</a></em></div>
+<div class="song_res"><span class="tabtype tab">tab</span> <a href="/uke-songs/a/riff-uke-tab-2.html">Riff</a></div>
+<div class="song_res"><span class="tabtype mix">mix</span> <a href="/uke-songs/b/both-uke-tab-3.html">Both</a></div>
+''';
+
+    test('keeps chord sheets as ukulele-tabs.com results with artist', () {
+      final results = ukuleleTabsSearchResults(page);
+      expect(results.map((r) => r.title), ['Love Like You', 'Both']);
+      expect(results.first.artist, 'Rebecca Sugar');
+      expect(results.first.site, WebTabSite.ukuleleTabs);
       expect(results.first.songId, isNull);
+      expect(results.last.artist, isNull);
     });
 
-    test('skips malformed entries and off-list hosts', () {
-      final results = parseWebSearchResponse({
-        'results': [
-          'nope',
-          {'title': 'no url'},
-          {'title': 'x', 'url': 42},
-          {'title': 'x', 'url': 'https://songsterr.com/a'},
-          {'url': 'https://chordie.com/a'},
-        ],
-      });
-      expect(results, hasLength(1));
-      expect(results.single.site, WebTabSite.chordie);
-      expect(results.single.title, '');
+    test('withSongId keeps the artist', () {
+      final r = ukuleleTabsSearchResults(page).first.withSongId('s1');
+      expect(r.songId, 's1');
+      expect(r.artist, 'Rebecca Sugar');
+    });
+  });
+
+  group('SupabaseWebTabsRepository.search', () {
+    const page = '''
+<div class="song_res"><span class="tabtype chrd">chords</span> <a href="/uke-songs/a/love-like-you-uke-tab-1.html">Love Like You</a> - <em><a class="parenth" href="/a.html">Rebecca Sugar</a></em></div>
+''';
+    const loveUrl =
+        'https://www.ukulele-tabs.com/uke-songs/a/love-like-you-uke-tab-1.html';
+
+    SupabaseClient backend(List<Uri> calls) => SupabaseClient(
+      'http://localhost:54321',
+      'anon-key',
+      httpClient: MockClient((request) async {
+        calls.add(request.url);
+        return http.Response(
+          jsonEncode([
+            {'source_url': loveUrl, 'song_id': 's7'},
+          ]),
+          200,
+          headers: {'content-type': 'application/json'},
+          request: request,
+        );
+      }),
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
+    );
+
+    test('fetches the site search page on device and marks imports', () async {
+      final siteCalls = <Uri>[];
+      final backendCalls = <Uri>[];
+      final repo = SupabaseWebTabsRepository(
+        backend(backendCalls),
+        httpClient: MockClient((request) async {
+          siteCalls.add(request.url);
+          return http.Response(page, 200);
+        }),
+      );
+
+      final results = await repo.search('love');
+
+      expect(siteCalls.single, ukuleleTabsSearchUrl('love'));
+      expect(backendCalls.single.path, '/rest/v1/rpc/imported_song_ids');
+      expect(results.single.title, 'Love Like You');
+      expect(results.single.songId, 's7');
     });
 
-    test('tolerates a body without results', () {
-      expect(parseWebSearchResponse(null), isEmpty);
-      expect(parseWebSearchResponse({'results': 'x'}), isEmpty);
-      expect(parseWebSearchResponse('text'), isEmpty);
+    test('a failed site fetch is a CatalogException', () async {
+      final repo = SupabaseWebTabsRepository(
+        backend([]),
+        httpClient: MockClient((_) async => http.Response('', 503)),
+      );
+      expect(repo.search('love'), throwsA(isA<CatalogException>()));
     });
   });
 

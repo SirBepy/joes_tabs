@@ -106,6 +106,7 @@ void main() {
           router: _router(search: const SearchScreen(initialQuery: 'song')),
           overrides: [
             initialSettingsOverride(),
+            webTabsEnabledProvider.overrideWithValue(true),
             searchFilteredProvider((
               query: 'song',
               instrumentSlug: ChordShapes.ukulele,
@@ -219,9 +220,36 @@ void main() {
     expect(find.text('Song B'), findsNothing);
   });
 
+  testWidgets('the web section stays hidden unless web tabs are enabled', (
+    tester,
+  ) async {
+    var searched = false;
+    await _pump(
+      tester,
+      router: _router(search: const SearchScreen(initialQuery: 'su')),
+      overrides: [
+        initialSettingsOverride(),
+        searchFilteredProvider((
+          query: 'su',
+          instrumentSlug: ChordShapes.ukulele,
+        )).overrideWith((ref) async => const <Song>[]),
+        currentUserProvider.overrideWith((ref) => _user()),
+        webSearchProvider('su').overrideWith((ref) async {
+          searched = true;
+          return const [];
+        }),
+      ],
+    );
+
+    expect(find.text('No songs found for "su".'), findsOneWidget);
+    expect(find.text('No chord pages found on the web.'), findsNothing);
+    expect(searched, isFalse);
+  });
+
   group('from the web', () {
     List<Override> emptyCatalog(String query) => [
       initialSettingsOverride(),
+      webTabsEnabledProvider.overrideWithValue(true),
       searchFilteredProvider((
         query: query,
         instrumentSlug: ChordShapes.ukulele,
@@ -320,6 +348,7 @@ void main() {
         router: _router(search: const SearchScreen(initialQuery: 'grace')),
         overrides: [
           initialSettingsOverride(),
+          webTabsEnabledProvider.overrideWithValue(true),
           searchFilteredProvider((
             query: 'grace',
             instrumentSlug: ChordShapes.ukulele,

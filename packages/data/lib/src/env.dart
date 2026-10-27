@@ -31,6 +31,11 @@ class Env {
     'GOOGLE_WEB_CLIENT_ID',
   );
 
+  /// Turns on the Search screen's "From the web" section. Off unless built with
+  /// `--dart-define=WEB_TABS=true`: ukulele-tabs.com's terms forbid extraction
+  /// without their written permission, so only the `ut-client` demo build sets it.
+  static const bool webTabs = bool.fromEnvironment('WEB_TABS');
+
   /// True only when both required defines are present and non-empty.
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;

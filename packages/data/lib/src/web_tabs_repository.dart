@@ -1,3 +1,4 @@
+import 'package:http/http.dart' as http;
 import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,10 +11,14 @@ class WebSearchResult {
     required this.url,
     required this.description,
     required this.site,
+    this.artist,
     this.songId,
   });
 
   final String title;
+
+  /// The artist as the site lists it, or null when only [title] carries it.
+  final String? artist;
   final Uri url;
   final String description;
   final WebTabSite site;
@@ -24,6 +29,7 @@ class WebSearchResult {
 
   WebSearchResult withSongId(String? id) => WebSearchResult(
     title: title,
+    artist: artist,
     url: url,
     description: description,
     site: site,
@@ -51,21 +57,24 @@ abstract class WebTabsRepository {
   });
 }
 
-/// [WebTabsRepository] over the `web-search` Edge Function and the
-/// `import_web_tab` / `imported_song_ids` RPCs.
+/// [WebTabsRepository] that searches ukulele-tabs.com's own search page from
+/// the device, then maps result URLs to already imported songs via the
+/// `imported_song_ids` RPC. Nothing about the search is stored server-side.
 class SupabaseWebTabsRepository implements WebTabsRepository {
-  SupabaseWebTabsRepository(this._client);
+  SupabaseWebTabsRepository(this._client, {http.Client? httpClient})
+    : _http = httpClient ?? http.Client();
 
   final SupabaseClient _client;
+  final http.Client _http;
 
   @override
   Future<List<WebSearchResult>> search(String query) async {
     try {
-      final res = await _client.functions.invoke(
-        'web-search',
-        body: {'query': query},
-      );
-      final results = parseWebSearchResponse(res.data);
+      final res = await _http.get(ukuleleTabsSearchUrl(query));
+      if (res.statusCode != 200) {
+        throw http.ClientException('HTTP ${res.statusCode}', res.request?.url);
+      }
+      final results = ukuleleTabsSearchResults(res.body);
       if (results.isEmpty) return results;
 
       final known = await _client.rpc<List<dynamic>>(
@@ -112,31 +121,16 @@ class SupabaseWebTabsRepository implements WebTabsRepository {
   }
 }
 
-/// Decodes the `web-search` function's `{results: [{title, url, description}]}`
-/// body, keeping only results on an allowlisted site. Malformed entries are
-/// skipped rather than failing the whole search.
-List<WebSearchResult> parseWebSearchResponse(Object? body) {
-  final results = body is Map ? body['results'] : null;
-  if (results is! List) return const [];
-  final out = <WebSearchResult>[];
-  for (final item in results) {
-    if (item is! Map) continue;
-    final rawUrl = item['url'];
-    if (rawUrl is! String) continue;
-    final url = Uri.tryParse(rawUrl);
-    if (url == null) continue;
-    final site = WebTabSite.forUrl(url);
-    if (site == null) continue;
-    out.add(
+/// The readable results on a ukulele-tabs.com search page. Tablature-only
+/// sheets are dropped: they carry no chord names for the reader to convert.
+List<WebSearchResult> ukuleleTabsSearchResults(String html) => [
+  for (final hit in parseUkuleleTabsSearch(html))
+    if (hit.hasChords)
       WebSearchResult(
-        title: item['title'] is String ? item['title'] as String : '',
-        url: url,
-        description: item['description'] is String
-            ? item['description'] as String
-            : '',
-        site: site,
+        title: hit.title,
+        artist: hit.artist,
+        url: hit.url,
+        description: '',
+        site: WebTabSite.ukuleleTabs,
       ),
-    );
-  }
-  return out;
-}
+];

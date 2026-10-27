@@ -5,9 +5,7 @@ library;
 ///
 /// Membership and [parseable] follow the terms-of-service review in
 /// `docs/superpowers/specs/2026-10-27-web-tabs-design.md`: a site is parseable
-/// only when its terms don't forbid extraction or framing. The Edge Function
-/// `supabase/functions/web-search` carries the same host list for its `site:`
-/// filter, so a site added here must be added there too.
+/// only when its terms don't forbid extraction or framing.
 class WebTabSite {
   const WebTabSite({
     required this.id,

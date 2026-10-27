@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth/auth_providers.dart';
 import 'catalog_repository.dart';
 import 'drift/app_database.dart';
+import 'env.dart';
 import 'offline_catalog_repository.dart';
 import 'supabase_catalog_repository.dart';
 import 'web_tabs_repository.dart';
@@ -125,6 +126,10 @@ final instrumentsByIdProvider = FutureProvider<Map<String, Instrument>>((
   final list = await ref.watch(catalogRepositoryProvider).instruments();
   return {for (final i in list) i.id: i};
 });
+
+/// Whether the Search screen shows the "From the web" section ([Env.webTabs]).
+/// A provider so widget tests can turn it on.
+final webTabsEnabledProvider = Provider<bool>((ref) => Env.webTabs);
 
 /// Web tabs backend (search + import), over the signed-in Supabase session.
 final webTabsRepositoryProvider = Provider<WebTabsRepository>((ref) {
