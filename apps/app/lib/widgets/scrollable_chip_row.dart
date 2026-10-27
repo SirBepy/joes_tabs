@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// A labelled, single-line horizontally-scrollable single-select chip row, with
@@ -34,11 +35,11 @@ class ScrollableChipRow extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
-              color: AppColors.textMuted,
+              color: context.palette.mutedInk,
             ),
           ),
         ),
@@ -61,7 +62,7 @@ class ScrollableChipRow extends StatelessWidget {
                     selected: option == selected,
                     showCheckmark: false,
                     selectedColor: AppColors.orange,
-                    backgroundColor: AppColors.peach,
+                    backgroundColor: context.palette.chip,
                     labelStyle: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: option == selected

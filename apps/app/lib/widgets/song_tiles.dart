@@ -8,6 +8,7 @@ import '../router/app_routes.dart';
 import '../state/favorites_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// A two-line trending/search list row: title over artist with a trailing
@@ -39,8 +40,8 @@ class SongListTile extends ConsumerWidget {
       title: _Highlighted(
         text: song.title,
         query: highlight,
-        base: const TextStyle(
-          color: AppColors.textDark,
+        base: TextStyle(
+          color: context.palette.ink,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -92,7 +93,7 @@ class SongCard extends StatelessWidget {
         width: width,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.cardPeach,
+          color: context.palette.card,
           borderRadius: BorderRadius.circular(AppSpacing.radius),
         ),
         child: Column(
@@ -105,8 +106,8 @@ class SongCard extends StatelessWidget {
               song.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textDark,
+              style: TextStyle(
+                color: context.palette.ink,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
@@ -206,7 +207,7 @@ class _InstrumentChip extends StatelessWidget {
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: AppColors.peach,
+        color: context.palette.chip,
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
       child: Text(
@@ -285,13 +286,13 @@ class EmptyState extends StatelessWidget {
             Icon(
               icon ?? PhosphorIconsFill.guitar,
               size: 56,
-              color: AppColors.peach,
+              color: context.palette.chip,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: context.palette.mutedInk),
             ),
           ],
         ),
@@ -322,7 +323,7 @@ class FriendlyError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: context.palette.mutedInk),
             ),
           ],
         ),

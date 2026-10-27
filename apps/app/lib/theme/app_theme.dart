@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_palette.dart';
 import 'app_spacing.dart';
 
 /// The app's [ThemeData]. Wireframe fidelity only: a warm peach/cream surface
@@ -23,6 +24,7 @@ abstract final class AppTheme {
     );
 
     return base.copyWith(
+      extensions: const [AppPalette.light],
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.orange,
         foregroundColor: AppColors.white,
@@ -84,6 +86,7 @@ abstract final class AppTheme {
     );
 
     return base.copyWith(
+      extensions: const [AppPalette.dark],
       // The browse app bar tracks the theme so dark mode darkens with the body
       // instead of keeping the bright orange band. It uses the same darkSurface
       // tone as the SectionHeader, so both top bars and the body are consistent

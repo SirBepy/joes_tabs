@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// A small fretboard chord diagram on a peach card.
@@ -42,7 +43,7 @@ class ChordDiagram extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.cardPeach,
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
       ),
       child: Column(
@@ -61,17 +62,17 @@ class ChordDiagram extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
           ],
           if (shape == null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Text(
                 'no diagram',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+                style: TextStyle(color: context.palette.mutedInk, fontSize: 10),
               ),
             )
           else
             CustomPaint(
               size: Size(width - AppSpacing.md, (width - AppSpacing.md) * 1.25),
-              painter: _FretboardPainter(shape),
+              painter: _FretboardPainter(shape, context.palette.mutedInk),
             ),
         ],
       ),
@@ -81,9 +82,13 @@ class ChordDiagram extends StatelessWidget {
 
 /// Draws a [ChordShape] as a small vertical fretboard.
 class _FretboardPainter extends CustomPainter {
-  _FretboardPainter(this.shape);
+  _FretboardPainter(this.shape, this.mutedInk);
 
   final ChordShape shape;
+
+  /// Open/muted markers and the fret label; the card behind flips with the
+  /// theme, so the caller supplies a colour that stays legible on it.
+  final Color mutedInk;
 
   static const int _fretsShown = 4;
 
@@ -130,7 +135,7 @@ class _FretboardPainter extends CustomPainter {
         final tp = TextPainter(
           text: TextSpan(
             text: marker,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 9),
+            style: TextStyle(color: mutedInk, fontSize: 9),
           ),
           textDirection: TextDirection.ltr,
         )..layout();
@@ -148,8 +153,8 @@ class _FretboardPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: '${shape.baseFret}fr',
-          style: const TextStyle(
-            color: AppColors.textMuted,
+          style: TextStyle(
+            color: mutedInk,
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
@@ -162,5 +167,7 @@ class _FretboardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _FretboardPainter old) =>
-      old.shape.name != shape.name || old.shape.frets != shape.frets;
+      old.shape.name != shape.name ||
+      old.shape.frets != shape.frets ||
+      old.mutedInk != mutedInk;
 }

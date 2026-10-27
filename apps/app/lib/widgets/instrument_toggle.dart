@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// A pill segmented control to switch between ukulele and guitar.
@@ -27,7 +28,7 @@ class InstrumentToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.peach,
+        color: context.palette.chip,
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
       child: Row(
@@ -79,7 +80,7 @@ class _Segment extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: selected ? AppColors.white : AppColors.textDark,
+            color: selected ? AppColors.white : context.palette.ink,
           ),
         ),
       ),

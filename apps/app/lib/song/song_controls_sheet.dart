@@ -3,6 +3,7 @@ import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// Brand-styled bottom sheet that hosts the song playback controls (instrument
@@ -40,7 +41,7 @@ Future<void> showSongControlsSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppColors.cream,
+    backgroundColor: context.palette.sheet,
     showDragHandle: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.lg)),
@@ -155,7 +156,7 @@ class _TransposeRow extends StatelessWidget {
         : (transpose > 0 ? '+$transpose' : '$transpose');
     return Row(
       children: [
-        const Text('Transpose', style: TextStyle(color: AppColors.textDark)),
+        Text('Transpose', style: TextStyle(color: context.palette.ink)),
         IconButton(
           tooltip: 'Down a semitone',
           icon: const Icon(PhosphorIconsRegular.minus),
@@ -174,7 +175,7 @@ class _TransposeRow extends StatelessWidget {
         if (shownKey.isNotEmpty)
           Text(
             'Key $shownKey',
-            style: const TextStyle(color: AppColors.textMuted),
+            style: TextStyle(color: context.palette.mutedInk),
           ),
         const Spacer(),
         if (capo != null && capo! > 0)
@@ -217,7 +218,7 @@ class _AutoscrollRow extends StatelessWidget {
           onPressed: onToggle,
         ),
         const SizedBox(width: AppSpacing.sm),
-        const Icon(PhosphorIconsRegular.gauge, color: AppColors.textMuted),
+        Icon(PhosphorIconsRegular.gauge, color: context.palette.mutedInk),
         Expanded(
           child: Slider(
             min: 10,

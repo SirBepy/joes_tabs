@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 
 /// Brand mascot placeholder: the orange ukulele character inside a peach circle.
 ///
@@ -23,8 +24,8 @@ class BrandMascot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
-        color: AppColors.peach,
+      decoration: BoxDecoration(
+        color: context.palette.chip,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,

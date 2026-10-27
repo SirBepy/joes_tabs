@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../router/app_routes.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import 'app_drawer.dart';
 
@@ -112,15 +113,11 @@ class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actions = ref.watch(sectionActionsProvider);
-    // The header bar must track the theme so dark mode darkens with the body
-    // instead of staying cream. In light mode these resolve to the exact same
-    // cream/peach tones used before (the light surface is AppColors.cream and
-    // the light divider is AppColors.peach via the surface palette); in dark
-    // mode they fall back to the dark warm surfaces. The orange foreground is
-    // the intentional brand accent and stays in both modes.
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final barColor = isDark ? AppColors.darkSurface : AppColors.cream;
-    final borderColor = isDark ? AppColors.darkCard : AppColors.peach;
+    // The bar and its divider come from the palette so dark mode darkens with
+    // the body. The orange foreground is the brand accent in both modes.
+    final palette = context.palette;
+    final barColor = palette.sheet;
+    final borderColor = palette.divider;
     return AppBar(
       backgroundColor: barColor,
       foregroundColor: AppColors.orange,

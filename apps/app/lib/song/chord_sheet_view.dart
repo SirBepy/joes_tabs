@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// Renders a parsed [ChordSheet] as chords-over-lyrics with monospace
@@ -40,8 +41,8 @@ class ChordSheetView extends StatelessWidget {
               ),
               child: Text(
                 '[${line.label}]',
-                style: const TextStyle(
-                  color: AppColors.textDark,
+                style: TextStyle(
+                  color: context.palette.ink,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -53,8 +54,8 @@ class ChordSheetView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: Text(
                 line.label ?? '',
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: context.palette.mutedInk,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -105,10 +106,11 @@ class _LyricLine extends StatelessWidget {
   }
 }
 
+// No colour here: it comes from the palette at build time so lyrics stay
+// readable on both themes.
 const TextStyle _lyricStyle = TextStyle(
   fontFamily: 'monospace',
   fontFamilyFallback: ['Courier New', 'Courier', 'monospace'],
-  color: AppColors.textDark,
   height: 1.2,
   fontSize: 14,
 );
@@ -152,7 +154,10 @@ class _Segment extends StatelessWidget {
         // Chord row: reserve the same height even when empty so lyric baselines
         // line up across segments.
         Text(transposed ?? '​', style: _chordStyle),
-        Text(lyric.isEmpty ? '​' : lyric, style: _lyricStyle),
+        Text(
+          lyric.isEmpty ? '​' : lyric,
+          style: _lyricStyle.copyWith(color: context.palette.ink),
+        ),
       ],
     );
   }
