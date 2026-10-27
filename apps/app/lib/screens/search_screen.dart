@@ -1,16 +1,20 @@
 import 'dart:async';
 
 import 'package:data/data.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../router/app_routes.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
+import '../web_tabs/open_external.dart';
 import '../widgets/song_tiles.dart';
 
 /// Search results screen. A debounced text field drives [searchFilteredProvider]
@@ -222,13 +226,19 @@ class _Results extends ConsumerWidget {
     final results = ref.watch(
       searchFilteredProvider((query: query, instrumentSlug: instrumentSlug)),
     );
+    final web = _WebResults(query: query);
     return results.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) =>
           const FriendlyError(message: 'Search failed. Please try again.'),
       data: (songs) {
         if (songs.isEmpty) {
-          return EmptyState(message: 'No songs found for "$query".');
+          return ListView(
+            children: [
+              EmptyState(message: 'No songs found for "$query".'),
+              web,
+            ],
+          );
         }
         final chip = _chipLabel(instrumentSlug);
         return SongListOrGrid(
@@ -238,6 +248,7 @@ class _Results extends ConsumerWidget {
             trailingChip: chip,
             highlight: query,
           ),
+          footer: web,
         );
       },
     );
@@ -255,5 +266,129 @@ class _Results extends ConsumerWidget {
       default:
         return null;
     }
+  }
+}
+
+/// "From the web": chord pages on the allowlisted sites, below the catalog.
+/// Signed-in only (the search API is metered and imported tabs are visible to
+/// signed-in users only), so signed-out users get a sign-in prompt instead.
+class _WebResults extends ConsumerWidget {
+  const _WebResults({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedIn = ref.watch(currentUserProvider) != null;
+    final muted = TextStyle(color: context.palette.mutedInk);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.xs,
+          ),
+          child: Text(
+            'FROM THE WEB',
+            style: TextStyle(
+              color: context.palette.mutedInk,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        if (!signedIn)
+          ListTile(
+            leading: const Icon(
+              PhosphorIconsRegular.globe,
+              color: AppColors.orange,
+            ),
+            title: const Text('Log in to search chord sites on the web'),
+            onTap: () => context.push(AppRoutes.login),
+          )
+        else
+          ref
+              .watch(webSearchProvider(query))
+              .when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, _) => Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    'Web search is unavailable right now.',
+                    style: muted,
+                  ),
+                ),
+                data: (results) => results.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Text(
+                          'No chord pages found on the web.',
+                          style: muted,
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          for (final r in results) _WebResultTile(result: r),
+                        ],
+                      ),
+              ),
+      ],
+    );
+  }
+}
+
+class _WebResultTile extends StatelessWidget {
+  const _WebResultTile({required this.result});
+
+  final WebSearchResult result;
+
+  /// Opens in the in-app reader only where it can work: a parseable site, on
+  /// Android/iOS (the web build has no WebView and can't read other sites).
+  bool get _readsInApp => result.site.parseable && !kIsWeb;
+
+  void _open(BuildContext context) {
+    final songId = result.songId;
+    if (songId != null) {
+      context.push(AppRoutes.songPath(songId));
+    } else if (_readsInApp) {
+      context.push(AppRoutes.webTabPath(result.url, result.title));
+    } else {
+      openExternally(result.url);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = parseWebTabTitle(result.title);
+    final external = result.songId == null && !_readsInApp;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      title: Text(
+        parsed.title.isEmpty ? result.title : parsed.title,
+        style: TextStyle(
+          color: context.palette.ink,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        [?parsed.artist, result.site.name].join(' · '),
+        style: const TextStyle(color: AppColors.orange),
+      ),
+      trailing: Icon(
+        external
+            ? PhosphorIconsRegular.arrowSquareOut
+            : PhosphorIconsRegular.caretRight,
+        color: AppColors.rust,
+        semanticLabel: external ? 'Opens in browser' : null,
+      ),
+      onTap: () => _open(context),
+    );
   }
 }

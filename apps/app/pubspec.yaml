@@ -73,6 +73,8 @@ dependencies:
   data:
     path: ../../packages/data
   google_sign_in: 7.2.0
+  webview_flutter: ^4.14.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

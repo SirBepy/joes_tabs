@@ -28,4 +28,13 @@ abstract final class AppRoutes {
   static const String song = '/song/:id';
 
   static String songPath(String id) => '/song/$id';
+
+  /// A chord page from web search, opened in the in-app WebView to be parsed.
+  /// Carries the page URL and the search result's title as query parameters.
+  static const String webTab = '/web-tab';
+
+  static String webTabPath(Uri url, String title) => Uri(
+    path: webTab,
+    queryParameters: {'url': url.toString(), 'title': title},
+  ).toString();
 }

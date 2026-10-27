@@ -9,6 +9,8 @@ import 'package:joes_tabs_app/theme/app_colors.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:joes_tabs_app/widgets/song_tiles.dart';
 import 'package:models/models.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/settings_overrides.dart';
 
@@ -113,8 +115,10 @@ void main() {
           ],
         );
 
-        expect(find.byType(GridView), grid ? findsOneWidget : findsNothing);
+        // A sliver grid, since the web-results footer needs a full-width row.
+        expect(find.byType(SliverGrid), grid ? findsOneWidget : findsNothing);
         expect(find.byType(SongListTile), findsNWidgets(2));
+        expect(find.text('FROM THE WEB'), findsOneWidget);
       },
     );
   }
@@ -214,4 +218,129 @@ void main() {
     expect(find.text('Song A'), findsOneWidget);
     expect(find.text('Song B'), findsNothing);
   });
+
+  group('from the web', () {
+    List<Override> emptyCatalog(String query) => [
+      initialSettingsOverride(),
+      searchFilteredProvider((
+        query: query,
+        instrumentSlug: ChordShapes.ukulele,
+      )).overrideWith((ref) async => const <Song>[]),
+    ];
+
+    testWidgets('signed out, it offers log in instead of searching', (
+      tester,
+    ) async {
+      var searched = false;
+      await _pump(
+        tester,
+        router: _router(search: const SearchScreen(initialQuery: 'su')),
+        overrides: [
+          ...emptyCatalog('su'),
+          webSearchProvider('su').overrideWith((ref) async {
+            searched = true;
+            return const [];
+          }),
+        ],
+      );
+
+      expect(find.text('No songs found for "su".'), findsOneWidget);
+      expect(
+        find.text('Log in to search chord sites on the web'),
+        findsOneWidget,
+      );
+      expect(searched, isFalse);
+    });
+
+    testWidgets('signed in, it lists pages with their site', (tester) async {
+      await _pump(
+        tester,
+        router: _router(search: const SearchScreen(initialQuery: 'su')),
+        overrides: [
+          ...emptyCatalog('su'),
+          currentUserProvider.overrideWith((ref) => _user()),
+          webSearchProvider('su').overrideWith(
+            (ref) async => [
+              WebSearchResult(
+                title: 'Love Like You Ukulele Tabs by Steven Universe',
+                url: Uri.parse('https://ukulele-tabs.com/love.html'),
+                description: '',
+                site: WebTabSite.ukuleleTabs,
+              ),
+              WebSearchResult(
+                title: 'HERE COMES A THOUGHT CHORDS by Steven Universe',
+                url: Uri.parse('https://tabs.ultimate-guitar.com/tab/x'),
+                description: '',
+                site: WebTabSite.ultimateGuitar,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      expect(find.text('Love Like You'), findsOneWidget);
+      expect(find.text('Steven Universe · Ukulele-tabs.com'), findsOneWidget);
+      expect(find.text('HERE COMES A THOUGHT'), findsOneWidget);
+      // Ultimate Guitar is link-only: marked as opening in the browser.
+      expect(find.byIcon(PhosphorIconsRegular.arrowSquareOut), findsOneWidget);
+      expect(find.byIcon(PhosphorIconsRegular.caretRight), findsOneWidget);
+    });
+
+    testWidgets('an already imported page opens its song', (tester) async {
+      await _pump(
+        tester,
+        router: _router(search: const SearchScreen(initialQuery: 'su')),
+        overrides: [
+          ...emptyCatalog('su'),
+          currentUserProvider.overrideWith((ref) => _user()),
+          webSearchProvider('su').overrideWith(
+            (ref) async => [
+              WebSearchResult(
+                title: 'Love Like You by Steven Universe',
+                url: Uri.parse('https://ukulele-tabs.com/love.html'),
+                description: '',
+                site: WebTabSite.ukuleleTabs,
+                songId: 's9',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Love Like You'));
+      await tester.pumpAndSettle();
+      expect(find.text('SONG s9'), findsOneWidget);
+    });
+
+    testWidgets('a failed web search keeps the catalog results', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        router: _router(search: const SearchScreen(initialQuery: 'grace')),
+        overrides: [
+          initialSettingsOverride(),
+          searchFilteredProvider((
+            query: 'grace',
+            instrumentSlug: ChordShapes.ukulele,
+          )).overrideWith((ref) async => [_song('s1', 'Amazing Grace')]),
+          currentUserProvider.overrideWith((ref) => _user()),
+          webSearchProvider(
+            'grace',
+          ).overrideWith((ref) async => throw Exception('502')),
+        ],
+      );
+
+      expect(find.text('Amazing Grace'), findsOneWidget);
+      expect(find.text('Web search is unavailable right now.'), findsOneWidget);
+    });
+  });
 }
+
+User _user() => User(
+  id: 'u1',
+  appMetadata: const {},
+  userMetadata: const {},
+  aud: 'authenticated',
+  createdAt: DateTime.utc(2026).toIso8601String(),
+);

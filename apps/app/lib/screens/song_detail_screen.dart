@@ -13,6 +13,7 @@ import '../state/settings_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../web_tabs/open_external.dart';
 import '../widgets/song_tiles.dart';
 
 /// Song / play-along view (per `docs/design/screens/tabs-screen.md`).
@@ -252,6 +253,8 @@ class _SongBodyState extends ConsumerState<_SongBody>
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _Header(song: widget.data.song),
+                      if (tab.sourceUrl case final url?)
+                        _SourceCredit(url: url, siteId: tab.sourceSite),
                       const SizedBox(height: AppSpacing.md),
                     ],
                   ),
@@ -313,6 +316,28 @@ class _Header extends StatelessWidget {
           ),
           Text(song.artist, style: const TextStyle(color: AppColors.rust)),
         ],
+      ),
+    );
+  }
+}
+
+/// Credit and link back to the page an imported tab was parsed from.
+class _SourceCredit extends StatelessWidget {
+  const _SourceCredit({required this.url, required this.siteId});
+
+  final String url;
+  final String? siteId;
+
+  @override
+  Widget build(BuildContext context) {
+    final uri = Uri.tryParse(url);
+    final name = WebTabSite.byId(siteId)?.name ?? uri?.host ?? url;
+    return Center(
+      child: TextButton.icon(
+        onPressed: uri == null ? null : () => openExternally(uri),
+        icon: const Icon(PhosphorIconsRegular.arrowSquareOut, size: 16),
+        label: Text('Source: $name'),
+        style: TextButton.styleFrom(foregroundColor: AppColors.rust),
       ),
     );
   }

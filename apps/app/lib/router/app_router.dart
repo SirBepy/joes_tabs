@@ -15,6 +15,7 @@ import '../screens/support_screen.dart';
 import '../screens/thank_you_screen.dart';
 import '../screens/trending_screen.dart';
 import '../screens/tuner_screen.dart';
+import '../screens/web_tab_screen.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/back_to_home_scope.dart';
 import '../widgets/tab_scroll.dart';
@@ -143,6 +144,16 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
         builder: (context, state) => _scoped(
           state,
           SongDetailScreen(songId: state.pathParameters['id'] ?? ''),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.webTab,
+        builder: (context, state) => _scoped(
+          state,
+          WebTabScreen(
+            url: Uri.parse(state.uri.queryParameters['url'] ?? ''),
+            title: state.uri.queryParameters['title'] ?? '',
+          ),
         ),
       ),
     ],

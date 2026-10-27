@@ -226,10 +226,14 @@ class SongListOrGrid extends StatelessWidget {
     super.key,
     required this.itemCount,
     required this.itemBuilder,
+    this.footer,
   });
 
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
+
+  /// Full-width content scrolled after the tiles (Search's web results).
+  final Widget? footer;
 
   static const double _minTileWidth = 340;
 
@@ -241,27 +245,46 @@ class SongListOrGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final footer = this.footer;
         if (constraints.maxWidth < kBreakpointMedium) {
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            itemCount: itemCount,
+            itemCount: itemCount + (footer == null ? 0 : 1),
             separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, i) =>
+                i < itemCount ? itemBuilder(context, i) : footer!,
+          );
+        }
+        final gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: gridColumnsForWidth(
+            constraints.maxWidth,
+            minTileWidth: _minTileWidth,
+          ),
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
+          childAspectRatio: _tileAspect,
+        );
+        if (footer == null) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            gridDelegate: gridDelegate,
+            itemCount: itemCount,
             itemBuilder: itemBuilder,
           );
         }
-        return GridView.builder(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: gridColumnsForWidth(
-              constraints.maxWidth,
-              minTileWidth: _minTileWidth,
+        // A grid cell can't span the row, so the footer needs its own sliver.
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              sliver: SliverGrid.builder(
+                gridDelegate: gridDelegate,
+                itemCount: itemCount,
+                itemBuilder: itemBuilder,
+              ),
             ),
-            mainAxisSpacing: AppSpacing.sm,
-            crossAxisSpacing: AppSpacing.sm,
-            childAspectRatio: _tileAspect,
-          ),
-          itemCount: itemCount,
-          itemBuilder: itemBuilder,
+            SliverToBoxAdapter(child: footer),
+          ],
         );
       },
     );
