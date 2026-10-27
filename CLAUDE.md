@@ -59,7 +59,7 @@ https://sirbepy.github.io/joes_tabs/
 - Repo: `SirBepy/joes_tabs` (public). Use the `SirBepy` gh account (it has the
   `workflow` scope; `josipmuzic` does not). `gh auth switch --user SirBepy` if needed.
 - Push to `master` auto-deploys the web (deploy-web.yml).
-- Releases are VERSION-DRIVEN: `/commit pushnbump` bumps root `package.json`, and
+- Releases are VERSION-DRIVEN: `/release` bumps root `package.json`, and
   the release-apk workflow publishes a `v<version>` GitHub Release with an APK when
   the version's tag does not yet exist. Plain pushes do not release.
 
