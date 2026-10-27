@@ -1,12 +1,15 @@
 import 'package:data/data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../ads/ad_service.dart';
 import '../ads/watch_ad_action.dart';
+import '../router/app_routes.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/brand_mascot.dart';
 
@@ -38,6 +41,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return ListView(
       children: [
+        const _AccountSection(),
+        const Divider(height: 1),
         // FONT SETTINGS (expandable).
         _Row(
           label: 'FONT SETTINGS',
@@ -218,6 +223,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // WATCH AN AD TO SUPPORT US (rewarded ad, mobile only). On web/desktop
         // the row is disabled with a caption, since AdMob has no web support.
         _buildWatchAdRow(),
+        const _SupportUsRow(),
         // LOG OUT only makes sense while signed in; anonymous users see nothing.
         if (user != null) ...[
           const SizedBox(height: AppSpacing.xl),
@@ -319,6 +325,102 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     }
+  }
+}
+
+/// Account entry points: Log In and Register while signed out, the email and a
+/// Log Out button while signed in.
+class _AccountSection extends ConsumerWidget {
+  const _AccountSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ACCOUNT',
+            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (user == null)
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    key: const Key('account-log-in'),
+                    onPressed: () => context.push(AppRoutes.login),
+                    child: const Text('Log In'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('account-register'),
+                    onPressed: () => context.push(AppRoutes.register),
+                    child: const Text('Register'),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    user.email ?? 'Signed in',
+                    key: const Key('account-email'),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: palette.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  key: const Key('account-log-out'),
+                  onPressed: () => ref.read(authServiceProvider).signOut(),
+                  child: const Text('Log Out'),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens the Support Us page (pushed, so back returns to Settings).
+class _SupportUsRow extends StatelessWidget {
+  const _SupportUsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      key: const Key('support-us-row'),
+      leading: const Icon(PhosphorIconsFill.heart, color: AppColors.orange),
+      title: Text(
+        'Support Us',
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          color: context.palette.ink,
+        ),
+      ),
+      trailing: const Icon(
+        PhosphorIconsFill.caretRight,
+        color: AppColors.orange,
+      ),
+      onTap: () => context.push(AppRoutes.support),
+    );
   }
 }
 

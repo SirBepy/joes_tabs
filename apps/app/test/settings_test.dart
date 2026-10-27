@@ -41,7 +41,8 @@ Future<void> _pumpSignedIn(WidgetTester tester, AuthService auth) => _pump(
 
 Future<void> _openDeleteDialog(WidgetTester tester) async {
   final row = find.byKey(const Key('delete-account-row'));
-  await tester.ensureVisible(row);
+  // The lazy list hasn't built the last rows yet; scroll them into existence.
+  await tester.scrollUntilVisible(row, 200);
   await tester.pumpAndSettle();
   await tester.tap(row);
   await tester.pumpAndSettle();

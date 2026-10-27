@@ -17,16 +17,31 @@ import '../screens/trending_screen.dart';
 import '../screens/tuner_screen.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/back_to_home_scope.dart';
+import '../widgets/tab_scroll.dart';
 import 'app_routes.dart';
+import 'app_tabs.dart';
 
 /// Builds the app's [GoRouter].
 ///
-/// A [ShellRoute] wraps the main destinations (Home, Trending, Saved, Chords,
-/// Tuner, Settings, Support) in the shared [AppShell] (top app bar + full-screen
-/// drawer). Splash, auth, and the song detail view sit outside the shell so they
-/// render without the drawer chrome. Every page except Splash and Onboarding
-/// sits in a [BackToHomeScope] so system back never closes the app off-Home.
+/// A [StatefulShellRoute] hosts the five bottom-bar tabs (see [appTabs] for the
+/// branch order) in the shared [AppShell], so each tab keeps its own stack and
+/// scroll position. Trending and Support Us are pushed pages inside the Home and
+/// Settings branches, which keeps the bar visible on them. Splash, auth, search
+/// and the song view sit outside the shell as full-screen pages; every one of
+/// them except Splash and Onboarding is in a [BackToHomeScope] so system back
+/// never closes the app from a page with nothing beneath it.
 GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
+  final scroll = TabScrollRegistry();
+
+  // Wraps a tab's root screen so the shell can scroll it to the top.
+  Widget tabRoot(String route, Widget screen) {
+    final branch = appTabs.indexWhere((t) => t.route == route);
+    return TabScrollScope(
+      controller: scroll.controllerFor(branch),
+      child: screen,
+    );
+  }
+
   return GoRouter(
     initialLocation: initialLocation,
     routes: [
@@ -34,37 +49,69 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
         path: AppRoutes.splash,
         builder: (context, state) => const SplashScreen(),
       ),
-      ShellRoute(
-        builder: (context, state, child) =>
-            _scoped(state, AppShell(child: child)),
-        routes: [
-          GoRoute(
-            path: AppRoutes.home,
-            builder: (context, state) => const HomeScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell, scroll: scroll),
+        // Order must match [appTabs].
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.tuner,
+                builder: (context, state) =>
+                    tabRoot(AppRoutes.tuner, const TunerScreen()),
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.trending,
-            builder: (context, state) => const TrendingScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.chords,
+                builder: (context, state) =>
+                    tabRoot(AppRoutes.chords, const ChordsScreen()),
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.saved,
-            builder: (context, state) => const SavedScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) =>
+                    tabRoot(AppRoutes.home, const HomeScreen()),
+                routes: [
+                  // Nested so `go('/trending')` stacks it on Home and back pops
+                  // to Home; the URL stays `/trending`.
+                  GoRoute(
+                    path: AppRoutes.trending.substring(1),
+                    builder: (context, state) => const TrendingScreen(),
+                  ),
+                ],
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.chords,
-            builder: (context, state) => const ChordsScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.saved,
+                builder: (context, state) =>
+                    tabRoot(AppRoutes.saved, const SavedScreen()),
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.tuner,
-            builder: (context, state) => const TunerScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.settings,
-            builder: (context, state) => const SettingsScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.support,
-            builder: (context, state) => const SupportScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.settings,
+                builder: (context, state) =>
+                    tabRoot(AppRoutes.settings, const SettingsScreen()),
+              ),
+              // A sibling rather than a child so the path stays `/support`.
+              // `push` from Settings stacks it on top of Settings.
+              GoRoute(
+                path: AppRoutes.support,
+                builder: (context, state) => const SupportScreen(),
+              ),
+            ],
           ),
         ],
       ),
@@ -102,7 +149,8 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
   );
 }
 
-/// Every route except Splash and Onboarding goes through here, so a new page
-/// can't forget the scope and let system back close the app.
+/// Every full-screen page outside the shell goes through here, so a new page
+/// can't forget the scope and let system back close the app. The shell handles
+/// its own back behaviour.
 Widget _scoped(GoRouterState state, Widget child) =>
     BackToHomeScope(location: state.matchedLocation, child: child);

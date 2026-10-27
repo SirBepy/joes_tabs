@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:joes_tabs_app/router/app_router.dart';
 import 'package:joes_tabs_app/router/app_routes.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
-import 'package:joes_tabs_app/widgets/app_drawer.dart';
 
 import 'support/settings_overrides.dart';
 
@@ -25,58 +24,15 @@ Future<GoRouter> _pumpShell(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('app shell renders Home with the menu button', (tester) async {
+  testWidgets('app shell renders Home with the search field and no menu', (
+    tester,
+  ) async {
     await _pumpShell(tester);
 
     // Anonymous (logged-out) default greeting is the generic 'WELCOME'.
     expect(find.text('WELCOME'), findsOneWidget);
-    expect(find.byTooltip('Menu'), findsOneWidget);
-  });
-
-  testWidgets('drawer opens and lists every destination', (tester) async {
-    await _pumpShell(tester);
-
-    await tester.tap(find.byTooltip('Menu'));
-    await tester.pumpAndSettle();
-
-    for (final d in AppDrawer.destinations) {
-      expect(find.text(d.label), findsOneWidget);
-    }
-    // Support Us lives at the bottom of the drawer's scrollable list; scroll
-    // it in. Target the drawer's own Scrollable (the Home body also scrolls).
-    final drawerScrollable = find.descendant(
-      of: find.byType(Drawer),
-      matching: find.byType(Scrollable),
-    );
-    await tester.scrollUntilVisible(
-      find.text('Support Us'),
-      200,
-      scrollable: drawerScrollable,
-    );
-    expect(find.text('Support Us'), findsOneWidget);
-    // Account links sit in the fixed bottom row.
-    expect(find.text('Log In'), findsOneWidget);
-    expect(find.text('Register'), findsOneWidget);
-  });
-
-  testWidgets('tapping a destination navigates and closes the drawer', (
-    tester,
-  ) async {
-    final router = await _pumpShell(tester);
-
-    await tester.tap(find.byTooltip('Menu'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Tuner'));
-    await tester.pumpAndSettle();
-
-    expect(
-      router.routerDelegate.currentConfiguration.uri.path,
-      AppRoutes.tuner,
-    );
-    // Tuner screen is shown (all-caps brand title).
-    expect(find.text('TUNER'), findsOneWidget);
-    // Drawer destinations are no longer visible (drawer closed).
-    expect(find.text('Saved Tabs'), findsNothing);
+    expect(find.text('Search tabs'), findsOneWidget);
+    expect(find.byTooltip('Menu'), findsNothing);
+    expect(find.byType(Drawer), findsNothing);
   });
 }

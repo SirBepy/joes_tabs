@@ -1,10 +1,10 @@
 /// Centralized route paths + names for the app. Keeping them in one place lets
-/// the drawer, screens, and tests refer to routes without string drift.
+/// the nav bar, screens, and tests refer to routes without string drift.
 abstract final class AppRoutes {
   static const String splash = '/splash';
 
-  /// First-run onboarding wizard. Lives outside the [ShellRoute] so it renders
-  /// without the drawer/top-bar chrome.
+  /// First-run onboarding wizard. Lives outside the shell route so it renders
+  /// without the navigation bar and top-bar chrome.
   static const String onboarding = '/onboarding';
   static const String home = '/';
   static const String trending = '/trending';

@@ -44,13 +44,22 @@ String _path(GoRouter router) =>
     router.routerDelegate.currentConfiguration.last.matchedLocation;
 
 void main() {
-  testWidgets('back on a drawer destination returns to Home', (tester) async {
-    final router = await _pumpApp(tester, AppRoutes.settings);
+  for (final location in [
+    AppRoutes.settings,
+    AppRoutes.saved,
+    AppRoutes.chords,
+    AppRoutes.tuner,
+  ]) {
+    testWidgets('back on the $location tab root returns to Home', (
+      tester,
+    ) async {
+      final router = await _pumpApp(tester, location);
 
-    await _pressBack(tester);
+      await _pressBack(tester);
 
-    expect(_path(router), AppRoutes.home);
-  });
+      expect(_path(router), AppRoutes.home);
+    });
+  }
 
   testWidgets('back on Login opened from Home returns to Home', (tester) async {
     final router = await _pumpApp(tester, AppRoutes.home);
@@ -118,27 +127,42 @@ void main() {
     expect(find.byKey(const Key('onboarding-get-started')), findsOneWidget);
   });
 
-  for (final (label, route) in [
-    ('Log In', AppRoutes.login),
-    ('Register', AppRoutes.register),
+  for (final (label, buttonKey, route) in [
+    ('Log In', 'account-log-in', AppRoutes.login),
+    ('Register', 'account-register', AppRoutes.register),
   ]) {
-    testWidgets('back on $label opened from the drawer returns to the page', (
+    testWidgets('back on $label opened from Settings returns to Settings', (
       tester,
     ) async {
-      final router = await _pumpApp(tester, AppRoutes.trending);
-      await tester.tap(find.byTooltip('Menu'));
-      await tester.pumpAndSettle();
+      final router = await _pumpApp(tester, AppRoutes.settings);
 
-      await tester.tap(find.text(label));
+      await tester.tap(find.byKey(Key(buttonKey)));
       await tester.pumpAndSettle();
       expect(_path(router), route);
 
       await _pressBack(tester);
 
-      // Trending (one of the two drawer hosts) is the origin: back must land
-      // there, not on Home. A route swap instead of a push would fall through
-      // to the Home fallback.
-      expect(_path(router), AppRoutes.trending);
+      // Settings is the origin: back must land there, not on Home. A route swap
+      // instead of a push would fall through to the Home fallback.
+      expect(_path(router), AppRoutes.settings);
     });
   }
+
+  testWidgets('back on Support Us opened from Settings returns to Settings', (
+    tester,
+  ) async {
+    final router = await _pumpApp(tester, AppRoutes.settings);
+    // Below the fold of the lazy list until scrolled in.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('support-us-row')),
+      200,
+    );
+    await tester.tap(find.byKey(const Key('support-us-row')));
+    await tester.pumpAndSettle();
+    expect(_path(router), AppRoutes.support);
+
+    await _pressBack(tester);
+
+    expect(_path(router), AppRoutes.settings);
+  });
 }

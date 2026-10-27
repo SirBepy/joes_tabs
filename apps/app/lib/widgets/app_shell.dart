@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../router/app_routes.dart';
+import '../router/app_tabs.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
-import 'app_drawer.dart';
+import 'tab_scroll.dart';
 
 /// Per-route trailing actions for the section header. A section screen registers
 /// its own action widgets here (typically in a post-frame callback during build)
@@ -17,22 +20,32 @@ import 'app_drawer.dart';
 /// empty. Routes that never set it show no stray action.
 final sectionActionsProvider = StateProvider<List<Widget>>((ref) => const []);
 
-/// Chrome around the main destinations. The top bar is route-dependent:
+/// How long the "Press back again to exit" prompt stays armed.
+const Duration kExitPromptWindow = Duration(seconds: 2);
+
+/// Chrome around the five tabs: a bottom [NavigationBar] on phones, a side
+/// [NavigationRail] from [kBreakpointMedium] up. The top bar is route-dependent:
 ///
 ///  * Browse screens (Home, Trending) keep the solid-orange app bar with the
-///    hamburger that opens the full-screen [AppDrawer] plus the rounded search
-///    field.
-///  * Section screens (Settings, Support Us, Saved Tabs, Chords, Tuner) instead
-///    show a [SectionHeader]: a circular back button and the screen title in the
-///    orange "bubble" heading font, on the cream background, with no search.
+///    rounded search field; Trending adds a back button.
+///  * Section screens (Tuner, Chords, Saved Tabs, Settings, Support Us) show a
+///    [SectionHeader]: the screen title in the orange "bubble" heading font on
+///    the cream background, with no search. Only Support Us, a pushed page, has
+///    a back button.
 ///
-/// Used by the [ShellRoute] in the router so every top-level screen shares the
-/// same scaffold + drawer.
-class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.child});
+/// It also owns system back for the whole tab area: see [_AppShellState._onBack].
+class AppShell extends StatefulWidget {
+  const AppShell({
+    super.key,
+    required this.navigationShell,
+    required this.scroll,
+  });
 
-  /// The current route's screen body.
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
+
+  /// Scroll controllers of the tab roots, used to scroll the active tab to the
+  /// top.
+  final TabScrollRegistry scroll;
 
   /// Section screens: route path -> the title shown in the bubble header.
   static const Map<String, String> _sectionTitles = {
@@ -41,6 +54,13 @@ class AppShell extends StatelessWidget {
     AppRoutes.saved: 'SAVED TABS',
     AppRoutes.chords: 'CHORDS',
     AppRoutes.tuner: 'TUNER',
+  };
+
+  /// Pushed pages that sit above a tab root and show a back button, mapped to
+  /// the route back falls back to when nothing is beneath them (a deep link).
+  static const Map<String, String> _pushedPages = {
+    AppRoutes.trending: AppRoutes.home,
+    AppRoutes.support: AppRoutes.settings,
   };
 
   /// Griddy routes are capped wider than reading routes so their grid layouts can
@@ -55,57 +75,266 @@ class AppShell extends StatelessWidget {
       _griddyRoutes.contains(location) ? kPageMaxWidth : kReadingMaxWidth;
 
   @override
-  Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.path;
-    final sectionTitle = _sectionTitles[location];
-    final isSection = sectionTitle != null;
+  State<AppShell> createState() => _AppShellState();
+}
 
-    return Scaffold(
-      // The drawer is only reachable from the browse screens (Home, Trending),
-      // matching the hamburger-only mockups; section screens use the back
-      // button. Omitting it on section routes keeps the edge-swipe gesture off
-      // where there is no hamburger to reveal it.
-      drawer: isSection ? null : const AppDrawer(),
-      appBar: isSection
-          ? SectionHeader(title: sectionTitle)
-          : AppBar(
-              leading: Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(PhosphorIconsRegular.list),
-                  tooltip: 'Menu',
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              ),
-              title: const _SearchField(),
+class _AppShellState extends State<AppShell> {
+  bool _exitArmed = false;
+  Timer? _exitTimer;
+
+  StatefulNavigationShell get _shell => widget.navigationShell;
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // An armed exit belongs to Home; leaving it must not let the next back
+    // close the app from another tab.
+    if (oldWidget.navigationShell.currentIndex != _shell.currentIndex) {
+      _disarmExit();
+    }
+  }
+
+  @override
+  void dispose() {
+    _exitTimer?.cancel();
+    super.dispose();
+  }
+
+  void _disarmExit() {
+    _exitTimer?.cancel();
+    _exitTimer = null;
+    _exitArmed = false;
+  }
+
+  /// System back when no page sits above the shell and no branch has a pushed
+  /// page (go_router pops those first; open sheets and dialogs close first too).
+  /// So this only runs at a tab root:
+  ///  * another tab -> switch to Home;
+  ///  * Home, scrolled down -> scroll to the top;
+  ///  * Home at the top -> prompt, and a second back inside
+  ///    [kExitPromptWindow] is let through (`canPop`) so the app exits.
+  void _onBack(bool didPop, Object? result) {
+    if (didPop) return;
+    if (_shell.currentIndex != kHomeTabIndex) {
+      _shell.goBranch(kHomeTabIndex);
+      return;
+    }
+    if (!widget.scroll.isAtTop(kHomeTabIndex)) {
+      widget.scroll.scrollToTop(kHomeTabIndex);
+      return;
+    }
+    setState(() => _exitArmed = true);
+    _exitTimer?.cancel();
+    _exitTimer = Timer(kExitPromptWindow, () {
+      if (mounted) setState(_disarmExit);
+    });
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Press back again to exit'),
+          duration: kExitPromptWindow,
+        ),
+      );
+  }
+
+  /// Switching tab restores that tab's own stack. Tapping the active tab pops
+  /// its stack to the root, and from the root scrolls it to the top.
+  void _onSelect(int index) {
+    if (index != _shell.currentIndex) {
+      _shell.goBranch(index);
+      return;
+    }
+    final branchNavigator = _shell.route.branches[index].navigatorKey;
+    if (branchNavigator.currentState?.canPop() ?? false) {
+      _shell.goBranch(index, initialLocation: true);
+    } else {
+      widget.scroll.scrollToTop(index);
+    }
+  }
+
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    String location,
+    VoidCallback? onBack,
+  ) {
+    final sectionTitle = AppShell._sectionTitles[location];
+    if (sectionTitle != null) {
+      return SectionHeader(title: sectionTitle, onBack: onBack);
+    }
+    return AppBar(
+      automaticallyImplyLeading: false,
+      leading: onBack == null
+          ? null
+          : IconButton(
+              icon: const Icon(PhosphorIconsRegular.caretLeft),
+              tooltip: 'Back',
+              onPressed: onBack,
             ),
-      // The app bar (Scaffold.appBar) and the Scaffold background stay full-bleed;
-      // only the routed body content is centered into a capped column so wide
-      // desktop windows don't stretch the mobile layout edge to edge. Reading
-      // routes stay phone-width; griddy routes get a wider cap so their grids can
-      // use the width. On viewports narrower than the cap the ConstrainedBox is a
-      // no-op, so mobile is unchanged.
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: _maxContentWidthFor(location)),
-          child: child,
+      title: const _SearchField(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final router = GoRouter.of(context);
+    // The deepest match, not `uri`: a pushed page (Support Us over Settings)
+    // doesn't change the shell's own `uri`.
+    final location =
+        router.routerDelegate.currentConfiguration.last.matchedLocation;
+    final fallback = AppShell._pushedPages[location];
+    final onBack = fallback == null
+        ? null
+        : () => router.canPop() ? router.pop() : router.go(fallback);
+
+    final content = Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: AppShell._maxContentWidthFor(location),
+        ),
+        child: _shell,
+      ),
+    );
+    final wide = MediaQuery.sizeOf(context).width >= kBreakpointMedium;
+
+    return PopScope(
+      canPop: _exitArmed && _shell.currentIndex == kHomeTabIndex,
+      onPopInvokedWithResult: _onBack,
+      child: Scaffold(
+        appBar: _buildAppBar(context, location, onBack),
+        // The app bar and the Scaffold background stay full-bleed; only the
+        // routed content is centered into a capped column so wide desktop
+        // windows don't stretch the mobile layout edge to edge. The rail sits
+        // outside that cap, flush with the window edge.
+        body: wide
+            ? Row(
+                children: [
+                  _TabRail(
+                    selectedIndex: _shell.currentIndex,
+                    onSelect: _onSelect,
+                  ),
+                  Expanded(child: content),
+                ],
+              )
+            : content,
+        bottomNavigationBar: wide
+            ? null
+            : _TabBar(selectedIndex: _shell.currentIndex, onSelect: _onSelect),
+      ),
+    );
+  }
+}
+
+/// Bottom bar on phones. Orange pill behind the active icon; surfaces come from
+/// the palette so it follows light and dark.
+class _TabBar extends StatelessWidget {
+  const _TabBar({required this.selectedIndex, required this.onSelect});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: palette.divider)),
+      ),
+      child: NavigationBar(
+        key: const Key('app-navigation-bar'),
+        selectedIndex: selectedIndex,
+        onDestinationSelected: onSelect,
+        backgroundColor: palette.sheet,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        indicatorColor: AppColors.orange,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w800
+                : FontWeight.w600,
+            color: states.contains(WidgetState.selected)
+                ? AppColors.orange
+                : palette.mutedInk,
+          ),
+        ),
+        destinations: [
+          for (final tab in appTabs)
+            NavigationDestination(
+              label: tab.label,
+              icon: Icon(tab.icon, color: palette.mutedInk),
+              selectedIcon: Icon(tab.selectedIcon, color: AppColors.white),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Side rail from [kBreakpointMedium] up, same destinations and order as
+/// [_TabBar].
+class _TabRail extends StatelessWidget {
+  const _TabRail({required this.selectedIndex, required this.onSelect});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    // Five labelled destinations need ~380px; a landscape phone is shorter, so
+    // it drops the labels rather than overflowing. (Not a SingleChildScrollView:
+    // an extra Scrollable beside the page makes every unscoped
+    // `find.byType(Scrollable)` ambiguous.)
+    return LayoutBuilder(
+      builder: (context, constraints) => DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(right: BorderSide(color: palette.divider)),
+        ),
+        child: NavigationRail(
+          key: const Key('app-navigation-rail'),
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onSelect,
+          labelType: constraints.maxHeight >= 400
+              ? NavigationRailLabelType.all
+              : NavigationRailLabelType.none,
+          backgroundColor: palette.sheet,
+          indicatorColor: AppColors.orange,
+          selectedLabelTextStyle: const TextStyle(
+            color: AppColors.orange,
+            fontWeight: FontWeight.w800,
+          ),
+          unselectedLabelTextStyle: TextStyle(
+            color: palette.mutedInk,
+            fontWeight: FontWeight.w600,
+          ),
+          destinations: [
+            for (final tab in appTabs)
+              NavigationRailDestination(
+                label: Text(tab.label),
+                icon: Icon(tab.icon, color: palette.mutedInk),
+                selectedIcon: Icon(tab.selectedIcon, color: AppColors.white),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// The section-screen header: a cream bar with a circular orange-outlined back
-/// button (Phosphor caret) at the leading edge and the screen [title] in the
-/// brand "bubble" heading font (Fredoka, orange). Tapping back returns to Home
-/// so navigation stays coherent with the drawer-driven model.
+/// The section-screen header: a cream bar with the screen [title] in the brand
+/// "bubble" heading font (Fredoka, orange). When [onBack] is set (a pushed page
+/// like Support Us) a circular orange-outlined back button (Phosphor caret) sits
+/// at the leading edge; the top-level tabs have none.
 ///
 /// Implemented as a [PreferredSizeWidget] so it can slot straight into
-/// [Scaffold.appBar]. The back tap is tolerant of being rendered outside a
-/// GoRouter (e.g. a bare widget test) - it simply no-ops there.
+/// [Scaffold.appBar].
 class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
-  const SectionHeader({super.key, required this.title});
+  const SectionHeader({super.key, required this.title, this.onBack});
 
   final String title;
+  final VoidCallback? onBack;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -119,6 +348,7 @@ class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
     final barColor = palette.sheet;
     final borderColor = palette.divider;
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: barColor,
       foregroundColor: AppColors.orange,
       elevation: 0,
@@ -126,12 +356,12 @@ class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
       toolbarHeight: 72,
       leadingWidth: 72,
       shape: Border(bottom: BorderSide(color: borderColor, width: 1)),
-      leading: Padding(
-        padding: const EdgeInsets.only(left: AppSpacing.md),
-        child: _BackCircle(
-          onTap: () => GoRouter.maybeOf(context)?.go(AppRoutes.home),
-        ),
-      ),
+      leading: onBack == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: AppSpacing.md),
+              child: _BackCircle(onTap: onBack!),
+            ),
       title: Text(title, style: Theme.of(context).textTheme.headlineMedium),
       centerTitle: false,
       actions: actions.isEmpty ? null : actions,

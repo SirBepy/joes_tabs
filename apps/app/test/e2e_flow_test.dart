@@ -155,15 +155,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Remove favorite'), findsOneWidget);
 
-    // 5. Back to the shell, open the drawer, go to Saved -> the favorited song
-    //    is listed there.
+    // 5. Back to the shell, open the Saved tab -> the favorited song is listed
+    //    there.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Menu'), findsOneWidget); // back in the shell
+    expect(find.byType(NavigationRail), findsOneWidget); // back in the shell
 
-    await tester.tap(find.byTooltip('Menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Saved Tabs'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationRail),
+        matching: find.text('Saved'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(
       router.routerDelegate.currentConfiguration.uri.path,
@@ -172,27 +175,29 @@ void main() {
     expect(find.text('Amazing Grace'), findsOneWidget);
     expect(find.text('Moon River'), findsNothing); // only the favorited one
 
-    // 6. Saved is a section screen (back button, no hamburger): tap Back to
-    //    return Home, then open the drawer there and go to Trending.
-    await tester.tap(find.bySemanticsLabel('Back'));
+    // 6. Home tab, then Trending (a page stacked inside the Home tab, bar still
+    //    visible); its back button returns to Home.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationRail),
+        matching: find.text('Home'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(router.routerDelegate.currentConfiguration.uri.path, AppRoutes.home);
 
-    await tester.tap(find.byTooltip('Menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Trending'));
+    router.go(AppRoutes.trending);
     await tester.pumpAndSettle();
     expect(
       router.routerDelegate.currentConfiguration.uri.path,
       AppRoutes.trending,
     );
+    expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.text('TRENDING'), findsWidgets);
     expect(find.text('Amazing Grace'), findsOneWidget);
     expect(find.text('Moon River'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Home'));
+    await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(router.routerDelegate.currentConfiguration.uri.path, AppRoutes.home);
   });

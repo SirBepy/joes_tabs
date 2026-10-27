@@ -88,7 +88,7 @@ Future<void> main() async {
           ),
         ),
         // With a live client, the current user is driven by Supabase's auth
-        // stream so the greeting + drawer react to real sign-in / sign-out.
+        // stream so the greeting + Settings account section react to real sign-in / sign-out.
         // Without one (e.g. missing dart-defines) the default logged-out
         // provider keeps the app fully navigable in anonymous mode.
         if (client != null)
