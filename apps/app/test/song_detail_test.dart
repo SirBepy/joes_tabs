@@ -63,25 +63,20 @@ Color? _appBarColor(WidgetTester tester) => tester
     )
     .color;
 
-Color? _titleColor(WidgetTester tester) =>
-    tester.widget<Text>(find.text('Ukulele Tabs')).style?.color;
-
 void main() {
   testWidgets('light theme keeps the orange app bar', (tester) async {
     await _pump(tester, theme: AppTheme.light);
 
     expect(_appBarColor(tester), AppColors.orange);
-    expect(_titleColor(tester), isNull);
+    // The song's own name heads the page, so the bar carries no title.
+    expect(find.text('Ukulele Tabs'), findsNothing);
   });
 
-  testWidgets('dark theme uses the dark bar with an orange title', (
-    tester,
-  ) async {
+  testWidgets('dark theme uses the dark bar', (tester) async {
     await _pump(tester, theme: AppTheme.dark);
 
     expect(_appBarColor(tester), AppColors.darkSurface);
     expect(_appBarColor(tester), isNot(AppColors.orange));
-    expect(_titleColor(tester), AppColors.orange);
   });
 
   testWidgets('renders the parsed chord sheet (title, lyric, chords)', (

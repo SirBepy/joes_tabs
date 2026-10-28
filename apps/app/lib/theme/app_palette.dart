@@ -46,7 +46,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   static const AppPalette light = AppPalette(
     sheet: AppColors.white,
     card: AppColors.white,
-    chip: AppColors.peach,
+    chip: AppColors.cardPeach,
     divider: AppColors.hairline,
     ink: AppColors.textDark,
     mutedInk: AppColors.textMuted,

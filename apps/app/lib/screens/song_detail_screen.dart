@@ -36,17 +36,14 @@ class SongDetailScreen extends ConsumerWidget {
     final async = ref.watch(songProvider(songId));
     final isFav = ref.watch(isFavoriteProvider(songId));
 
-    // Light: the theme's sky band with navy title/icons. Dark: the theme's
-    // navy bar (like every other screen), so sky blue is the accent instead of
-    // the background.
+    // Light: the theme's sky band with white icons. Dark: the theme's navy bar
+    // (like every other screen), so sky blue is the accent instead of the
+    // background. No title: the whole app is ukulele-tabs.com, and the song's
+    // own name heads the page.
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Ukulele Tabs',
-          style: dark ? const TextStyle(color: AppColors.orange) : null,
-        ),
         actions: [
           IconButton(
             tooltip: isFav ? 'Remove favorite' : 'Add favorite',
@@ -254,8 +251,7 @@ class _SongBodyState extends ConsumerState<_SongBody>
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _Header(song: widget.data.song),
-                      if (tab.sourceUrl case final url?)
-                        _SourceCredit(url: url, siteId: tab.sourceSite),
+                      if (tab.sourceUrl case final url?) _OpenInWeb(url: url),
                       const SizedBox(height: AppSpacing.md),
                     ],
                   ),
@@ -332,31 +328,26 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Credit and link back to the page an imported tab was parsed from: a pale
-/// hibiscus pill, so the source reads as a deliberate credit, not a footnote.
-class _SourceCredit extends StatelessWidget {
-  const _SourceCredit({required this.url, required this.siteId});
+/// Link back to the page an imported tab was read from. Every tab here comes
+/// from ukulele-tabs.com, so it names the action, not the site.
+class _OpenInWeb extends StatelessWidget {
+  const _OpenInWeb({required this.url});
 
   final String url;
-  final String? siteId;
 
   @override
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(url);
-    final name = WebTabSite.byId(siteId)?.name ?? uri?.host ?? url;
-    final palette = context.palette;
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md),
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Center(
         child: TextButton.icon(
           onPressed: uri == null ? null : () => openExternally(uri),
           icon: const Icon(PhosphorIconsRegular.arrowSquareOut, size: 16),
-          label: Text('Source: $name'),
+          label: const Text('Open in web'),
           style: TextButton.styleFrom(
-            foregroundColor: palette.ink,
-            backgroundColor: palette.chip,
+            foregroundColor: context.palette.accent,
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           ),
         ),
       ),

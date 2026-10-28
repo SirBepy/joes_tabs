@@ -225,8 +225,8 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-/// Bottom bar on phones. Hibiscus-yellow pill behind the active navy icon;
-/// surfaces come from the palette so it follows light and dark.
+/// Bottom bar on phones. Sky-blue pill behind the active white icon; surfaces
+/// come from the palette so it follows light and dark.
 class _TabBar extends StatelessWidget {
   const _TabBar({required this.selectedIndex, required this.onSelect});
 
@@ -247,7 +247,7 @@ class _TabBar extends StatelessWidget {
         backgroundColor: palette.sheet,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        indicatorColor: AppColors.hibiscus,
+        indicatorColor: AppColors.orange,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             fontSize: 12,
@@ -255,7 +255,7 @@ class _TabBar extends StatelessWidget {
                 ? FontWeight.w800
                 : FontWeight.w600,
             color: states.contains(WidgetState.selected)
-                ? palette.ink
+                ? palette.accent
                 : palette.mutedInk,
           ),
         ),
@@ -264,7 +264,7 @@ class _TabBar extends StatelessWidget {
             NavigationDestination(
               label: tab.label,
               icon: Icon(tab.icon, color: palette.mutedInk),
-              selectedIcon: Icon(tab.selectedIcon, color: AppColors.textDark),
+              selectedIcon: Icon(tab.selectedIcon, color: AppColors.white),
             ),
         ],
       ),
@@ -300,9 +300,9 @@ class _TabRail extends StatelessWidget {
               ? NavigationRailLabelType.all
               : NavigationRailLabelType.none,
           backgroundColor: palette.sheet,
-          indicatorColor: AppColors.hibiscus,
+          indicatorColor: AppColors.orange,
           selectedLabelTextStyle: TextStyle(
-            color: palette.ink,
+            color: palette.accent,
             fontWeight: FontWeight.w800,
           ),
           unselectedLabelTextStyle: TextStyle(
@@ -314,7 +314,7 @@ class _TabRail extends StatelessWidget {
               NavigationRailDestination(
                 label: Text(tab.label),
                 icon: Icon(tab.icon, color: palette.mutedInk),
-                selectedIcon: Icon(tab.selectedIcon, color: AppColors.textDark),
+                selectedIcon: Icon(tab.selectedIcon, color: AppColors.white),
               ),
           ],
         ),

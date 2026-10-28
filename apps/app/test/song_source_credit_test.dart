@@ -54,7 +54,7 @@ Future<void> _pump(WidgetTester tester, SongWithTabs song) async {
 }
 
 void main() {
-  testWidgets('an imported tab credits its source site', (tester) async {
+  testWidgets('an imported tab links back to its page', (tester) async {
     await _pump(
       tester,
       _song(
@@ -62,19 +62,12 @@ void main() {
         sourceSite: 'ukulele-tabs',
       ),
     );
-    expect(find.text('Source: Ukulele-tabs.com'), findsOneWidget);
-  });
-
-  testWidgets('an unknown site id falls back to the host', (tester) async {
-    await _pump(
-      tester,
-      _song(sourceUrl: 'https://example.org/x', sourceSite: 'gone'),
-    );
-    expect(find.text('Source: example.org'), findsOneWidget);
-  });
-
-  testWidgets('a catalog tab shows no source credit', (tester) async {
-    await _pump(tester, _song());
+    expect(find.text('Open in web'), findsOneWidget);
     expect(find.textContaining('Source:'), findsNothing);
+  });
+
+  testWidgets('a catalog tab has no web link', (tester) async {
+    await _pump(tester, _song());
+    expect(find.text('Open in web'), findsNothing);
   });
 }

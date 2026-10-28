@@ -86,7 +86,7 @@ void main() {
     testWidgets('light: values come from the light palette', (tester) async {
       await _pump(tester, AppTheme.light, picker);
       expect(_hasColoredContainer(tester, AppPalette.light.card), isTrue);
-      expect(_hasColoredContainer(tester, AppColors.peach), isTrue);
+      expect(_hasColoredContainer(tester, AppPalette.light.chip), isTrue);
       expect(_textColor(tester, 'Minor'), AppColors.textDark);
     });
   });
@@ -129,7 +129,7 @@ void main() {
       await _pump(tester, AppTheme.light, const ThankYouScreen());
       expect(
         tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
-        AppColors.peach,
+        AppPalette.light.chip,
       );
       expect(
         _textColor(tester, 'Tap anywhere to continue'),
@@ -162,7 +162,7 @@ void main() {
       await _pump(tester, AppTheme.light, const OnboardingScreen());
       expect(_textColor(tester, welcome), AppColors.textMuted);
       expect(AppTheme.light.scaffoldBackgroundColor, AppColors.cream);
-      expect(_hasColoredContainer(tester, AppColors.peach), isTrue);
+      expect(_hasColoredContainer(tester, AppPalette.light.chip), isTrue);
     });
   });
 }
