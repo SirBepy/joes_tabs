@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../ads/ad_service.dart';
+import '../ads/watch_ad_action.dart';
 import '../router/app_routes.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
@@ -13,12 +15,12 @@ import '../widgets/brand_mascot.dart';
 
 /// Settings (per `docs/design/screens/settings*.md`).
 ///
-/// Wireframe list of rows: an expandable Font Settings group (size stepper),
-/// a 3-way Theme selector (System / Light / Dark, bound to [themeModeProvider]),
-/// an "Instruments I play" multi-select (min one, bound to [instrumentsProvider]
-/// and read app-wide to control picker visibility), My Tags (placeholder), an
-/// Account section whose Log Out opens a mascot confirmation dialog, and, while
-/// signed in, a Delete Account row that opens the same kind of dialog.
+/// A list of rows that share one label style ([_labelStyle]): an expandable
+/// Font Settings group (size stepper), a 3-way Theme selector on the same line
+/// as its label (System / Light / Dark, bound to [themeModeProvider]), Maximal
+/// Chords, My Tags (placeholder), the optional rewarded ad, and last the
+/// Account section, whose Log Out opens a mascot confirmation dialog, plus,
+/// while signed in, a Delete Account row that opens the same kind of dialog.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -39,8 +41,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return ListView(
       children: [
-        const _AccountSection(),
-        const Divider(height: 1),
         // FONT SETTINGS (expandable).
         _Row(
           label: 'FONT SETTINGS',
@@ -87,49 +87,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         const Divider(height: 1),
-        // THEME (System / Light / Dark).
+        // THEME (System / Light / Dark), beside its label. Text-only segments:
+        // with icons the three no longer fit next to the label on a phone.
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.sm,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
           ),
-          child: Text(
-            'THEME',
-            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.md,
-          ),
-          child: SegmentedButton<ThemeMode>(
-            key: const Key('theme-mode-selector'),
-            segments: const [
-              ButtonSegment(
-                value: ThemeMode.system,
-                label: Text('System'),
-                icon: Icon(PhosphorIconsRegular.desktop),
-              ),
-              ButtonSegment(
-                value: ThemeMode.light,
-                label: Text('Light'),
-                icon: Icon(PhosphorIconsRegular.sun),
-              ),
-              ButtonSegment(
-                value: ThemeMode.dark,
-                label: Text('Dark'),
-                icon: Icon(PhosphorIconsRegular.moon),
+          child: Row(
+            children: [
+              Expanded(child: Text('THEME', style: _labelStyle(context))),
+              SegmentedButton<ThemeMode>(
+                key: const Key('theme-mode-selector'),
+                segments: const [
+                  ButtonSegment(value: ThemeMode.system, label: Text('System')),
+                  ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+                  ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+                ],
+                selected: {themeMode},
+                showSelectedIcon: false,
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                onSelectionChanged: (s) =>
+                    ref.read(themeModeProvider.notifier).set(s.first),
               ),
             ],
-            selected: {themeMode},
-            showSelectedIcon: false,
-            onSelectionChanged: (s) =>
-                ref.read(themeModeProvider.notifier).set(s.first),
           ),
         ),
         const Divider(height: 1),
@@ -137,10 +118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           key: const Key('maximal-chords-switch'),
           value: maximalChords,
           activeThumbColor: AppColors.rust,
-          title: Text(
-            'MAXIMAL CHORDS',
-            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
-          ),
+          title: Text('MAXIMAL CHORDS', style: _labelStyle(context)),
           subtitle: const Text(
             'Show advanced chord types (9ths, 11ths, altered, etc.)',
           ),
@@ -155,7 +133,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         const Divider(height: 1),
-        // Log out lives in the Account section; only deletion is down here.
+        // WATCH AN AD TO SUPPORT US (rewarded ad, optional, mobile only). On
+        // web/desktop the row is disabled with a caption, since AdMob has no
+        // web support.
+        _buildWatchAdRow(),
+        const Divider(height: 1),
+        const _AccountSection(),
+        // Log out lives in the Account section; only deletion is below it.
         if (user != null) ...[
           const SizedBox(height: AppSpacing.xl),
           Divider(height: 1, color: palette.divider),
@@ -171,6 +155,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  /// "Watch an ad to support us" row. Enabled on mobile (triggers a rewarded
+  /// ad); disabled with a caption on web/desktop where AdMob is unsupported.
+  Widget _buildWatchAdRow() {
+    final adService = ref.watch(adServiceProvider);
+    final supported = adService.isSupported;
+    final palette = context.palette;
+
+    return ListTile(
+      key: const Key('watch-ad-row'),
+      enabled: supported,
+      leading: Icon(
+        PhosphorIconsFill.megaphone,
+        color: supported ? palette.accent : palette.mutedInk,
+      ),
+      title: Text('WATCH AN AD TO SUPPORT US', style: _labelStyle(context)),
+      subtitle: supported
+          ? null
+          : const Text(
+              'Available on the mobile app',
+              key: Key('watch-ad-web-note'),
+            ),
+      onTap: supported ? () => runWatchAdFlow(context, adService) : null,
     );
   }
 
@@ -231,19 +240,11 @@ class _AccountSection extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final palette = context.palette;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ACCOUNT',
-            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
-          ),
+          Text('ACCOUNT', style: _labelStyle(context)),
           const SizedBox(height: AppSpacing.sm),
           if (user == null)
             Row(
@@ -303,17 +304,19 @@ class _Row extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      title: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: context.palette.ink,
-        ),
-      ),
+      title: Text(label, style: _labelStyle(context)),
       trailing: trailing,
     );
   }
 }
+
+/// Every Settings row label: the list-tile title size, bold, in ink. Labels
+/// outside a ListTile (Theme, Account) would otherwise inherit the smaller body
+/// size.
+TextStyle? _labelStyle(BuildContext context) => Theme.of(context)
+    .textTheme
+    .bodyLarge
+    ?.copyWith(fontWeight: FontWeight.w700, color: context.palette.ink);
 
 /// Confirmation dialog in the log-out style of
 /// `docs/design/screens/settings-1.md`: mascot, [message], a plain

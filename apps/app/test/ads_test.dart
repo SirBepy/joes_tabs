@@ -194,14 +194,46 @@ void main() {
     });
   });
 
-  testWidgets('Settings offers no ad or Support Us row (free app)', (
-    tester,
-  ) async {
-    final ad = FakeAdService(isSupported: true);
-    await _pump(tester, const SettingsScreen(), ad);
+  group('Settings watch-ad row', () {
+    testWidgets('enabled on mobile, tapping invokes the service', (
+      tester,
+    ) async {
+      final ad = FakeAdService(isSupported: true);
+      await _pump(tester, const SettingsScreen(), ad);
 
-    expect(find.byKey(const Key('watch-ad-row')), findsNothing);
-    expect(find.byKey(const Key('support-us-row')), findsNothing);
+      // No web caption when supported, and the ad stays the only support
+      // entry: no Support Us page row.
+      expect(find.byKey(const Key('watch-ad-web-note')), findsNothing);
+      expect(find.byKey(const Key('support-us-row')), findsNothing);
+
+      final tile = tester.widget<ListTile>(
+        find.byKey(const Key('watch-ad-row')),
+      );
+      expect(tile.enabled, isTrue);
+
+      await tester.tap(find.byKey(const Key('watch-ad-row')));
+      await tester.pump();
+      expect(ad.showCalls, 1);
+    });
+
+    testWidgets('disabled on web with a caption, tapping does nothing', (
+      tester,
+    ) async {
+      final ad = FakeAdService(isSupported: false);
+      await _pump(tester, const SettingsScreen(), ad);
+
+      expect(find.byKey(const Key('watch-ad-web-note')), findsOneWidget);
+
+      final tile = tester.widget<ListTile>(
+        find.byKey(const Key('watch-ad-row')),
+      );
+      expect(tile.enabled, isFalse);
+      expect(tile.onTap, isNull);
+
+      await tester.tap(find.byKey(const Key('watch-ad-row')));
+      await tester.pump();
+      expect(ad.showCalls, 0);
+    });
   });
 
   group('Support screen WATCH AD button', () {
