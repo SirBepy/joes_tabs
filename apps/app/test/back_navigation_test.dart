@@ -1,3 +1,4 @@
+import 'package:data/data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,9 @@ Future<GoRouter> _pumpApp(
     ProviderScope(
       overrides: [
         appDatabaseOverride(db),
+        // Home's Recently opened is a Drift stream query, which leaves a timer
+        // pending past the test; the lists are not under test here.
+        recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
         initialSettingsOverride(
           onboardingComplete: onboardingComplete,
           instrumentSlugs: const [],
@@ -147,22 +151,4 @@ void main() {
       expect(_path(router), AppRoutes.settings);
     });
   }
-
-  testWidgets('back on Support Us opened from Settings returns to Settings', (
-    tester,
-  ) async {
-    final router = await _pumpApp(tester, AppRoutes.settings);
-    // Below the fold of the lazy list until scrolled in.
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('support-us-row')),
-      200,
-    );
-    await tester.tap(find.byKey(const Key('support-us-row')));
-    await tester.pumpAndSettle();
-    expect(_path(router), AppRoutes.support);
-
-    await _pressBack(tester);
-
-    expect(_path(router), AppRoutes.settings);
-  });
 }

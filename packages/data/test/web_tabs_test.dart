@@ -124,7 +124,7 @@ void main() {
       authOptions: const AuthClientOptions(autoRefreshToken: false),
     );
 
-    test('fetches the site search page on device and marks imports', () async {
+    test('fetches the site search page on device, never our backend', () async {
       final siteCalls = <Uri>[];
       final backendCalls = <Uri>[];
       final repo = SupabaseWebTabsRepository(
@@ -138,9 +138,9 @@ void main() {
       final results = await repo.search('love');
 
       expect(siteCalls.single, ukuleleTabsSearchUrl('love'));
-      expect(backendCalls.single.path, '/rest/v1/rpc/imported_song_ids');
+      expect(backendCalls, isEmpty);
       expect(results.single.title, 'Love Like You');
-      expect(results.single.songId, 's7');
+      expect(results.single.artist, 'Rebecca Sugar');
     });
 
     test('a failed site fetch is a CatalogException', () async {
@@ -244,5 +244,21 @@ void main() {
     });
     expect(tab.sourceUrl, 'https://chordie.com/a');
     expect(tab.sourceSite, 'chordie');
+  });
+
+  test('a web song id resolves from memory, never the catalog', () async {
+    const url = 'https://www.ukulele-tabs.com/uke-songs/a/b-uke-tab-1.html';
+    final catalog = _CountingCatalog();
+    final container = ProviderContainer(
+      overrides: [catalogRepositoryProvider.overrideWithValue(catalog)],
+    );
+    addTearDown(container.dispose);
+
+    expect(await container.read(songProvider(url).future), isNull);
+
+    final song = SongWithTabs(song: webSongStub(url));
+    container.read(webSongsProvider.notifier).state = {url: song};
+    expect(await container.read(songProvider(url).future), song);
+    expect(catalog.getSongCalls, 0);
   });
 }

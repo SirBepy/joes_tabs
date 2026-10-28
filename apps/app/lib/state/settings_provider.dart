@@ -16,11 +16,10 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 /// [instrumentDisplayName]) so adding a third instrument later (e.g. Bass) is
 /// one more entry, no model change.
 
-/// The instrument slugs the app currently supports, in display order.
-const List<String> kSupportedInstrumentSlugs = [
-  ChordShapes.ukulele,
-  ChordShapes.guitar,
-];
+/// The instrument slugs the app currently supports, in display order. The
+/// ukulele-tabs.com client is ukulele only, which also hides every instrument
+/// picker ([showInstrumentPickerProvider]).
+const List<String> kSupportedInstrumentSlugs = [ChordShapes.ukulele];
 
 /// Human label for an instrument slug, for pickers and settings.
 String instrumentDisplayName(String slug) {

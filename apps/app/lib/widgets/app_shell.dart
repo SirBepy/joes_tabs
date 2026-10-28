@@ -404,7 +404,7 @@ class _BackCircle extends StatelessWidget {
 }
 
 /// Rounded search field in the browse app bar. Tapping it opens the dedicated
-/// [SearchScreen] (`/search`) where the query drives `searchProvider`.
+/// [SearchScreen] (`/search`), which searches ukulele-tabs.com.
 class _SearchField extends StatelessWidget {
   const _SearchField();
 
@@ -424,7 +424,7 @@ class _SearchField extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Search tabs',
+                'Search ukulele-tabs.com',
                 style: TextStyle(color: AppColors.textMuted),
               ),
             ),

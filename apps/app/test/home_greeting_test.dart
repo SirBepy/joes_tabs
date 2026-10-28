@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:joes_tabs_app/screens/home_screen.dart';
+import 'package:joes_tabs_app/state/favorites_provider.dart';
 import 'package:joes_tabs_app/theme/app_palette.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
-import 'package:models/models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 User _user(String email) => User(
@@ -17,28 +17,24 @@ User _user(String email) => User(
   createdAt: DateTime.utc(2026).toIso8601String(),
 );
 
-Song _song() {
-  final now = DateTime.utc(2026);
-  return Song(
-    id: 's1',
-    title: 'Amazing Grace',
-    artist: 'Traditional',
-    createdAt: now,
-    updatedAt: now,
-  );
-}
+const _url1 =
+    'https://www.ukulele-tabs.com/uke-songs/vance-joy/riptide-uke-tab-1.html';
+const _url2 =
+    'https://www.ukulele-tabs.com/uke-songs/israel-kamakawiwoole/over-the-rainbow-uke-tab-2.html';
 
 Future<void> _pump(
   WidgetTester tester, {
   User? user,
   ThemeData? theme,
-  List<Song> trending = const [],
+  List<String> recent = const [],
+  Set<String> saved = const {},
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         if (user != null) currentUserProvider.overrideWithValue(user),
-        trendingProvider.overrideWith((ref) async => trending),
+        recentSongIdsProvider.overrideWith((ref) => Stream.value(recent)),
+        favoritesProvider.overrideWith((ref) => FavoritesNotifier(saved)),
       ],
       child: MaterialApp(
         theme: theme ?? AppTheme.light,
@@ -104,23 +100,48 @@ void main() {
     });
   });
 
+  testWidgets('lists recent and saved links, skipping catalog ids', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pump(tester, recent: [_url1, 'catalog-uuid'], saved: {_url2});
+
+    expect(find.text('RECENTLY OPENED'), findsOneWidget);
+    expect(find.text('Riptide'), findsOneWidget);
+    expect(find.text('Vance Joy'), findsOneWidget);
+    expect(find.text('Over The Rainbow'), findsOneWidget);
+  });
+
+  testWidgets('empty lists explain how to fill them', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pump(tester);
+
+    expect(
+      find.text('Search above to find a song. The ones you open show here.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('No saved songs yet. Tap the bookmark on a song to save it.'),
+      findsOneWidget,
+    );
+  });
+
   group('dark palette', () {
-    testWidgets('trending panel and its dividers use palette tokens', (
+    testWidgets('song panel and its dividers use palette tokens', (
       tester,
     ) async {
-      // Tall enough that the lazy list builds the Trending panel.
+      // Tall enough that the lazy list builds the panels.
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await _pump(
-        tester,
-        theme: AppTheme.dark,
-        trending: [
-          _song(),
-          _song().copyWith(id: 's2'),
-        ],
-      );
+      await _pump(tester, theme: AppTheme.dark, recent: [_url1, _url2]);
 
       final panels = tester
           .widgetList<Container>(find.byType(Container))

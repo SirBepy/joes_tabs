@@ -58,8 +58,8 @@ abstract class WebTabsRepository {
 }
 
 /// [WebTabsRepository] that searches ukulele-tabs.com's own search page from
-/// the device, then maps result URLs to already imported songs via the
-/// `imported_song_ids` RPC. Nothing about the search is stored server-side.
+/// the device. Nothing about the search touches our backend, so it works
+/// signed out.
 class SupabaseWebTabsRepository implements WebTabsRepository {
   SupabaseWebTabsRepository(this._client, {http.Client? httpClient})
     : _http = httpClient ?? http.Client();
@@ -74,20 +74,7 @@ class SupabaseWebTabsRepository implements WebTabsRepository {
       if (res.statusCode != 200) {
         throw http.ClientException('HTTP ${res.statusCode}', res.request?.url);
       }
-      final results = ukuleleTabsSearchResults(res.body);
-      if (results.isEmpty) return results;
-
-      final known = await _client.rpc<List<dynamic>>(
-        'imported_song_ids',
-        params: {'urls': results.map((r) => r.url.toString()).toList()},
-      );
-      final songIdByUrl = <String, String>{
-        for (final row in known)
-          (row as Map)['source_url'] as String: row['song_id'] as String,
-      };
-      return [
-        for (final r in results) r.withSongId(songIdByUrl[r.url.toString()]),
-      ];
+      return ukuleleTabsSearchResults(res.body);
     } catch (e) {
       throw CatalogException('Web search failed', e);
     }

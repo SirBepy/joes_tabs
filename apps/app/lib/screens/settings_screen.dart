@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../ads/ad_service.dart';
-import '../ads/watch_ad_action.dart';
 import '../router/app_routes.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
@@ -35,7 +33,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final fontSize = ref.watch(fontSizeProvider);
     final themeMode = ref.watch(themeModeProvider);
-    final instruments = ref.watch(instrumentsProvider);
     final maximalChords = ref.watch(maximalChordsProvider);
     final user = ref.watch(currentUserProvider);
     final palette = context.palette;
@@ -136,60 +133,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         const Divider(height: 1),
-        // INSTRUMENTS I PLAY (multi-select, min one). Controls picker
-        // visibility app-wide.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.sm,
-          ),
-          child: Text(
-            'INSTRUMENTS I PLAY',
-            style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.md,
-          ),
-          child: Wrap(
-            key: const Key('instruments-multiselect'),
-            spacing: AppSpacing.sm,
-            children: [
-              for (final slug in kSupportedInstrumentSlugs)
-                FilterChip(
-                  key: Key('instrument-chip-$slug'),
-                  label: Text(instrumentDisplayName(slug)),
-                  selected: instruments.contains(slug),
-                  showCheckmark: true,
-                  selectedColor: AppColors.orange,
-                  backgroundColor: palette.chip,
-                  labelStyle: TextStyle(
-                    color: instruments.contains(slug)
-                        ? AppColors.white
-                        : AppColors.rust,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  side: BorderSide.none,
-                  onSelected: (selected) {
-                    final notifier = ref.read(instrumentsProvider.notifier);
-                    if (selected) {
-                      notifier.add(slug);
-                    } else {
-                      // Min-one rule: removing the last instrument is a no-op.
-                      notifier.remove(slug);
-                    }
-                  },
-                ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
         SwitchListTile(
           key: const Key('maximal-chords-switch'),
           value: maximalChords,
@@ -212,10 +155,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         const Divider(height: 1),
-        // WATCH AN AD TO SUPPORT US (rewarded ad, mobile only). On web/desktop
-        // the row is disabled with a caption, since AdMob has no web support.
-        _buildWatchAdRow(),
-        const _SupportUsRow(),
         // Log out lives in the Account section; only deletion is down here.
         if (user != null) ...[
           const SizedBox(height: AppSpacing.xl),
@@ -232,34 +171,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ],
-    );
-  }
-
-  /// "Watch an ad to support us" row. Enabled on mobile (triggers a rewarded
-  /// ad); disabled with a caption on web/desktop where AdMob is unsupported.
-  Widget _buildWatchAdRow() {
-    final adService = ref.watch(adServiceProvider);
-    final supported = adService.isSupported;
-    final palette = context.palette;
-
-    return ListTile(
-      key: const Key('watch-ad-row'),
-      enabled: supported,
-      leading: Icon(
-        PhosphorIconsFill.megaphone,
-        color: supported ? AppColors.orange : palette.ink,
-      ),
-      title: Text(
-        'WATCH AN AD TO SUPPORT US',
-        style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
-      ),
-      subtitle: supported
-          ? null
-          : const Text(
-              'Available on the mobile app',
-              key: Key('watch-ad-web-note'),
-            ),
-      onTap: supported ? () => runWatchAdFlow(context, adService) : null,
     );
   }
 
@@ -377,31 +288,6 @@ class _AccountSection extends ConsumerWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Opens the Support Us page (pushed, so back returns to Settings).
-class _SupportUsRow extends StatelessWidget {
-  const _SupportUsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      key: const Key('support-us-row'),
-      leading: const Icon(PhosphorIconsFill.heart, color: AppColors.orange),
-      title: Text(
-        'Support Us',
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: context.palette.ink,
-        ),
-      ),
-      trailing: const Icon(
-        PhosphorIconsFill.caretRight,
-        color: AppColors.orange,
-      ),
-      onTap: () => context.push(AppRoutes.support),
     );
   }
 }

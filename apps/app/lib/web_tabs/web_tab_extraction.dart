@@ -73,7 +73,7 @@ String webTabExtractionScript(WebTabSite site) {
 ''';
 }
 
-/// A parsed web tab, ready for `import_web_tab`.
+/// A parsed web tab.
 class WebTabDraft {
   const WebTabDraft({
     required this.title,
@@ -92,10 +92,13 @@ class WebTabDraft {
 ///
 /// Title and artist come from the search result's title when it names them,
 /// since search titles are more uniform than page headings; the page heading
-/// fills whatever the result title lacks.
+/// fills whatever the result title lacks. A [resultArtist] means the result
+/// already split the two (ukulele-tabs.com's own search), so both are taken
+/// as given.
 WebTabDraft? webTabDraftFromMessage(
   String message, {
   required String resultTitle,
+  String? resultArtist,
 }) {
   Object? decoded;
   try {
@@ -110,7 +113,9 @@ WebTabDraft? webTabDraftFromMessage(
       ? decoded['title'] as String
       : '';
 
-  final fromResult = parseWebTabTitle(resultTitle);
+  final fromResult = resultArtist != null && resultTitle.trim().isNotEmpty
+      ? (title: resultTitle.trim(), artist: resultArtist)
+      : parseWebTabTitle(resultTitle);
   final fromPage = parseWebTabTitle(pageTitle);
   final title = fromResult.title.isNotEmpty ? fromResult.title : fromPage.title;
   if (title.isEmpty) return null;

@@ -28,16 +28,6 @@ void main() {
     }
   });
 
-  testWidgets('switching to guitar swaps the note set to include D and B', (
-    tester,
-  ) async {
-    await _pump(tester);
-    await tester.tap(find.text('Guitar'));
-    await tester.pump();
-    expect(find.text('D'), findsWidgets);
-    expect(find.text('B'), findsWidgets);
-  });
-
   test('tunings cover both instruments', () {
     expect(ChordShapes.namesFor(ChordShapes.ukulele), isNotEmpty);
     expect(ChordShapes.namesFor(ChordShapes.guitar), isNotEmpty);

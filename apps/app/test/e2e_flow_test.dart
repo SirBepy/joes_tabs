@@ -11,59 +11,26 @@ import 'package:models/models.dart';
 
 import 'support/settings_overrides.dart';
 
-/// In-memory catalog the whole flow runs against: a couple of seeded songs with
-/// a published ukulele tab each, so trending, the song detail (chord render +
-/// transpose), and the saved-back-fill all resolve without a network.
-class _FakeCatalog implements CatalogRepository {
-  _FakeCatalog(this._songs, this._details);
+const _riptideUrl =
+    'https://www.ukulele-tabs.com/uke-songs/vance-joy/riptide-uke-tab-1.html';
 
-  final List<Song> _songs;
-  final Map<String, SongWithTabs> _details;
-
-  @override
-  Future<List<Song>> trending({int limit = 20}) async => _songs;
-
-  @override
-  Future<List<Song>> listSongs({
-    String? instrumentSlug,
-    int limit = 50,
-  }) async => _songs;
-
-  @override
-  Future<List<Song>> search(String query) async => _songs;
-
-  @override
-  Future<List<Song>> searchSongs(
-    String query, {
-    String? instrumentSlug,
-  }) async => _songs;
-
-  @override
-  Future<SongWithTabs?> getSong(String id) async => _details[id];
-
-  @override
-  Future<List<Instrument>> instruments() async => const <Instrument>[];
-}
-
-SongWithTabs _seed(String id, String title, String content) {
+/// A song as the reader leaves it in memory after reading its page: id and
+/// source are the page URL, nothing comes from our catalog.
+SongWithTabs _readSong() {
   final now = DateTime.utc(2026);
   return SongWithTabs(
-    song: Song(
-      id: id,
-      title: title,
-      artist: 'Traditional',
-      createdAt: now,
-      updatedAt: now,
-    ),
+    song: webSongStub(_riptideUrl, title: 'Riptide', artist: 'Vance Joy'),
     tabs: [
       Tab(
-        id: '$id-t1',
-        songId: id,
-        instrumentId: 'uke-id',
-        content: content,
+        id: _riptideUrl,
+        songId: _riptideUrl,
+        instrumentId: ChordShapes.ukulele,
+        content: '{key: G}\n[G]Lady running [C]down\n',
         originalKey: 'G',
-        source: TabSource.official,
+        source: TabSource.imported,
         status: TabStatus.published,
+        sourceUrl: _riptideUrl,
+        sourceSite: 'ukulele-tabs',
         createdAt: now,
         updatedAt: now,
       ),
@@ -72,133 +39,61 @@ SongWithTabs _seed(String id, String title, String content) {
 }
 
 void main() {
-  testWidgets('full journey: home -> song -> transpose -> favorite -> saved', (
+  testWidgets('read song -> transpose -> save the link -> Saved and Home', (
     tester,
   ) async {
-    final grace = _seed(
-      's1',
-      'Amazing Grace',
-      '{key: G}\n[G]Amazing [C]grace\n',
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final router = buildRouter(
+      initialLocation: AppRoutes.songPath(_riptideUrl),
     );
-    final river = _seed('s2', 'Moon River', '{key: G}\n[G]Moon [D]river\n');
-    final details = {grace.song.id: grace, river.song.id: river};
-    final songs = [grace.song, river.song];
-
-    final router = buildRouter(initialLocation: AppRoutes.home);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          // Seed persisted preferences so the settings-backed providers hydrate.
           initialSettingsOverride(),
-          // Real provider graph, fake data source: trending / getSong /
-          // instruments all flow through this one repository.
-          catalogRepositoryProvider.overrideWithValue(
-            _FakeCatalog(songs, details),
-          ),
-          // In-memory favorites (the base notifier, no Drift) so toggling on
-          // the detail screen is observable on Home + Saved.
+          // The reader has already put the page's sheet in memory.
+          webSongsProvider.overrideWith((ref) => {_riptideUrl: _readSong()}),
           favoritesProvider.overrideWith((ref) => FavoritesNotifier()),
-          // In-memory Drift cache so the Saved screen's cache-first lookup
-          // resolves (it back-fills the favorited song from trending). Without
-          // this the default opens a file-backed sqlite db that never settles
-          // under flutter test.
-          appDatabaseProvider.overrideWithValue(
-            AppDatabase.forTesting(NativeDatabase.memory()),
-          ),
+          appDatabaseProvider.overrideWithValue(db),
+          // Home's Recently opened is a Drift stream query, which leaves a timer
+          // pending past the test; the lists are not under test here.
+          recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
         ],
         child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
 
-    // 1. Home shows the seeded trending list. The trending panel can sit below
-    //    the fold on the small test surface (the welcome mascot pushes it down,
-    //    and the centered max-width content column makes text wrap taller), so
-    //    scroll it into the lazy ListView's build window before asserting it
-    //    rendered.
-    expect(find.text('WELCOME'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Amazing Grace'), 200);
-    await tester.pumpAndSettle();
-    expect(find.text('Amazing Grace'), findsOneWidget);
-    expect(find.text('Moon River'), findsOneWidget);
+    // 1. The song page renders the in-memory sheet, credited to its source.
+    expect(find.text('RIPTIDE'), findsOneWidget);
+    expect(find.text('Lady running '), findsOneWidget);
+    expect(find.text('G'), findsWidgets);
+    expect(find.text('G#'), findsNothing);
 
-    // 2. Tap a trending song -> lands on its detail (chord sheet renders).
-    await tester.ensureVisible(find.text('Amazing Grace'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Amazing Grace'));
-    await tester.pumpAndSettle();
-    expect(find.text('AMAZING GRACE'), findsOneWidget); // header (upper-cased)
-    expect(find.text('Amazing '), findsOneWidget); // lyric run from the sheet
-    expect(find.text('G'), findsWidgets); // chord G in strip + over the lyric
-    expect(find.text('G#'), findsNothing); // not transposed yet
-
-    // 3. Open the controls sheet (faders FAB) and transpose up a semitone ->
-    //    G becomes G# in the rendered sheet behind the sheet.
+    // 2. Transpose up a semitone.
     await tester.tap(find.byTooltip('Song controls'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Up a semitone'));
     await tester.pumpAndSettle();
-    final offset = tester.widget<Text>(
-      find.byKey(const Key('transpose-offset')),
-    );
-    expect(offset.data, '+1');
     expect(find.text('G#'), findsWidgets);
-
-    // Dismiss the controls sheet (its modal barrier sits over the app bar) so
-    // the favorite heart is tappable again.
     await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
 
-    // 4. Favorite the song -> the heart tooltip flips to "Remove favorite".
-    expect(find.byTooltip('Add favorite'), findsOneWidget);
+    // 3. Save it: only the URL goes into favorites.
     await tester.tap(find.byTooltip('Add favorite'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Remove favorite'), findsOneWidget);
 
-    // 5. Back to the shell, open the Saved tab -> the favorited song is listed
-    //    there.
-    await tester.pageBack();
+    // 4. Saved lists it, named from the URL.
+    router.go(AppRoutes.saved);
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationRail), findsOneWidget); // back in the shell
+    expect(find.text('Riptide'), findsOneWidget);
+    expect(find.text('Vance Joy'), findsOneWidget);
 
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationRail),
-        matching: find.text('Saved'),
-      ),
-    );
+    // 5. Home lists it under Saved too.
+    router.go(AppRoutes.home);
     await tester.pumpAndSettle();
-    expect(
-      router.routerDelegate.currentConfiguration.uri.path,
-      AppRoutes.saved,
-    );
-    expect(find.text('Amazing Grace'), findsOneWidget);
-    expect(find.text('Moon River'), findsNothing); // only the favorited one
-
-    // 6. Home tab, then Trending (a page stacked inside the Home tab, bar still
-    //    visible); its back button returns to Home.
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationRail),
-        matching: find.text('Home'),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(router.routerDelegate.currentConfiguration.uri.path, AppRoutes.home);
-
-    router.go(AppRoutes.trending);
-    await tester.pumpAndSettle();
-    expect(
-      router.routerDelegate.currentConfiguration.uri.path,
-      AppRoutes.trending,
-    );
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.text('TRENDING'), findsWidgets);
-    expect(find.text('Amazing Grace'), findsOneWidget);
-    expect(find.text('Moon River'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Back'));
-    await tester.pumpAndSettle();
-    expect(router.routerDelegate.currentConfiguration.uri.path, AppRoutes.home);
+    expect(find.text('SAVED'), findsOneWidget);
+    expect(find.text('Riptide'), findsWidgets);
   });
 }

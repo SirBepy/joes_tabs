@@ -43,7 +43,7 @@ class SongDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Joes Tabs',
+          'Ukulele Tabs',
           style: dark ? const TextStyle(color: AppColors.orange) : null,
         ),
         actions: [

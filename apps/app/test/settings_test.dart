@@ -6,7 +6,6 @@ import 'package:joes_tabs_app/screens/settings_screen.dart';
 import 'package:joes_tabs_app/state/settings_provider.dart';
 import 'package:joes_tabs_app/theme/app_palette.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
-import 'package:models/models.dart';
 
 import 'login_form_test.dart' show testUser;
 import 'support/settings_overrides.dart';
@@ -81,18 +80,17 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('renders the 3-way theme selector and instrument multi-select', (
+  testWidgets('renders the 3-way theme selector and no instrument choice', (
     tester,
   ) async {
     await _pump(tester);
 
     expect(find.byKey(const Key('theme-mode-selector')), findsOneWidget);
-    expect(find.byKey(const Key('instruments-multiselect')), findsOneWidget);
+    expect(find.byKey(const Key('instruments-multiselect')), findsNothing);
     expect(find.text('System'), findsOneWidget);
     expect(find.text('Light'), findsOneWidget);
     expect(find.text('Dark'), findsOneWidget);
-    expect(find.text('Ukulele'), findsOneWidget);
-    expect(find.text('Guitar'), findsOneWidget);
+    expect(find.text('Guitar'), findsNothing);
   });
 
   testWidgets('theme selector updates and persists the provider', (
@@ -138,34 +136,6 @@ void main() {
     await tester.tap(sw);
     await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(sw).value, isTrue);
-  });
-
-  testWidgets('instrument multi-select adds and removes (min one enforced)', (
-    tester,
-  ) async {
-    // Start with only ukulele so the toggle starts single-selected.
-    await _pump(tester, instrumentSlugs: const [ChordShapes.ukulele]);
-
-    expect(_ref.read(instrumentsProvider), {ChordShapes.ukulele});
-
-    // Tapping the only selected chip must NOT clear it (min-one rule).
-    await tester.tap(find.byKey(const Key('instrument-chip-ukulele')));
-    await tester.pump();
-    expect(_ref.read(instrumentsProvider), {ChordShapes.ukulele});
-
-    // Adding guitar selects both.
-    await tester.tap(find.byKey(const Key('instrument-chip-guitar')));
-    await tester.pump();
-    expect(_ref.read(instrumentsProvider), {
-      ChordShapes.ukulele,
-      ChordShapes.guitar,
-    });
-
-    final record = await AppSettingsRepository(_db).read();
-    expect(record.instrumentSlugs.toSet(), {
-      ChordShapes.ukulele,
-      ChordShapes.guitar,
-    });
   });
 
   testWidgets('Delete Account is hidden while signed out', (tester) async {
@@ -223,22 +193,15 @@ void main() {
   });
 
   group('dark palette', () {
-    testWidgets('headings, chips and rows resolve the dark tokens', (
-      tester,
-    ) async {
+    testWidgets('headings and rows resolve the dark tokens', (tester) async {
       await _pump(tester, theme: AppTheme.dark);
       await tester.pumpAndSettle();
 
       Color? ink(String text) =>
           tester.widget<Text>(find.text(text)).style?.color;
       expect(ink('THEME'), AppPalette.dark.ink);
-      expect(ink('INSTRUMENTS I PLAY'), AppPalette.dark.ink);
       expect(ink('MAXIMAL CHORDS'), AppPalette.dark.ink);
       expect(ink('FONT SETTINGS'), AppPalette.dark.ink);
-      final chip = tester.widget<FilterChip>(
-        find.byKey(const Key('instrument-chip-ukulele')),
-      );
-      expect(chip.backgroundColor, AppPalette.dark.chip);
     });
 
     testWidgets('the log-out dialog sits on the dark card with ink text', (

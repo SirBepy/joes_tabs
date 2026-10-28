@@ -10,26 +10,32 @@ import '../state/favorites_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
-import '../widgets/brand_mascot.dart';
 import '../widgets/song_tiles.dart';
 
-/// Logged-in home / dashboard (mockup `welcome.md`): greeting, a horizontal
-/// Saved Tabs row from the in-memory favorites, and a vertical Trending list
-/// from `trendingProvider`.
+/// Home for the ukulele-tabs.com client: the shell's search bar on top, then
+/// the songs you opened recently and the ones you saved. Both lists hold only
+/// links (song ids are page URLs), so titles come from each URL's slug.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final trending = ref.watch(trendingProvider);
     final favoriteIds = ref.watch(favoritesProvider);
+    final recentIds = ref.watch(recentSongIdsProvider).valueOrNull ?? const [];
     final user = ref.watch(currentUserProvider);
 
-    // Logged in: greet by email (name part). Anonymous: a generic welcome.
     final greetingTop = user == null ? 'WELCOME' : 'WELCOME BACK';
-    // Signed out has no subtitle: the sign-in card below carries the prompt.
     final greetingName = user == null ? null : '${_displayName(user.email)}!';
+
+    final recent = [
+      for (final id in recentIds)
+        if (isWebSongId(id)) webSongStub(id),
+    ].take(kHomeRecentCount).toList();
+    final saved = [
+      for (final id in favoriteIds)
+        if (isWebSongId(id)) webSongStub(id),
+    ];
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -51,61 +57,60 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   const _SignInCard(),
                 ],
-                const SizedBox(height: AppSpacing.md),
-                // Brand mascot placeholder (orange ukulele character TBD).
-                const BrandMascot(size: 140),
               ],
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        _SectionLabel(
-          'SAVED TABS',
-          // "SEE ALL >" link routes to the full saved list.
-          trailing: const _SectionLink(
+        const _SectionLabel('RECENTLY OPENED'),
+        _SongPanel(
+          songs: recent,
+          empty: const EmptyState(
+            message:
+                'Search above to find a song. The ones you open show here.',
+            icon: PhosphorIconsRegular.clockCounterClockwise,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        const _SectionLabel(
+          'SAVED',
+          trailing: _SectionLink(
             key: Key('home-saved-see-all'),
             label: 'SEE ALL',
             route: AppRoutes.saved,
             push: true,
           ),
         ),
-        _SavedRow(favoriteIds: favoriteIds, trending: trending),
-        const SizedBox(height: AppSpacing.lg),
-        const _SectionLabel(
-          'TRENDING',
-          trailing: _SectionLink(
-            key: Key('home-trending-see-all'),
-            label: 'SEE ALL',
-            route: AppRoutes.trending,
+        _SongPanel(
+          songs: saved.take(kHomeRecentCount).toList(),
+          empty: const EmptyState(
+            message:
+                'No saved songs yet. Tap the bookmark on a song to save it.',
+            icon: PhosphorIconsRegular.bookmarkSimple,
           ),
-        ),
-        trending.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(AppSpacing.xl),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) =>
-              const FriendlyError(message: 'Could not load trending tabs.'),
-          data: (songs) => _TrendingPanel(songs: songs),
         ),
       ],
     );
   }
 }
 
-/// The grouped peach panel wrapping the home Trending list, with thin dividers
-/// between rows (mockup Welcome.png).
-class _TrendingPanel extends StatelessWidget {
-  const _TrendingPanel({required this.songs});
+/// How many songs each Home list shows before "SEE ALL".
+const int kHomeRecentCount = 5;
+
+/// A grouped card of song rows with thin dividers, or [empty] when there are
+/// none.
+class _SongPanel extends StatelessWidget {
+  const _SongPanel({required this.songs, required this.empty});
 
   final List<Song> songs;
+  final Widget empty;
 
   @override
   Widget build(BuildContext context) {
     if (songs.isEmpty) {
-      return const EmptyState(
-        message: 'No trending tabs right now. Check back soon.',
-        icon: PhosphorIconsRegular.chartLineUp,
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: empty,
       );
     }
     return Container(
@@ -134,8 +139,8 @@ class _TrendingPanel extends StatelessWidget {
 }
 
 /// A "LABEL >" navigation link pinned to the right of a section header.
-/// Saved is a sibling tab, so it is pushed; Trending is nested under Home, so
-/// `go` stacks it on Home and back pops to Home.
+/// Saved is a sibling tab, so it is pushed; a nested route would use `go` so
+/// it stacks on Home and back pops to Home.
 class _SectionLink extends StatelessWidget {
   const _SectionLink({
     super.key,
@@ -260,44 +265,6 @@ class _SectionLabel extends StatelessWidget {
           ),
           ?trailing,
         ],
-      ),
-    );
-  }
-}
-
-/// Horizontal saved-tab cards. Resolves favorite ids against the trending list
-/// (the only catalogue currently in hand); shows an empty state when none.
-class _SavedRow extends StatelessWidget {
-  const _SavedRow({required this.favoriteIds, required this.trending});
-
-  final Set<String> favoriteIds;
-  final AsyncValue<List<Song>> trending;
-
-  @override
-  Widget build(BuildContext context) {
-    if (favoriteIds.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: EmptyState(
-          message: 'No saved tabs yet. Tap the heart on a song to save it.',
-          icon: PhosphorIconsRegular.bookmarkSimple,
-        ),
-      );
-    }
-    final saved = (trending.valueOrNull ?? const <Song>[])
-        .where((s) => favoriteIds.contains(s.id))
-        .toList();
-    if (saved.isEmpty) {
-      return const SizedBox(height: 1);
-    }
-    return SizedBox(
-      height: 118,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: saved.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (_, i) => SongCard(song: saved[i]),
       ),
     );
   }

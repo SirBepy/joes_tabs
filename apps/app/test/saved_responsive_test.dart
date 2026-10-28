@@ -7,17 +7,13 @@ import 'package:joes_tabs_app/screens/saved_screen.dart';
 import 'package:joes_tabs_app/state/favorites_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 import 'package:joes_tabs_app/widgets/song_tiles.dart';
-import 'package:models/models.dart';
 
 import 'support/settings_overrides.dart';
 
-Song _song(String id, String title) => Song(
-  id: id,
-  title: title,
-  artist: 'Artist',
-  createdAt: DateTime.utc(2026),
-  updatedAt: DateTime.utc(2026),
-);
+const _urlA =
+    'https://www.ukulele-tabs.com/uke-songs/some-band/song-a-uke-tab-1.html';
+const _urlB =
+    'https://www.ukulele-tabs.com/uke-songs/some-band/song-b-uke-tab-2.html';
 
 /// Minimal router so SongListTile's `context.push('/song/:id')` resolves; Saved
 /// is mounted at `/saved`.
@@ -42,11 +38,10 @@ Future<void> _pump(WidgetTester tester) async {
     ProviderScope(
       overrides: [
         initialSettingsOverride(),
-        // Non-empty favorites so the screen renders the list/grid, not the
-        // empty state.
-        favoritesProvider.overrideWith((ref) => FavoritesNotifier({'a', 'b'})),
-        savedSongsProvider.overrideWith(
-          (ref) async => [_song('a', 'Song A'), _song('b', 'Song B')],
+        // Two saved links so the screen renders the list/grid, not the empty
+        // state.
+        favoritesProvider.overrideWith(
+          (ref) => FavoritesNotifier({_urlA, _urlB}),
         ),
       ],
       child: MaterialApp.router(theme: AppTheme.light, routerConfig: _router()),
@@ -92,4 +87,28 @@ void main() {
       expect(find.byType(SongListTile), findsNWidgets(2));
     },
   );
+
+  testWidgets('lists saved links by their URL slug and skips catalog ids', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          initialSettingsOverride(),
+          favoritesProvider.overrideWith(
+            (ref) => FavoritesNotifier({_urlA, 'catalog-uuid'}),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: _router(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SongListTile), findsOneWidget);
+    expect(find.text('Song A'), findsOneWidget);
+    expect(find.text('Some Band'), findsOneWidget);
+  });
 }

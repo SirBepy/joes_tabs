@@ -4,22 +4,18 @@ import 'package:data/data.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../router/app_routes.dart';
-import '../state/settings_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../web_tabs/open_external.dart';
 import '../widgets/song_tiles.dart';
 
-/// Search results screen. A debounced text field drives [searchFilteredProvider]
-/// (query + an instrument filter); matching songs render as tappable rows to the
-/// song detail with a small instrument chip.
+/// Search screen: a debounced text field drives [webSearchProvider], which
+/// reads ukulele-tabs.com's own search page from the device. Results are link
+/// rows; opening one reads that page, and the bookmark saves only its link.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key, this.initialQuery = ''});
 
@@ -37,26 +33,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _debounce;
   String _query = '';
 
-  /// Active instrument filter slug, or null for "All" (both instruments).
-  /// Seeded from the currently-viewed instrument in [didChangeDependencies].
-  String? _instrumentSlug;
-  bool _filterInitialized = false;
-
   @override
   void initState() {
     super.initState();
     _query = widget.initialQuery.trim();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Default the filter to the currently-viewed instrument once. Read (not
-    // watch) so later settings changes don't yank the user's in-screen choice.
-    if (!_filterInitialized) {
-      _instrumentSlug = ref.read(selectedInstrumentProvider);
-      _filterInitialized = true;
-    }
   }
 
   void _onChanged(String value) {
@@ -64,10 +44,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _debounce = Timer(const Duration(milliseconds: 300), () {
       if (mounted) setState(() => _query = value.trim());
     });
-  }
-
-  void _onFilterChanged(String? slug) {
-    setState(() => _instrumentSlug = slug);
   }
 
   @override
@@ -79,12 +55,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final showPicker = ref.watch(showInstrumentPickerProvider);
-    // When the user plays one instrument, hide the All/Ukulele/Guitar filter and
-    // force that single instrument as the result filter.
-    final effectiveSlug = showPicker
-        ? _instrumentSlug
-        : ref.watch(instrumentsProvider).first;
     return Scaffold(
       appBar: AppBar(
         title: TextField(
@@ -96,7 +66,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           // instead of inheriting dark mode's light body text.
           style: const TextStyle(color: AppColors.textDark),
           decoration: InputDecoration(
-            hintText: 'Search by song or artist',
+            hintText: 'Search ukulele-tabs.com',
             // Hint and icon take the muted light-theme tone explicitly so dark
             // mode's pale input colours do not wash out on the white fill.
             hintStyle: const TextStyle(color: AppColors.textMuted),
@@ -122,278 +92,91 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           constraints: const BoxConstraints(maxWidth: kPageMaxWidth),
           child: Column(
             children: [
-              if (showPicker)
-                _InstrumentFilterBar(
-                  selected: _instrumentSlug,
-                  onChanged: _onFilterChanged,
-                ),
               Expanded(
                 child: _query.isEmpty
                     ? const EmptyState(
-                        message: 'Search by song or artist to find a tab.',
+                        message:
+                            'Search ukulele-tabs.com by song or artist to '
+                            'find a tab.',
                         icon: PhosphorIconsRegular.magnifyingGlass,
                       )
-                    : _Results(query: _query, instrumentSlug: effectiveSlug),
+                    : _Results(query: _query),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Segmented All / Ukulele / Guitar filter row above the results.
-class _InstrumentFilterBar extends StatelessWidget {
-  const _InstrumentFilterBar({required this.selected, required this.onChanged});
-
-  /// Selected instrument slug, or null for "All".
-  final String? selected;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          _FilterChoice(
-            label: 'All',
-            selected: selected == null,
-            onTap: () => onChanged(null),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _FilterChoice(
-            label: 'Ukulele',
-            selected: selected == ChordShapes.ukulele,
-            onTap: () => onChanged(ChordShapes.ukulele),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _FilterChoice(
-            label: 'Guitar',
-            selected: selected == ChordShapes.guitar,
-            onTap: () => onChanged(ChordShapes.guitar),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterChoice extends StatelessWidget {
-  const _FilterChoice({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      showCheckmark: false,
-      selectedColor: AppColors.orange,
-      backgroundColor: context.palette.chip,
-      labelStyle: TextStyle(
-        color: selected ? AppColors.white : AppColors.rust,
-        fontWeight: FontWeight.w600,
-      ),
-      side: BorderSide.none,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
     );
   }
 }
 
 class _Results extends ConsumerWidget {
-  const _Results({required this.query, required this.instrumentSlug});
+  const _Results({required this.query});
 
   final String query;
-  final String? instrumentSlug;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final results = ref.watch(
-      searchFilteredProvider((query: query, instrumentSlug: instrumentSlug)),
-    );
-    final web = ref.watch(webTabsEnabledProvider)
-        ? _WebResults(query: query)
-        : null;
-    return results.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) =>
-          const FriendlyError(message: 'Search failed. Please try again.'),
-      data: (songs) {
-        if (songs.isEmpty) {
-          return ListView(
-            children: [
-              EmptyState(message: 'No songs found for "$query".'),
-              ?web,
-            ],
-          );
-        }
-        final chip = _chipLabel(instrumentSlug);
-        return SongListOrGrid(
-          itemCount: songs.length,
-          itemBuilder: (_, i) => SongListTile(
-            song: songs[i],
-            trailingChip: chip,
-            highlight: query,
-          ),
-          footer: web,
-        );
-      },
-    );
-  }
-
-  /// The instrument chip shown on each result. When a specific instrument is
-  /// selected every result has a tab for it, so we surface that label; for
-  /// "All" we omit the chip (results may have either/both).
-  static String? _chipLabel(String? slug) {
-    switch (slug) {
-      case ChordShapes.ukulele:
-        return 'uke';
-      case ChordShapes.guitar:
-        return 'guitar';
-      default:
-        return null;
+    // The web build can't read another site's page (CORS), so it links out to
+    // the site's own search instead.
+    if (kIsWeb) {
+      return _OpenOnSite(query: query);
     }
-  }
-}
-
-/// "From the web": chord pages on the allowlisted sites, below the catalog.
-/// Signed-in only (imported tabs are visible to signed-in users only), so
-/// signed-out users get a sign-in prompt instead.
-class _WebResults extends ConsumerWidget {
-  const _WebResults({required this.query});
-
-  final String query;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final signedIn = ref.watch(currentUserProvider) != null;
-    final muted = TextStyle(color: context.palette.mutedInk);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.xs,
+    return ref
+        .watch(webSearchProvider(query))
+        .when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) => const FriendlyError(
+            message: "Couldn't reach ukulele-tabs.com. Please try again.",
           ),
-          child: Text(
-            'FROM THE WEB',
-            style: TextStyle(
-              color: context.palette.mutedInk,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        if (!signedIn)
-          ListTile(
-            leading: const Icon(
-              PhosphorIconsRegular.globe,
-              color: AppColors.orange,
-            ),
-            title: const Text('Log in to search chord sites on the web'),
-            onTap: () => context.push(AppRoutes.login),
-          )
-        else
-          ref
-              .watch(webSearchProvider(query))
-              .when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
-                  child: Center(child: CircularProgressIndicator()),
+          data: (results) {
+            if (results.isEmpty) {
+              return EmptyState(message: 'No songs found for "$query".');
+            }
+            return SongListOrGrid(
+              itemCount: results.length,
+              itemBuilder: (_, i) => SongListTile(
+                song: webSongStub(
+                  results[i].url.toString(),
+                  title: results[i].title,
+                  artist: results[i].artist,
                 ),
-                error: (_, _) => Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Text(
-                    'Web search is unavailable right now.',
-                    style: muted,
-                  ),
-                ),
-                data: (results) => results.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Text(
-                          'No chord pages found on the web.',
-                          style: muted,
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          for (final r in results) _WebResultTile(result: r),
-                        ],
-                      ),
+                highlight: query,
               ),
-      ],
-    );
+            );
+          },
+        );
   }
 }
 
-class _WebResultTile extends StatelessWidget {
-  const _WebResultTile({required this.result});
+class _OpenOnSite extends StatelessWidget {
+  const _OpenOnSite({required this.query});
 
-  final WebSearchResult result;
-
-  /// Opens in the in-app reader only where it can work: a parseable site, on
-  /// Android/iOS (the web build has no WebView and can't read other sites).
-  bool get _readsInApp => result.site.parseable && !kIsWeb;
-
-  void _open(BuildContext context) {
-    final songId = result.songId;
-    if (songId != null) {
-      context.push(AppRoutes.songPath(songId));
-    } else if (_readsInApp) {
-      context.push(AppRoutes.webTabPath(result.url, result.title));
-    } else {
-      openExternally(result.url);
-    }
-  }
+  final String query;
 
   @override
   Widget build(BuildContext context) {
-    final artist = result.artist;
-    final parsed = artist != null
-        ? (title: result.title, artist: artist)
-        : parseWebTabTitle(result.title);
-    final external = result.songId == null && !_readsInApp;
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      title: Text(
-        parsed.title.isEmpty ? result.title : parsed.title,
-        style: TextStyle(
-          color: context.palette.ink,
-          fontWeight: FontWeight.w600,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'The web version can only open the search on ukulele-tabs.com. '
+              'Use the Android or iOS app to read tabs here.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.icon(
+              icon: const Icon(PhosphorIconsRegular.arrowSquareOut),
+              label: const Text('Search on ukulele-tabs.com'),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.orange),
+              onPressed: () => openExternally(ukuleleTabsSearchUrl(query)),
+            ),
+          ],
         ),
       ),
-      subtitle: Text(
-        [?parsed.artist, result.site.name].join(' · '),
-        style: const TextStyle(color: AppColors.orange),
-      ),
-      trailing: Icon(
-        external
-            ? PhosphorIconsRegular.arrowSquareOut
-            : PhosphorIconsRegular.caretRight,
-        color: AppColors.rust,
-        semanticLabel: external ? 'Opens in browser' : null,
-      ),
-      onTap: () => _open(context),
     );
   }
 }

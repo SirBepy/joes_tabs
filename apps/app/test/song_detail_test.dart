@@ -64,7 +64,7 @@ Color? _appBarColor(WidgetTester tester) => tester
     .color;
 
 Color? _titleColor(WidgetTester tester) =>
-    tester.widget<Text>(find.text('Joes Tabs')).style?.color;
+    tester.widget<Text>(find.text('Ukulele Tabs')).style?.color;
 
 void main() {
   testWidgets('light theme keeps the orange app bar', (tester) async {

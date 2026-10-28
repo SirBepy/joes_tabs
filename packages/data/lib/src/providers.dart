@@ -112,8 +112,17 @@ final searchFilteredProvider = FutureProvider.family<List<Song>, SearchArgs>((
       .searchSongs(args.query, instrumentSlug: args.instrumentSlug);
 });
 
-/// A single song with its published tabs, or null if not found/visible.
+/// Web songs read on this device this session, keyed by page URL. Memory only:
+/// ukulele-tabs.com's terms forbid storing their sheets without permission, so
+/// a saved or recent web song is re-read from its page on every open.
+final webSongsProvider = StateProvider<Map<String, SongWithTabs>>(
+  (ref) => const {},
+);
+
+/// A single song with its published tabs, or null if not found/visible. A web
+/// song id resolves from [webSongsProvider] only.
 final songProvider = FutureProvider.family<SongWithTabs?, String>((ref, id) {
+  if (isWebSongId(id)) return ref.watch(webSongsProvider)[id];
   ref.watch(catalogViewerProvider);
   return ref.watch(catalogRepositoryProvider).getSong(id);
 });
@@ -125,6 +134,11 @@ final instrumentsByIdProvider = FutureProvider<Map<String, Instrument>>((
 ) async {
   final list = await ref.watch(catalogRepositoryProvider).instruments();
   return {for (final i in list) i.id: i};
+});
+
+/// Recently opened song ids, newest first (the Drift recent-views LRU).
+final recentSongIdsProvider = StreamProvider<List<String>>((ref) {
+  return ref.watch(appDatabaseProvider).watchRecentViewIds();
 });
 
 /// Whether the Search screen shows the "From the web" section ([Env.webTabs]).

@@ -51,7 +51,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "JOE'S\nTABS",
+              'UKULELE\nTABS',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

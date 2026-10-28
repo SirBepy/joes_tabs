@@ -11,6 +11,20 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
+/// Opens [song]: a catalog song goes straight to its page, a web song is read
+/// from its page again first (only its link is kept between opens).
+void openSong(BuildContext context, Song song) {
+  context.push(
+    isWebSongId(song.id)
+        ? AppRoutes.webTabPath(
+            Uri.parse(song.id),
+            song.title,
+            artist: song.artist.isEmpty ? null : song.artist,
+          )
+        : AppRoutes.songPath(song.id),
+  );
+}
+
 /// A two-line trending/search list row: title over artist with a trailing
 /// bookmark toggle, tappable to the song detail. Matches `trending-2.md`.
 class SongListTile extends ConsumerWidget {
@@ -70,7 +84,7 @@ class SongListTile extends ConsumerWidget {
           ),
         ],
       ),
-      onTap: () => context.push(AppRoutes.songPath(song.id)),
+      onTap: () => openSong(context, song),
     );
   }
 }
@@ -88,7 +102,7 @@ class SongCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(AppSpacing.radius),
-      onTap: () => context.push(AppRoutes.songPath(song.id)),
+      onTap: () => openSong(context, song),
       child: Container(
         width: width,
         padding: const EdgeInsets.all(AppSpacing.md),

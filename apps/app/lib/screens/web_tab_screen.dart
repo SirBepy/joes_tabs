@@ -7,36 +7,44 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../router/app_routes.dart';
-import '../state/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../web_tabs/open_external.dart';
 import '../web_tabs/web_tab_extraction.dart';
-import '../web_tabs/web_tab_importer.dart';
+import '../web_tabs/web_song_reader.dart';
 import '../widgets/song_tiles.dart';
 
-/// Opens a chord page from web search in a WebView, reads the chords out of the
-/// loaded page on the device, stores them as an imported tab, and replaces
-/// itself with that song. Android/iOS only: the web build links out instead
-/// (no WebView there, and browsers block reading another site's page).
+/// Opens a ukulele-tabs.com page in a WebView, reads the chords out of the
+/// loaded page on the device into an in-memory song, and replaces itself with
+/// that song. Nothing is stored (the site's terms forbid it without
+/// permission), so every open of a saved or recent song comes back through
+/// here. Android/iOS only: the web build links out instead (no WebView there,
+/// and browsers block reading another site's page).
 ///
-/// The page stays visible underneath, so a bot challenge (e-chords sits behind
-/// Cloudflare) can be passed by hand; every finished load is read again, so the
-/// real page still imports after the challenge redirects.
+/// The page stays visible underneath, so a bot challenge can be passed by
+/// hand; every finished load is read again.
 class WebTabScreen extends ConsumerStatefulWidget {
-  const WebTabScreen({super.key, required this.url, required this.title});
+  const WebTabScreen({
+    super.key,
+    required this.url,
+    required this.title,
+    this.artist,
+  });
 
   final Uri url;
 
   /// The search result's title, the preferred source of song title/artist.
   final String title;
 
+  /// The search result's artist, when the site listed it separately.
+  final String? artist;
+
   @override
   ConsumerState<WebTabScreen> createState() => _WebTabScreenState();
 }
 
-enum _Phase { reading, failed, saving }
+enum _Phase { reading, failed }
 
 class _WebTabScreenState extends ConsumerState<WebTabScreen> {
   WebViewController? _controller;
@@ -70,33 +78,26 @@ class _WebTabScreenState extends ConsumerState<WebTabScreen> {
       ..loadRequest(widget.url);
   }
 
-  Future<void> _onExtracted(String message) async {
+  void _onExtracted(String message) {
     final site = _site;
-    // A save already in flight wins; a later load's message would only
-    // re-import the same URL.
-    if (_done || _phase == _Phase.saving || site == null || !mounted) return;
-    final importer = WebTabImporter(
-      repository: ref.read(webTabsRepositoryProvider),
+    if (_done || site == null || !mounted) return;
+    final song = webSongFromMessage(
+      message,
       url: widget.url,
       site: site,
       resultTitle: widget.title,
-      instrumentSlug: ref.read(selectedInstrumentProvider),
+      resultArtist: widget.artist,
     );
-    setState(() => _phase = _Phase.saving);
-    try {
-      final songId = await importer.import(message);
-      if (!mounted) return;
-      if (songId == null) {
-        setState(() => _phase = _Phase.failed);
-        return;
-      }
-      _done = true;
-      ref.invalidate(searchFilteredProvider);
-      ref.invalidate(webSearchProvider);
-      context.pushReplacement(AppRoutes.songPath(songId));
-    } on CatalogException {
-      if (mounted) setState(() => _phase = _Phase.failed);
+    if (song == null) {
+      setState(() => _phase = _Phase.failed);
+      return;
     }
+    _done = true;
+    final id = song.song.id;
+    final store = ref.read(webSongsProvider.notifier);
+    store.state = {...store.state, id: song};
+    ref.read(appDatabaseProvider).recordView(id);
+    context.pushReplacement(AppRoutes.songPath(id));
   }
 
   @override

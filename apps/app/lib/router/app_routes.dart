@@ -27,14 +27,15 @@ abstract final class AppRoutes {
   /// Song detail, e.g. `/song/abc123`.
   static const String song = '/song/:id';
 
-  static String songPath(String id) => '/song/$id';
+  /// Encoded because a web song's id is its page URL.
+  static String songPath(String id) => '/song/${Uri.encodeComponent(id)}';
 
   /// A chord page from web search, opened in the in-app WebView to be parsed.
-  /// Carries the page URL and the search result's title as query parameters.
+  /// Carries the page URL and the result's title and artist as query parameters.
   static const String webTab = '/web-tab';
 
-  static String webTabPath(Uri url, String title) => Uri(
+  static String webTabPath(Uri url, String title, {String? artist}) => Uri(
     path: webTab,
-    queryParameters: {'url': url.toString(), 'title': title},
+    queryParameters: {'url': url.toString(), 'title': title, 'artist': ?artist},
   ).toString();
 }

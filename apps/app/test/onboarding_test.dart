@@ -5,9 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:joes_tabs_app/router/app_router.dart';
 import 'package:joes_tabs_app/router/app_routes.dart';
-import 'package:joes_tabs_app/state/settings_provider.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
-import 'package:models/models.dart';
 
 import 'support/settings_overrides.dart';
 
@@ -23,9 +21,11 @@ Future<GoRouter> _pumpApp(
     ProviderScope(
       overrides: [
         appDatabaseOverride(db),
+        // Home's Recently opened is a Drift stream query, which leaves a timer
+        // pending past the test; the lists are not under test here.
+        recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
         initialSettingsOverride(
           onboardingComplete: onboardingComplete,
-          // Start empty so the onboarding instrument step requires a choice.
           instrumentSlugs: const [],
         ),
       ],
@@ -66,68 +66,6 @@ void main() {
     });
   });
 
-  group('onboarding instrument step', () {
-    testWidgets(
-      'Continue is disabled at zero selected and enabled after a pick, '
-      'and commits the selection to instrumentsProvider',
-      (tester) async {
-        final db = inMemoryAppDatabase();
-        addTearDown(db.close);
-        late WidgetRef capturedRef;
-
-        final router = buildRouter(initialLocation: AppRoutes.onboarding);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              appDatabaseOverride(db),
-              initialSettingsOverride(
-                onboardingComplete: false,
-                instrumentSlugs: const [],
-              ),
-            ],
-            child: Consumer(
-              builder: (context, ref, _) {
-                capturedRef = ref;
-                return MaterialApp.router(
-                  theme: AppTheme.light,
-                  routerConfig: router,
-                );
-              },
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Advance off the Welcome step to the instrument step.
-        await tester.tap(find.byKey(const Key('onboarding-get-started')));
-        await tester.pumpAndSettle();
-
-        // Zero selected: Continue is disabled.
-        final continueButton = tester.widget<ElevatedButton>(
-          find.byKey(const Key('onboarding-instrument-continue')),
-        );
-        expect(continueButton.onPressed, isNull);
-
-        // Pick guitar: Continue becomes enabled.
-        await tester.tap(find.byKey(const Key('onboarding-instrument-guitar')));
-        await tester.pumpAndSettle();
-        final enabledButton = tester.widget<ElevatedButton>(
-          find.byKey(const Key('onboarding-instrument-continue')),
-        );
-        expect(enabledButton.onPressed, isNotNull);
-
-        // Continue commits the selection to the persisted provider.
-        await tester.tap(
-          find.byKey(const Key('onboarding-instrument-continue')),
-        );
-        await tester.pumpAndSettle();
-        expect(capturedRef.read(instrumentsProvider), {ChordShapes.guitar});
-        final record = await AppSettingsRepository(db).read();
-        expect(record.instrumentSlugs, [ChordShapes.guitar]);
-      },
-    );
-  });
-
   group('onboarding account step', () {
     testWidgets('Skip marks onboardingComplete=true and routes home', (
       tester,
@@ -140,6 +78,9 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseOverride(db),
+            // Home's Recently opened is a Drift stream query, which leaves a timer
+            // pending past the test; the lists are not under test here.
+            recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
             initialSettingsOverride(
               onboardingComplete: false,
               instrumentSlugs: const [],
@@ -153,12 +94,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Advance off the Welcome step, then through the instrument step.
+      // Advance off the Welcome step to the Account step.
       await tester.tap(find.byKey(const Key('onboarding-get-started')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('onboarding-instrument-ukulele')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('onboarding-instrument-continue')));
       await tester.pumpAndSettle();
 
       // Skip finishes onboarding to home.
@@ -184,6 +121,9 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseOverride(db),
+            // Home's Recently opened is a Drift stream query, which leaves a timer
+            // pending past the test; the lists are not under test here.
+            recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
             initialSettingsOverride(
               onboardingComplete: false,
               instrumentSlugs: const [],
@@ -198,10 +138,6 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('onboarding-get-started')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('onboarding-instrument-ukulele')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('onboarding-instrument-continue')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('onboarding-sign-in')));
@@ -224,6 +160,9 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseOverride(db),
+            // Home's Recently opened is a Drift stream query, which leaves a timer
+            // pending past the test; the lists are not under test here.
+            recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
             initialSettingsOverride(
               onboardingComplete: false,
               instrumentSlugs: const [],
@@ -238,10 +177,6 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('onboarding-get-started')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('onboarding-instrument-ukulele')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('onboarding-instrument-continue')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('onboarding-create-account')));

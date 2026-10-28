@@ -137,7 +137,7 @@ void main() {
   });
 
   group('onboarding', () {
-    const welcome = 'Chord sheets for ukulele and guitar, made simple.';
+    const welcome = 'Every ukulele-tabs.com song, made simple to play.';
 
     testWidgets('dark: welcome copy uses muted ink on the dark scaffold', (
       tester,

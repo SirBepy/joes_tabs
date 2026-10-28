@@ -1,3 +1,4 @@
+import 'package:data/data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,12 @@ Future<GoRouter> _pumpShell(WidgetTester tester) async {
   final router = buildRouter(initialLocation: AppRoutes.home);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [initialSettingsOverride()],
+      overrides: [
+        initialSettingsOverride(),
+        // Home's Recently opened is a Drift stream query, which leaves a timer
+        // pending past the test; the lists are not under test here.
+        recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
+      ],
       child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
     ),
   );
@@ -31,7 +37,7 @@ void main() {
 
     // Anonymous (logged-out) default greeting is the generic 'WELCOME'.
     expect(find.text('WELCOME'), findsOneWidget);
-    expect(find.text('Search tabs'), findsOneWidget);
+    expect(find.text('Search ukulele-tabs.com'), findsOneWidget);
     expect(find.byTooltip('Menu'), findsNothing);
     expect(find.byType(Drawer), findsNothing);
   });

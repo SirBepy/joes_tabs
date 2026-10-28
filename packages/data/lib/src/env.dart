@@ -31,10 +31,13 @@ class Env {
     'GOOGLE_WEB_CLIENT_ID',
   );
 
-  /// Turns on the Search screen's "From the web" section. Off unless built with
-  /// `--dart-define=WEB_TABS=true`: ukulele-tabs.com's terms forbid extraction
-  /// without their written permission, so only the `ut-client` demo build sets it.
-  static const bool webTabs = bool.fromEnvironment('WEB_TABS');
+  /// Turns on ukulele-tabs.com search. On by default on the `ut-client` demo
+  /// branch, which is the ukulele-tabs.com client; `develop` defaults it off
+  /// because their terms forbid extraction without written permission.
+  static const bool webTabs = bool.fromEnvironment(
+    'WEB_TABS',
+    defaultValue: true,
+  );
 
   /// True only when both required defines are present and non-empty.
   static bool get isConfigured =>

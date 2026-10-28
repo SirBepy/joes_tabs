@@ -110,6 +110,14 @@ void main() {
   });
 
   group('recent-views LRU', () {
+    test('watchRecentViewIds lists views newest first', () async {
+      final base = DateTime.utc(2026, 1, 1);
+      await db.recordView('a', at: base);
+      await db.recordView('b', at: base.add(const Duration(minutes: 1)));
+      await db.recordView('a', at: base.add(const Duration(minutes: 2)));
+      expect(db.watchRecentViewIds(), emits(['a', 'b']));
+    });
+
     test(
       'evicts oldest NON-favorite over cap, keeps favorites cached',
       () async {

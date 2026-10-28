@@ -225,6 +225,13 @@ class AppDatabase extends _$AppDatabase {
 
   // --- Recent views / LRU -------------------------------------------------
 
+  /// Stream of recently viewed song ids, newest first.
+  Stream<List<String>> watchRecentViewIds() {
+    final query = select(recentViews)
+      ..orderBy([(v) => OrderingTerm.desc(v.viewedAt)]);
+    return query.watch().map((rows) => rows.map((r) => r.songId).toList());
+  }
+
   /// Records a view of [songId] (insert or refresh its timestamp), then evicts
   /// the oldest NON-favorite cached songs while over [kRecentViewsCap].
   /// Favorited songs are never evicted and never counted against the cap.

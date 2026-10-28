@@ -148,7 +148,7 @@ class _JoesTabsAppState extends ConsumerState<JoesTabsApp> {
     }
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
-      title: "Joe's Tabs",
+      title: 'Ukulele Tabs',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

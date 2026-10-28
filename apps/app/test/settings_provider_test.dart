@@ -37,15 +37,14 @@ void main() {
       expect(c.read(fontSizeProvider), 28);
     });
 
-    test('instruments hydrate; empty falls back to both', () {
-      final both = _container(instrumentSlugs: const []);
-      expect(both.read(instrumentsProvider), {
-        ChordShapes.ukulele,
-        ChordShapes.guitar,
-      });
+    test('instruments hydrate to ukulele only, dropping guitar', () {
+      final empty = _container(instrumentSlugs: const []);
+      expect(empty.read(instrumentsProvider), {ChordShapes.ukulele});
 
-      final single = _container(instrumentSlugs: const [ChordShapes.guitar]);
-      expect(single.read(instrumentsProvider), {ChordShapes.guitar});
+      final both = _container(
+        instrumentSlugs: const [ChordShapes.ukulele, ChordShapes.guitar],
+      );
+      expect(both.read(instrumentsProvider), {ChordShapes.ukulele});
     });
   });
 
@@ -77,40 +76,14 @@ void main() {
       await c.read(instrumentsProvider.notifier).set(<String>{});
       expect(c.read(instrumentsProvider), {ChordShapes.ukulele});
     });
-
-    test(
-      'removing the selected instrument resets selectedInstrument',
-      () async {
-        final c = _container(); // both, selected defaults to ukulele (first)
-        expect(c.read(selectedInstrumentProvider), ChordShapes.ukulele);
-
-        // Drop ukulele -> only guitar remains, selection must move to guitar.
-        await c.read(instrumentsProvider.notifier).set({ChordShapes.guitar});
-        expect(c.read(instrumentsProvider), {ChordShapes.guitar});
-        expect(c.read(selectedInstrumentProvider), ChordShapes.guitar);
-      },
-    );
-
-    test('keeps the selection when it is still in the set', () async {
-      final c = _container();
-      c.read(selectedInstrumentProvider.notifier).state = ChordShapes.guitar;
-
-      // Re-set to both: guitar is still present, so selection is untouched.
-      await c.read(instrumentsProvider.notifier).set({
-        ChordShapes.ukulele,
-        ChordShapes.guitar,
-      });
-      expect(c.read(selectedInstrumentProvider), ChordShapes.guitar);
-    });
   });
 
   group('showInstrumentPickerProvider', () {
-    test('false for a single instrument, true for two', () {
-      final single = _container(instrumentSlugs: const [ChordShapes.ukulele]);
-      expect(single.read(showInstrumentPickerProvider), isFalse);
-
-      final both = _container();
-      expect(both.read(showInstrumentPickerProvider), isTrue);
+    test('never shows: the app is ukulele only', () {
+      final both = _container(
+        instrumentSlugs: const [ChordShapes.ukulele, ChordShapes.guitar],
+      );
+      expect(both.read(showInstrumentPickerProvider), isFalse);
     });
   });
 

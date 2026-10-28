@@ -1,40 +1,12 @@
 import 'dart:convert';
 
-import 'package:data/data.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:joes_tabs_app/web_tabs/web_tab_extraction.dart';
-import 'package:joes_tabs_app/web_tabs/web_tab_importer.dart';
+import 'package:joes_tabs_app/web_tabs/web_song_reader.dart';
 import 'package:models/models.dart';
 
 String _message({String title = '', String text = ''}) =>
     jsonEncode({'title': title, 'text': text});
-
-class _RecordingRepo implements WebTabsRepository {
-  Map<String, Object?>? imported;
-
-  @override
-  Future<String> importTab({
-    required String title,
-    String? artist,
-    required Uri sourceUrl,
-    required WebTabSite site,
-    required String instrumentSlug,
-    required String chordPro,
-  }) async {
-    imported = {
-      'title': title,
-      'artist': artist,
-      'url': sourceUrl.toString(),
-      'site': site.id,
-      'instrument': instrumentSlug,
-      'chordPro': chordPro,
-    };
-    return 'song-1';
-  }
-
-  @override
-  Future<List<WebSearchResult>> search(String query) async => const [];
-}
 
 void main() {
   group('webTabExtractionScript', () {
@@ -102,54 +74,42 @@ void main() {
     });
   });
 
-  group('WebTabImporter', () {
-    test('stores the draft with the site\'s own instrument', () async {
-      final repo = _RecordingRepo();
-      final songId = await WebTabImporter(
-        repository: repo,
-        url: Uri.parse('https://ukulele-tabs.com/love.html'),
+  group('webSongFromMessage', () {
+    final url = Uri.parse(
+      'https://www.ukulele-tabs.com/uke-songs/rebecca-sugar/love-like-you-uke-tab-1.html',
+    );
+
+    test('builds an in-memory ukulele song whose id is the page URL', () {
+      final song = webSongFromMessage(
+        _message(text: 'C\nIf I could'),
+        url: url,
         site: WebTabSite.ukuleleTabs,
-        resultTitle: 'Love Like You by Steven Universe',
-        instrumentSlug: 'guitar',
-      ).import(_message(text: 'C\nIf I could'));
+        resultTitle: 'Love Like You (steven Universe)',
+        resultArtist: 'Rebecca Sugar',
+      )!;
 
-      expect(songId, 'song-1');
-      expect(repo.imported, {
-        'title': 'Love Like You',
-        'artist': 'Steven Universe',
-        'url': 'https://ukulele-tabs.com/love.html',
-        'site': 'ukulele-tabs',
-        'instrument': 'ukulele',
-        'chordPro':
-            '{title: Love Like You}\n{artist: Steven Universe}\n[C]If I could',
-      });
+      expect(song.song.id, url.toString());
+      expect(song.song.title, 'Love Like You (steven Universe)');
+      expect(song.song.artist, 'Rebecca Sugar');
+      final tab = song.tabs.single;
+      expect(tab.songId, url.toString());
+      expect(tab.instrumentId, ChordShapes.ukulele);
+      expect(tab.sourceUrl, url.toString());
+      expect(tab.sourceSite, 'ukulele-tabs');
+      expect(tab.status, TabStatus.published);
+      expect(tab.content, contains('[C]If I could'));
     });
 
-    test('uses the user\'s instrument for instrument-agnostic sites', () async {
-      final repo = _RecordingRepo();
-      await WebTabImporter(
-        repository: repo,
-        url: Uri.parse('https://www.chordie.com/chord.pere/riptide'),
-        site: WebTabSite.chordie,
-        resultTitle: 'Riptide - Vance Joy',
-        instrumentSlug: 'guitar',
-      ).import(_message(text: '[Am]I was scared'));
-
-      expect(repo.imported!['instrument'], 'guitar');
-    });
-
-    test('imports nothing when the page has no chords', () async {
-      final repo = _RecordingRepo();
-      final songId = await WebTabImporter(
-        repository: repo,
-        url: Uri.parse('https://e-chords.com/x'),
-        site: WebTabSite.eChords,
-        resultTitle: 'X',
-        instrumentSlug: 'guitar',
-      ).import(_message(text: 'Just a moment...'));
-
-      expect(songId, isNull);
-      expect(repo.imported, isNull);
+    test('a page without chords is no song', () {
+      expect(
+        webSongFromMessage(
+          _message(text: 'Just a moment...'),
+          url: url,
+          site: WebTabSite.ukuleleTabs,
+          resultTitle: 'X',
+        ),
+        isNull,
+      );
     });
   });
 }

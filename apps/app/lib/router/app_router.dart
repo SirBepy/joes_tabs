@@ -153,6 +153,7 @@ GoRouter buildRouter({String initialLocation = AppRoutes.splash}) {
           WebTabScreen(
             url: Uri.parse(state.uri.queryParameters['url'] ?? ''),
             title: state.uri.queryParameters['title'] ?? '',
+            artist: state.uri.queryParameters['artist'],
           ),
         ),
       ),

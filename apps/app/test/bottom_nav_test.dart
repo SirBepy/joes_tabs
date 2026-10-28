@@ -54,6 +54,9 @@ Future<GoRouter> _pumpApp(
       overrides: [
         appDatabaseOverride(db),
         initialSettingsOverride(instrumentSlugs: const []),
+        // Home's Recently opened is a Drift stream query, which leaves a timer
+        // pending past the test; the lists are not under test here.
+        recentSongIdsProvider.overrideWith((ref) => Stream.value(const [])),
         ...overrides,
       ],
       child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
@@ -323,22 +326,6 @@ void main() {
       expect(find.text('Press back again to exit'), findsNothing);
       expect(exits, isEmpty);
     });
-
-    testWidgets('an open dialog closes before back switches tab', (
-      tester,
-    ) async {
-      final router = await _pumpApp(tester, location: AppRoutes.settings);
-      showDialog<void>(
-        context: tester.element(find.byType(Scaffold).first),
-        builder: (_) => const AlertDialog(content: Text('hello dialog')),
-      );
-      await tester.pumpAndSettle();
-
-      await _pressBack(tester);
-
-      expect(find.text('hello dialog'), findsNothing);
-      expect(_path(router), AppRoutes.settings);
-    });
   });
 
   group('Trending and Support pages', () {
@@ -485,23 +472,9 @@ void main() {
       );
       expect(find.text('LOG OUT'), findsNothing);
     });
-
-    testWidgets('Support Us row opens the Support page', (tester) async {
-      final router = await _pumpApp(tester, location: AppRoutes.settings);
-
-      await tester.scrollUntilVisible(
-        find.byKey(const Key('support-us-row')),
-        200,
-      );
-      await tester.tap(find.byKey(const Key('support-us-row')));
-      await tester.pumpAndSettle();
-
-      expect(_path(router), AppRoutes.support);
-      expect(find.text('SUPPORT US'), findsOneWidget);
-    });
   });
 
-  group('Home sign-in card and Trending link', () {
+  group('Home sign-in card and Saved link', () {
     testWidgets('signed out: Log In and Register push their screens', (
       tester,
     ) async {
@@ -523,44 +496,21 @@ void main() {
       expect(find.byKey(const Key('home-login-cta')), findsNothing);
     });
 
-    testWidgets(
-      'saved and trending rows both say SEE ALL; saved opens /saved',
-      (tester) async {
-        final router = await _pumpApp(tester);
-        await tester.scrollUntilVisible(
-          find.byKey(const Key('home-trending-see-all')),
-          200,
-        );
-
-        expect(find.text('SEE ALL'), findsNWidgets(2));
-        expect(find.textContaining('ALL SAVED TABS'), findsNothing);
-
-        await tester.ensureVisible(find.byKey(const Key('home-saved-see-all')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('home-saved-see-all')));
-        await tester.pumpAndSettle();
-        expect(_path(router), AppRoutes.saved);
-      },
-    );
-
-    testWidgets('SEE ALL opens Trending on top of Home and back returns', (
-      tester,
-    ) async {
+    testWidgets('the saved row says SEE ALL and opens /saved', (tester) async {
       final router = await _pumpApp(tester);
       await tester.scrollUntilVisible(
-        find.byKey(const Key('home-trending-see-all')),
+        find.byKey(const Key('home-saved-see-all')),
         200,
       );
 
-      await tester.tap(find.byKey(const Key('home-trending-see-all')));
-      await tester.pumpAndSettle();
-      expect(_path(router), AppRoutes.trending);
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('SEE ALL'), findsOneWidget);
+      expect(find.textContaining('ALL SAVED TABS'), findsNothing);
 
-      await tester.tap(find.byTooltip('Back'));
+      await tester.ensureVisible(find.byKey(const Key('home-saved-see-all')));
       await tester.pumpAndSettle();
-      expect(_path(router), AppRoutes.home);
-      expect(find.byKey(const Key('home-trending-see-all')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('home-saved-see-all')));
+      await tester.pumpAndSettle();
+      expect(_path(router), AppRoutes.saved);
     });
   });
 }
