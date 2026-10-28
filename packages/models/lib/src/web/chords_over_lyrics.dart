@@ -35,6 +35,19 @@ class ChordsOverLyrics {
   /// Whether [token] is a chord symbol.
   static bool isChord(String token) => _chord.hasMatch(token);
 
+  /// The chord [token] names, or null. Sites also wrap chords in parentheses,
+  /// alone (`(F)`) or as a group spread over tokens (`(F` `G)`), so one
+  /// leading `(` and an unbalanced trailing `)` are not part of the name.
+  static String? _chordName(String token) {
+    var t = token;
+    if (t.startsWith('(')) t = t.substring(1);
+    if (t.endsWith(')') &&
+        ')'.allMatches(t).length > '('.allMatches(t).length) {
+      t = t.substring(0, t.length - 1);
+    }
+    return t.isNotEmpty && isChord(t) ? t : null;
+  }
+
   /// Whether [line] holds only chords (plus bar lines / repeat marks), with at
   /// least one real chord.
   static bool isChordLine(String line) {
@@ -42,7 +55,7 @@ class ChordsOverLyrics {
     if (tokens.length == 1 && tokens.first.isEmpty) return false;
     var chords = 0;
     for (final token in tokens) {
-      if (isChord(token)) {
+      if (_chordName(token) != null) {
         chords++;
       } else if (!_chordLineFiller.hasMatch(token)) {
         return false;
@@ -139,7 +152,11 @@ class ChordsOverLyrics {
     final placed = <({int column, String chord})>[];
     for (final m in RegExp(r'\S+').allMatches(chordLine)) {
       final token = m.group(0)!;
-      if (isChord(token)) placed.add((column: m.start, chord: token));
+      final chord = _chordName(token);
+      if (chord == null) continue;
+      // Place it where the name starts, after any opening parenthesis.
+      final column = m.start + (token.startsWith('(') ? 1 : 0);
+      placed.add((column: column, chord: chord));
     }
 
     var result = lyric;
@@ -157,7 +174,8 @@ class ChordsOverLyrics {
   static String _chordsOnly(String chordLine) => chordLine
       .trim()
       .split(RegExp(r'\s+'))
-      .where(isChord)
+      .map(_chordName)
+      .nonNulls
       .map((c) => '[$c]')
       .join(' ');
 

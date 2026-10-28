@@ -59,6 +59,20 @@ void main() {
       expect(out, '[Am]I was scared of de[G]ntists and the dark');
     });
 
+    test('reads chords wrapped in parentheses (ukulele-tabs.com style)', () {
+      final out = ChordsOverLyrics.toChordPro(
+        '            (F)\n'
+        'All I want to do\n'
+        '(Am   G7)\n'
+        'Is see you',
+      );
+      expect(
+        out,
+        'All I want to[F] do\n'
+        'I[Am]s see[G7] you',
+      );
+    });
+
     test('pads a lyric shorter than its last chord', () {
       final out = ChordsOverLyrics.toChordPro('C       G\nHi');
       expect(out, '[C]Hi      [G]');
