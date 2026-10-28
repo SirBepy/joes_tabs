@@ -35,8 +35,8 @@ void main() {
   ) async {
     await _pumpShell(tester);
 
-    // Anonymous (logged-out) default greeting is the generic 'WELCOME'.
-    expect(find.text('WELCOME'), findsOneWidget);
+    // Anonymous (logged-out) default greeting is the generic 'Welcome'.
+    expect(find.text('Welcome'), findsOneWidget);
     expect(find.text('Search ukulele-tabs.com'), findsOneWidget);
     expect(find.byTooltip('Menu'), findsNothing);
     expect(find.byType(Drawer), findsNothing);

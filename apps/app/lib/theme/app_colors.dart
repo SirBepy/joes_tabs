@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
 
 /// Brand palette for the ukulele-tabs.com client: their logo's sky blue as
-/// the accent, its hibiscus yellow for highlights, on pale blue surfaces.
+/// the header band, a deeper blue for text and actions, its hibiscus yellow
+/// for highlights, on pale blue surfaces with white cards.
 ///
 /// The constant names are the original warm palette's (orange, peach, ...) so
 /// every screen picks the new tones up unchanged; read them as roles, not hues.
-/// Exact tones get tuned with the owner from screenshots.
 abstract final class AppColors {
-  /// Primary accent: sky blue, used for the header band, headings, and primary
-  /// actions.
+  /// Brand sky blue: the header band, large decorative fills (diagram dots,
+  /// mascot). White text on it is only 2.85:1, so text on it uses [textDark]
+  /// and small text or buttons use [rust] instead.
   static const Color orange = Color(0xFF29A3DC);
 
-  /// A deeper blue for pressed/secondary accents.
-  static const Color rust = Color(0xFF1B7DB0);
+  /// Deep blue for text, links, icons and filled buttons on light surfaces:
+  /// 5.2:1 on [cream], and white on it is 5.4:1.
+  static const Color rust = Color(0xFF176FA0);
 
-  /// Pale hibiscus yellow for panels and highlights.
+  /// The logo's hibiscus yellow: the active tab indicator. Navy on it, never
+  /// white.
+  static const Color hibiscus = Color(0xFFFFCF3A);
+
+  /// Pale hibiscus yellow for chips, the source credit and placeholders.
   static const Color peach = Color(0xFFFFF1B8);
 
   /// Near-white blue app background.
   static const Color cream = Color(0xFFF3FAFE);
 
-  /// Soft blue card fill (song panels, cards).
+  /// Soft blue fill for small tiles that sit on white cards (row icons).
   static const Color cardPeach = Color(0xFFE2F2FB);
+
+  /// Light blue hairline around white cards and between rows.
+  static const Color hairline = Color(0xFFDCEBF4);
 
   static const Color textDark = Color(0xFF12324A);
   static const Color textMuted = Color(0xFF5F7C8F);
@@ -35,7 +44,7 @@ abstract final class AppColors {
   /// Slightly lifted navy surface for panels/sheets (counterpart to [peach]).
   static const Color darkSurface = Color(0xFF162A3A);
 
-  /// Navy card fill (counterpart to [cardPeach]).
+  /// Navy card fill (counterpart to the light theme's white cards).
   static const Color darkCard = Color(0xFF1E3649);
 
   /// Off-white body text for dark surfaces (counterpart to [textDark]); keeps

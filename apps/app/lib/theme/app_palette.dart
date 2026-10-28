@@ -6,9 +6,9 @@ import 'app_colors.dart';
 ///
 /// Widgets read these via `context.palette` instead of picking a raw
 /// [AppColors] light constant, because a raw constant ignores the active
-/// brightness (peach panels and dark-brown text become unreadable on the dark
-/// theme). Brand orange/rust are identical in both themes and stay on
-/// [AppColors].
+/// brightness (pale panels and navy text become unreadable on the dark
+/// theme). Fills that carry white content ([AppColors.rust]) are identical in
+/// both themes and stay on [AppColors].
 @immutable
 class AppPalette extends ThemeExtension<AppPalette> {
   const AppPalette({
@@ -18,6 +18,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.divider,
     required this.ink,
     required this.mutedInk,
+    required this.accent,
   });
 
   /// Bars and bottom sheets that sit on top of the page background.
@@ -38,13 +39,18 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// Secondary text and icons.
   final Color mutedInk;
 
+  /// Accent text and icons: artist names, links, chord names, bookmarks. Deep
+  /// blue on light surfaces, where sky blue fails contrast; sky blue on navy.
+  final Color accent;
+
   static const AppPalette light = AppPalette(
-    sheet: AppColors.cream,
-    card: AppColors.cardPeach,
+    sheet: AppColors.white,
+    card: AppColors.white,
     chip: AppColors.peach,
-    divider: AppColors.peach,
+    divider: AppColors.hairline,
     ink: AppColors.textDark,
     mutedInk: AppColors.textMuted,
+    accent: AppColors.rust,
   );
 
   static const AppPalette dark = AppPalette(
@@ -54,6 +60,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     divider: AppColors.darkCard,
     ink: AppColors.darkText,
     mutedInk: AppColors.darkTextMuted,
+    accent: AppColors.orange,
   );
 
   @override
@@ -64,6 +71,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? divider,
     Color? ink,
     Color? mutedInk,
+    Color? accent,
   }) {
     return AppPalette(
       sheet: sheet ?? this.sheet,
@@ -72,6 +80,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       divider: divider ?? this.divider,
       ink: ink ?? this.ink,
       mutedInk: mutedInk ?? this.mutedInk,
+      accent: accent ?? this.accent,
     );
   }
 
@@ -85,6 +94,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       divider: Color.lerp(divider, other.divider, t)!,
       ink: Color.lerp(ink, other.ink, t)!,
       mutedInk: Color.lerp(mutedInk, other.mutedInk, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
     );
   }
 }

@@ -5,7 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
-/// A small fretboard chord diagram on a peach card.
+/// A small fretboard chord diagram on a card.
 ///
 /// Looks the chord up in [ChordShapes] for [instrumentSlug] and draws it with a
 /// [CustomPaint] fretboard (allowed: this is a diagram, not an icon). Unknown
@@ -45,6 +45,7 @@ class ChordDiagram extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.palette.card,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
+        border: Border.all(color: context.palette.divider),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -54,9 +55,10 @@ class ChordDiagram extends StatelessWidget {
               chord,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.orange,
-                fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: context.palette.ink,
+                fontSize: 17,
+                height: 1.1,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -72,7 +74,11 @@ class ChordDiagram extends StatelessWidget {
           else
             CustomPaint(
               size: Size(width - AppSpacing.md, (width - AppSpacing.md) * 1.25),
-              painter: _FretboardPainter(shape, context.palette.mutedInk),
+              painter: _FretboardPainter(
+                shape,
+                context.palette.mutedInk,
+                context.palette.ink,
+              ),
             ),
         ],
       ),
@@ -82,13 +88,17 @@ class ChordDiagram extends StatelessWidget {
 
 /// Draws a [ChordShape] as a small vertical fretboard.
 class _FretboardPainter extends CustomPainter {
-  _FretboardPainter(this.shape, this.mutedInk);
+  _FretboardPainter(this.shape, this.mutedInk, this.gridColor);
 
   final ChordShape shape;
 
   /// Open/muted markers and the fret label; the card behind flips with the
   /// theme, so the caller supplies a colour that stays legible on it.
   final Color mutedInk;
+
+  /// Strings, frets and the nut: the theme's ink, so the sky-blue finger dots
+  /// stand out against them.
+  final Color gridColor;
 
   static const int _fretsShown = 4;
 
@@ -98,7 +108,7 @@ class _FretboardPainter extends CustomPainter {
     if (strings < 2) return;
 
     final grid = Paint()
-      ..color = AppColors.rust
+      ..color = gridColor
       ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
     final dot = Paint()..color = AppColors.orange;
@@ -119,7 +129,7 @@ class _FretboardPainter extends CustomPainter {
     for (var f = 0; f <= _fretsShown; f++) {
       final y = top + f * rowGap;
       final p = Paint()
-        ..color = AppColors.rust
+        ..color = gridColor
         ..strokeWidth = (f == 0 && shape.baseFret == 1) ? 3.0 : 1.2;
       canvas.drawLine(Offset(left, y), Offset(right, y), p);
     }
@@ -169,5 +179,6 @@ class _FretboardPainter extends CustomPainter {
   bool shouldRepaint(covariant _FretboardPainter old) =>
       old.shape.name != shape.name ||
       old.shape.frets != shape.frets ||
-      old.mutedInk != mutedInk;
+      old.mutedInk != mutedInk ||
+      old.gridColor != gridColor;
 }

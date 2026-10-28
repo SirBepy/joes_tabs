@@ -53,9 +53,11 @@ void main() {
       expect(_hasColoredContainer(tester, AppPalette.dark.chip), isTrue);
     });
 
-    testWidgets('light: ruler track keeps its original peach', (tester) async {
+    testWidgets('light: ruler track is the pale blue tile fill', (
+      tester,
+    ) async {
       await _pump(tester, AppTheme.light, const Scaffold(body: _gauge));
-      expect(_hasColoredContainer(tester, const Color(0xFFF6E2D4)), isTrue);
+      expect(_hasColoredContainer(tester, AppColors.cardPeach), isTrue);
     });
 
     testWidgets('dark: non-target note labels use the palette ink', (
@@ -81,9 +83,9 @@ void main() {
       expect(_textColor(tester, 'Minor'), AppPalette.dark.ink);
     });
 
-    testWidgets('light: values are the original constants', (tester) async {
+    testWidgets('light: values come from the light palette', (tester) async {
       await _pump(tester, AppTheme.light, picker);
-      expect(_hasColoredContainer(tester, AppColors.cardPeach), isTrue);
+      expect(_hasColoredContainer(tester, AppPalette.light.card), isTrue);
       expect(_hasColoredContainer(tester, AppColors.peach), isTrue);
       expect(_textColor(tester, 'Minor'), AppColors.textDark);
     });

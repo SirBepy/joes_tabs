@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
@@ -115,10 +114,10 @@ const TextStyle _lyricStyle = TextStyle(
   fontSize: 14,
 );
 
+// Colour comes from the palette's accent at build time, like the lyrics.
 const TextStyle _chordStyle = TextStyle(
   fontFamily: 'monospace',
   fontFamilyFallback: ['Courier New', 'Courier', 'monospace'],
-  color: AppColors.orange,
   fontWeight: FontWeight.bold,
   height: 1.2,
   fontSize: 13,
@@ -153,7 +152,10 @@ class _Segment extends StatelessWidget {
       children: [
         // Chord row: reserve the same height even when empty so lyric baselines
         // line up across segments.
-        Text(transposed ?? '​', style: _chordStyle),
+        Text(
+          transposed ?? '​',
+          style: _chordStyle.copyWith(color: context.palette.accent),
+        ),
         Text(
           lyric.isEmpty ? '​' : lyric,
           style: _lyricStyle.copyWith(color: context.palette.ink),

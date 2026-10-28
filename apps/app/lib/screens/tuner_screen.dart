@@ -283,9 +283,9 @@ class _StringChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: AppColors.orange,
+              color: context.palette.accent,
             ),
           ),
         ),

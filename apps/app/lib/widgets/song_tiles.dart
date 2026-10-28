@@ -33,6 +33,8 @@ class SongListTile extends ConsumerWidget {
     required this.song,
     this.trailingChip,
     this.highlight,
+    this.version,
+    this.showIcon = false,
   });
 
   final Song song;
@@ -44,28 +46,33 @@ class SongListTile extends ConsumerWidget {
   /// Optional query to emphasise where it matches the title/artist (search).
   final String? highlight;
 
+  /// Which of several same-named sheets this is (search), shown after the
+  /// artist so otherwise identical rows can be told apart.
+  final int? version;
+
+  /// Whether to lead with a small music-note tile (Home's song cards).
+  final bool showIcon;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saved = ref.watch(isFavoriteProvider(song.id));
+    final palette = context.palette;
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      // Production style (trending-5 / Welcome.png): dark title over an orange
-      // artist line.
+      contentPadding: EdgeInsets.only(
+        left: showIcon ? AppSpacing.md : AppSpacing.lg,
+        right: AppSpacing.sm,
+      ),
+      leading: showIcon ? const _SongIcon() : null,
       title: _Highlighted(
         text: song.title,
         query: highlight,
-        base: TextStyle(
-          color: context.palette.ink,
-          fontWeight: FontWeight.w600,
-        ),
+        base: TextStyle(color: palette.ink, fontWeight: FontWeight.w600),
       ),
       subtitle: _Highlighted(
         text: song.artist,
         query: highlight,
-        base: const TextStyle(
-          color: AppColors.orange,
-          fontWeight: FontWeight.w500,
-        ),
+        base: TextStyle(color: palette.accent, fontWeight: FontWeight.w500),
+        suffix: version == null ? null : ' · Version $version',
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -77,7 +84,7 @@ class SongListTile extends ConsumerWidget {
               saved
                   ? PhosphorIconsFill.bookmarkSimple
                   : PhosphorIconsRegular.bookmarkSimple,
-              color: AppColors.orange,
+              color: palette.accent,
             ),
             onPressed: () =>
                 ref.read(favoritesProvider.notifier).toggle(song.id),
@@ -90,7 +97,7 @@ class SongListTile extends ConsumerWidget {
 }
 
 /// A compact saved-tab card for horizontal rows (home) and grids (saved):
-/// a rounded peach card with the song title, artist, and a small row of three
+/// a rounded card with the song title, artist, and a small row of three
 /// chord-swatch dots at the bottom (mockup Welcome.png).
 class SongCard extends StatelessWidget {
   const SongCard({super.key, required this.song, this.width = 160});
@@ -114,8 +121,8 @@ class SongCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Title is a brand heading-ish line; artist sits in the orange
-            // accent like the mockup card.
+            // Title is a brand heading-ish line; artist sits in the accent
+            // like the mockup card.
             Text(
               song.title,
               maxLines: 1,
@@ -131,7 +138,7 @@ class SongCard extends StatelessWidget {
               song.artist,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.orange, fontSize: 12),
+              style: TextStyle(color: context.palette.accent, fontSize: 12),
             ),
             const SizedBox(height: AppSpacing.sm),
             const _ChordSwatches(),
@@ -171,39 +178,74 @@ class _ChordSwatches extends StatelessWidget {
 }
 
 /// Renders [text] in [base] style, bolding the first case-insensitive run that
-/// matches [query]. Falls back to plain text when there is no query or match.
+/// matches [query], then an optional muted [suffix]. Plain text when there is
+/// no query or match.
 class _Highlighted extends StatelessWidget {
-  const _Highlighted({required this.text, required this.base, this.query});
+  const _Highlighted({
+    required this.text,
+    required this.base,
+    this.query,
+    this.suffix,
+  });
 
   final String text;
   final String? query;
   final TextStyle base;
+  final String? suffix;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final q = query?.trim() ?? '';
-    if (q.isEmpty) return Text(text, style: base);
-
-    final lowerText = text.toLowerCase();
-    final start = lowerText.indexOf(q.toLowerCase());
-    if (start < 0) return Text(text, style: base);
-
+    final start = q.isEmpty ? -1 : text.toLowerCase().indexOf(q.toLowerCase());
+    if (start < 0 && suffix == null) return Text(text, style: base);
     final end = start + q.length;
     return Text.rich(
       TextSpan(
         style: base,
         children: [
-          if (start > 0) TextSpan(text: text.substring(0, start)),
-          TextSpan(
-            text: text.substring(start, end),
-            style: const TextStyle(
-              color: AppColors.rust,
-              fontWeight: FontWeight.w800,
+          if (start < 0)
+            TextSpan(text: text)
+          else ...[
+            if (start > 0) TextSpan(text: text.substring(0, start)),
+            TextSpan(
+              text: text.substring(start, end),
+              style: TextStyle(
+                color: palette.accent,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          if (end < text.length) TextSpan(text: text.substring(end)),
+            if (end < text.length) TextSpan(text: text.substring(end)),
+          ],
+          if (suffix != null)
+            TextSpan(
+              text: suffix,
+              style: TextStyle(
+                color: palette.mutedInk,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+/// The small rounded music-note tile leading a Home song row.
+class _SongIcon extends StatelessWidget {
+  const _SongIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.palette.accent;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(PhosphorIconsRegular.musicNotes, color: accent),
     );
   }
 }
@@ -226,7 +268,7 @@ class _InstrumentChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(color: AppColors.rust, fontSize: 11),
+        style: TextStyle(color: context.palette.accent, fontSize: 11),
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/google_sign_in_flow.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
 /// "Continue with Google" button plus an "or" divider, shown above the email
@@ -84,8 +84,8 @@ class _GoogleSignInSectionState extends ConsumerState<GoogleSignInSection> {
               : const Icon(PhosphorIconsBold.googleLogo),
           label: const Text('Continue with Google'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.orange,
-            side: const BorderSide(color: AppColors.orange, width: 2),
+            foregroundColor: context.palette.accent,
+            side: BorderSide(color: context.palette.accent, width: 2),
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             shape: const StadiumBorder(),
           ),

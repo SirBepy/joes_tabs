@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:joes_tabs_app/state/settings_provider.dart';
+import 'package:joes_tabs_app/theme/app_colors.dart';
 import 'package:joes_tabs_app/theme/app_theme.dart';
 
 import 'support/settings_overrides.dart';
@@ -70,9 +71,9 @@ void main() {
   ) async {
     expect(AppTheme.light.brightness, Brightness.light);
     expect(AppTheme.dark.brightness, Brightness.dark);
-    expect(
-      AppTheme.dark.colorScheme.primary,
-      AppTheme.light.colorScheme.primary,
-    );
+    // Light buttons carry white labels, which only reach contrast on the
+    // deep blue; on navy the brand sky blue reads fine.
+    expect(AppTheme.light.colorScheme.primary, AppColors.rust);
+    expect(AppTheme.dark.colorScheme.primary, AppColors.orange);
   });
 }

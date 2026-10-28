@@ -7,7 +7,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../router/app_routes.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../web_tabs/open_external.dart';
@@ -179,7 +178,7 @@ class _Banner extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
-                Icon(icon, color: AppColors.rust),
+                Icon(icon, color: context.palette.accent),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(

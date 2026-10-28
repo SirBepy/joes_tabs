@@ -65,7 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. The song page renders the in-memory sheet, credited to its source.
-    expect(find.text('RIPTIDE'), findsOneWidget);
+    expect(find.text('Riptide'), findsOneWidget);
     expect(find.text('Lady running '), findsOneWidget);
     expect(find.text('G'), findsWidgets);
     expect(find.text('G#'), findsNothing);
@@ -93,7 +93,7 @@ void main() {
     // 5. Home lists it under Saved too.
     router.go(AppRoutes.home);
     await tester.pumpAndSettle();
-    expect(find.text('SAVED'), findsOneWidget);
+    expect(find.byKey(const Key('home-saved-see-all')), findsOneWidget);
     expect(find.text('Riptide'), findsWidgets);
   });
 }

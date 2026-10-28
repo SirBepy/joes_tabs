@@ -7,7 +7,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../router/app_routes.dart';
 import '../state/favorites_provider.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/song_tiles.dart';
@@ -25,7 +24,7 @@ class HomeScreen extends ConsumerWidget {
     final recentIds = ref.watch(recentSongIdsProvider).valueOrNull ?? const [];
     final user = ref.watch(currentUserProvider);
 
-    final greetingTop = user == null ? 'WELCOME' : 'WELCOME BACK';
+    final greetingTop = user == null ? 'Welcome' : 'Welcome back';
     final greetingName = user == null ? null : '${_displayName(user.email)}!';
 
     final recent = [
@@ -50,7 +49,7 @@ class HomeScreen extends ConsumerWidget {
                   Text(
                     greetingName,
                     style: textTheme.titleMedium?.copyWith(
-                      color: AppColors.orange.withValues(alpha: 0.6),
+                      color: context.palette.accent,
                     ),
                   ),
                 if (user == null) ...[
@@ -62,7 +61,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        const _SectionLabel('RECENTLY OPENED'),
+        const _SectionLabel('Recently opened'),
         _SongPanel(
           songs: recent,
           empty: const EmptyState(
@@ -73,10 +72,10 @@ class HomeScreen extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         const _SectionLabel(
-          'SAVED',
+          'Saved',
           trailing: _SectionLink(
             key: Key('home-saved-see-all'),
-            label: 'SEE ALL',
+            label: 'See all',
             route: AppRoutes.saved,
             push: true,
           ),
@@ -97,8 +96,8 @@ class HomeScreen extends ConsumerWidget {
 /// How many songs each Home list shows before "SEE ALL".
 const int kHomeRecentCount = 5;
 
-/// A grouped card of song rows with thin dividers, or [empty] when there are
-/// none.
+/// A grouped white card of song rows with hairline dividers, or [empty] when
+/// there are none.
 class _SongPanel extends StatelessWidget {
   const _SongPanel({required this.songs, required this.empty});
 
@@ -115,22 +114,14 @@ class _SongPanel extends StatelessWidget {
     }
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: context.palette.card,
-        borderRadius: BorderRadius.circular(AppSpacing.radius),
-      ),
+      decoration: _cardDecoration(context),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           for (var i = 0; i < songs.length; i++) ...[
             if (i > 0)
-              Divider(
-                height: 1,
-                thickness: 1,
-                indent: AppSpacing.lg,
-                endIndent: AppSpacing.lg,
-                color: context.palette.divider,
-              ),
-            SongListTile(song: songs[i]),
+              Divider(height: 1, thickness: 1, color: context.palette.divider),
+            SongListTile(song: songs[i], showIcon: true),
           ],
         ],
       ),
@@ -138,7 +129,7 @@ class _SongPanel extends StatelessWidget {
   }
 }
 
-/// A "LABEL >" navigation link pinned to the right of a section header.
+/// A "Label >" navigation link pinned to the right of a section header.
 /// Saved is a sibling tab, so it is pushed; a nested route would use `go` so
 /// it stacks on Home and back pops to Home.
 class _SectionLink extends StatelessWidget {
@@ -155,21 +146,28 @@ class _SectionLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.palette.accent;
     return InkWell(
       borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       onTap: () => push ? context.push(route) : context.go(route),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xs,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(width: AppSpacing.xs),
-            const Icon(
-              PhosphorIconsRegular.caretRight,
-              size: 18,
-              color: AppColors.orange,
+            Text(
+              label,
+              style: TextStyle(
+                color: accent,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            const SizedBox(width: 2),
+            Icon(PhosphorIconsRegular.caretRight, size: 16, color: accent),
           ],
         ),
       ),
@@ -188,16 +186,13 @@ class _SignInCard extends StatelessWidget {
       key: const Key('home-login-cta'),
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppSpacing.radius),
-      ),
+      decoration: _cardDecoration(context),
       child: Column(
         children: [
           Text(
             'Log in to sync your saved tabs across devices.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: palette.ink, fontWeight: FontWeight.w600),
+            style: TextStyle(color: palette.ink, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -214,8 +209,8 @@ class _SignInCard extends StatelessWidget {
                 child: OutlinedButton(
                   key: const Key('home-cta-register'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.orange,
-                    side: const BorderSide(color: AppColors.orange),
+                    foregroundColor: palette.accent,
+                    side: BorderSide(color: palette.accent, width: 1.5),
                   ),
                   onPressed: () => context.push(AppRoutes.register),
                   child: const Text('Register'),
@@ -229,30 +224,49 @@ class _SignInCard extends StatelessWidget {
   }
 }
 
-/// Derives a friendly display name from an email: the local part before `@`,
-/// upper-cased to match the mockup's all-caps greeting. Falls back to a generic
-/// label when no email is available.
+/// Derives a friendly display name from an email: the local part before `@`.
+/// Falls back to a generic label when no email is available.
 String _displayName(String? email) {
-  if (email == null || email.isEmpty) return 'FRIEND';
-  final local = email.split('@').first;
-  return local.toUpperCase();
+  if (email == null || email.isEmpty) return 'friend';
+  return email.split('@').first;
+}
+
+/// Home's white card: a hairline border plus a soft offset shadow so it lifts
+/// off the pale blue page. Dark mode keeps the flat navy card.
+BoxDecoration _cardDecoration(BuildContext context) {
+  final palette = context.palette;
+  final light = Theme.of(context).brightness == Brightness.light;
+  return BoxDecoration(
+    color: palette.card,
+    borderRadius: BorderRadius.circular(AppSpacing.radius),
+    border: light ? Border.all(color: palette.divider) : null,
+    boxShadow: light
+        ? const [
+            BoxShadow(
+              color: Color(0x0F12324A),
+              offset: Offset(0, 1),
+              blurRadius: 3,
+            ),
+          ]
+        : null,
+  );
 }
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text, {this.trailing});
   final String text;
 
-  /// Optional widget pinned to the right of the header (e.g. an "ALL SAVED
-  /// TABS >" link).
+  /// Optional widget pinned to the right of the header (e.g. a "See all >"
+  /// link).
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
+        AppSpacing.lg + AppSpacing.xs,
         0,
-        AppSpacing.lg,
+        AppSpacing.md,
         AppSpacing.sm,
       ),
       child: Row(
@@ -261,7 +275,12 @@ class _SectionLabel extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(
+              text,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontSize: 18),
+            ),
           ),
           ?trailing,
         ],

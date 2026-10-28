@@ -12,6 +12,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import 'pitch.dart';
 
@@ -19,11 +20,12 @@ import 'pitch.dart';
 const Color _green = Color(0xFF3FA34D);
 const Color _amber = Color(0xFFE8B23C);
 const Color _red = Color(0xFFD9534F);
-// Light-theme ruler tones, kept off the shared palette because they differ
-// slightly from textDark/peach; dark mode takes the palette instead.
-const Color _ink = Color(0xFF3A2E27);
-const Color _muted = Color(0xFFB8A99D);
-const Color _peach2 = Color(0xFFF6E2D4);
+// Light-theme ruler tones: a pale blue track (the yellow chip fill would
+// fight the green/amber/red zone colors) and a soft blue-grey for idle
+// labels; dark mode takes the palette instead.
+const Color _ink = AppColors.textDark;
+const Color _muted = Color(0xFFA9BFCD);
+const Color _peach2 = AppColors.cardPeach;
 
 Color _colorFor(TuneZone z) => switch (z) {
   TuneZone.green => _green,

@@ -122,7 +122,7 @@ class _InstrumentPickerAction extends ConsumerWidget {
 
     return PopupMenuButton<String>(
       tooltip: 'Choose instrument',
-      icon: Icon(instrumentIcon(selected), color: AppColors.orange),
+      icon: Icon(instrumentIcon(selected), color: context.palette.accent),
       onSelected: (slug) =>
           ref.read(selectedInstrumentProvider.notifier).state = slug,
       itemBuilder: (context) => [
@@ -135,7 +135,7 @@ class _InstrumentPickerAction extends ConsumerWidget {
                   instrumentIcon(slug),
                   size: 20,
                   color: slug == selected
-                      ? AppColors.orange
+                      ? context.palette.accent
                       : context.palette.ink,
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -146,7 +146,7 @@ class _InstrumentPickerAction extends ConsumerWidget {
                         ? FontWeight.w700
                         : FontWeight.w500,
                     color: slug == selected
-                        ? AppColors.orange
+                        ? context.palette.accent
                         : context.palette.ink,
                   ),
                 ),
@@ -210,7 +210,7 @@ class _Tab extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.orange : Colors.transparent,
+          color: selected ? AppColors.rust : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         ),
         child: Text(

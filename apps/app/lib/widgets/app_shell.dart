@@ -26,11 +26,11 @@ const Duration kExitPromptWindow = Duration(seconds: 2);
 /// Chrome around the five tabs: a bottom [NavigationBar] on phones, a side
 /// [NavigationRail] from [kBreakpointMedium] up. The top bar is route-dependent:
 ///
-///  * Browse screens (Home, Trending) keep the solid-orange app bar with the
+///  * Browse screens (Home, Trending) keep the sky-blue app bar with the
 ///    rounded search field; Trending adds a back button.
 ///  * Section screens (Tuner, Chords, Saved Tabs, Settings, Support Us) show a
-///    [SectionHeader]: the screen title in the orange "bubble" heading font on
-///    the cream background, with no search. Only Support Us, a pushed page, has
+///    [SectionHeader]: the screen title in the "bubble" heading font on
+///    a white bar, with no search. Only Support Us, a pushed page, has
 ///    a back button.
 ///
 /// It also owns system back for the whole tab area: see [_AppShellState._onBack].
@@ -49,11 +49,11 @@ class AppShell extends StatefulWidget {
 
   /// Section screens: route path -> the title shown in the bubble header.
   static const Map<String, String> _sectionTitles = {
-    AppRoutes.settings: 'SETTINGS',
-    AppRoutes.support: 'SUPPORT US',
-    AppRoutes.saved: 'SAVED TABS',
-    AppRoutes.chords: 'CHORDS',
-    AppRoutes.tuner: 'TUNER',
+    AppRoutes.settings: 'Settings',
+    AppRoutes.support: 'Support us',
+    AppRoutes.saved: 'Saved tabs',
+    AppRoutes.chords: 'Chords',
+    AppRoutes.tuner: 'Tuner',
   };
 
   /// Pushed pages that sit above a tab root and show a back button, mapped to
@@ -225,8 +225,8 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-/// Bottom bar on phones. Orange pill behind the active icon; surfaces come from
-/// the palette so it follows light and dark.
+/// Bottom bar on phones. Hibiscus-yellow pill behind the active navy icon;
+/// surfaces come from the palette so it follows light and dark.
 class _TabBar extends StatelessWidget {
   const _TabBar({required this.selectedIndex, required this.onSelect});
 
@@ -247,7 +247,7 @@ class _TabBar extends StatelessWidget {
         backgroundColor: palette.sheet,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        indicatorColor: AppColors.orange,
+        indicatorColor: AppColors.hibiscus,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             fontSize: 12,
@@ -255,7 +255,7 @@ class _TabBar extends StatelessWidget {
                 ? FontWeight.w800
                 : FontWeight.w600,
             color: states.contains(WidgetState.selected)
-                ? AppColors.orange
+                ? palette.ink
                 : palette.mutedInk,
           ),
         ),
@@ -264,7 +264,7 @@ class _TabBar extends StatelessWidget {
             NavigationDestination(
               label: tab.label,
               icon: Icon(tab.icon, color: palette.mutedInk),
-              selectedIcon: Icon(tab.selectedIcon, color: AppColors.white),
+              selectedIcon: Icon(tab.selectedIcon, color: AppColors.textDark),
             ),
         ],
       ),
@@ -300,9 +300,9 @@ class _TabRail extends StatelessWidget {
               ? NavigationRailLabelType.all
               : NavigationRailLabelType.none,
           backgroundColor: palette.sheet,
-          indicatorColor: AppColors.orange,
-          selectedLabelTextStyle: const TextStyle(
-            color: AppColors.orange,
+          indicatorColor: AppColors.hibiscus,
+          selectedLabelTextStyle: TextStyle(
+            color: palette.ink,
             fontWeight: FontWeight.w800,
           ),
           unselectedLabelTextStyle: TextStyle(
@@ -314,7 +314,7 @@ class _TabRail extends StatelessWidget {
               NavigationRailDestination(
                 label: Text(tab.label),
                 icon: Icon(tab.icon, color: palette.mutedInk),
-                selectedIcon: Icon(tab.selectedIcon, color: AppColors.white),
+                selectedIcon: Icon(tab.selectedIcon, color: AppColors.textDark),
               ),
           ],
         ),
@@ -323,9 +323,9 @@ class _TabRail extends StatelessWidget {
   }
 }
 
-/// The section-screen header: a cream bar with the screen [title] in the brand
-/// "bubble" heading font (Fredoka, orange). When [onBack] is set (a pushed page
-/// like Support Us) a circular orange-outlined back button (Phosphor caret) sits
+/// The section-screen header: a white bar with the screen [title] in the brand
+/// "bubble" heading font (Fredoka). When [onBack] is set (a pushed page
+/// like Support Us) a circular accent-outlined back button (Phosphor caret) sits
 /// at the leading edge; the top-level tabs have none.
 ///
 /// Implemented as a [PreferredSizeWidget] so it can slot straight into
@@ -342,15 +342,15 @@ class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actions = ref.watch(sectionActionsProvider);
-    // The bar and its divider come from the palette so dark mode darkens with
-    // the body. The orange foreground is the brand accent in both modes.
+    // The bar, its divider and the accent foreground come from the palette so
+    // dark mode darkens with the body.
     final palette = context.palette;
     final barColor = palette.sheet;
     final borderColor = palette.divider;
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: barColor,
-      foregroundColor: AppColors.orange,
+      foregroundColor: palette.accent,
       elevation: 0,
       scrolledUnderElevation: 0,
       toolbarHeight: 72,
@@ -369,7 +369,7 @@ class SectionHeader extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-/// The circular back control: an orange-outlined circle wrapping a Phosphor
+/// The circular back control: an accent-outlined circle wrapping a Phosphor
 /// caret-left, matching the section mockups.
 class _BackCircle extends StatelessWidget {
   const _BackCircle({required this.onTap});
@@ -378,6 +378,7 @@ class _BackCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.palette.accent;
     return Semantics(
       button: true,
       label: 'Back',
@@ -390,13 +391,9 @@ class _BackCircle extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.orange, width: 2),
+            border: Border.all(color: accent, width: 2),
           ),
-          child: const Icon(
-            PhosphorIconsBold.caretLeft,
-            color: AppColors.orange,
-            size: 22,
-          ),
+          child: Icon(PhosphorIconsBold.caretLeft, color: accent, size: 22),
         ),
       ),
     );
@@ -410,27 +407,35 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // bodyLarge, not a bare TextStyle: the app bar's default text style is the
+    // Fredoka title face, which a color-only style would inherit.
+    final hintStyle = Theme.of(
+      context,
+    ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted);
     return InkWell(
       borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       onTap: () => context.push(AppRoutes.search),
       child: Container(
-        height: 40,
+        height: 46,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-        ),
-        child: const Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Search ukulele-tabs.com',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F12324A),
+              offset: Offset(0, 1),
+              blurRadius: 2,
             ),
-            Icon(
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text('Search ukulele-tabs.com', style: hintStyle)),
+            const Icon(
               PhosphorIconsRegular.magnifyingGlass,
               color: AppColors.textMuted,
+              size: 22,
             ),
           ],
         ),

@@ -48,7 +48,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _fontExpanded
                 ? PhosphorIconsFill.caretDown
                 : PhosphorIconsFill.caretRight,
-            color: AppColors.orange,
+            color: context.palette.accent,
           ),
           onTap: () => setState(() => _fontExpanded = !_fontExpanded),
         ),
@@ -136,7 +136,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SwitchListTile(
           key: const Key('maximal-chords-switch'),
           value: maximalChords,
-          activeThumbColor: AppColors.orange,
+          activeThumbColor: AppColors.rust,
           title: Text(
             'MAXIMAL CHORDS',
             style: TextStyle(fontWeight: FontWeight.w700, color: palette.ink),
@@ -163,9 +163,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _Row(
             key: const Key('delete-account-row'),
             label: 'DELETE ACCOUNT',
-            trailing: const Icon(
+            trailing: Icon(
               PhosphorIconsFill.caretRight,
-              color: AppColors.orange,
+              color: context.palette.accent,
             ),
             onTap: () => _confirmDeleteAccount(context),
           ),
@@ -362,7 +362,7 @@ class _ConfirmDialog extends StatelessWidget {
               width: double.infinity,
               child: TextButton(
                 style: TextButton.styleFrom(
-                  backgroundColor: AppColors.orange,
+                  backgroundColor: AppColors.rust,
                   foregroundColor: AppColors.white,
                 ),
                 onPressed: () => Navigator.of(context).pop(false),

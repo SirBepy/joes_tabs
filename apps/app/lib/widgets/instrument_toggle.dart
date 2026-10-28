@@ -73,7 +73,7 @@ class _Segment extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.orange : Colors.transparent,
+          color: selected ? AppColors.rust : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         ),
         child: Text(

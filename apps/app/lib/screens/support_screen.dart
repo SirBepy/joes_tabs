@@ -74,7 +74,7 @@ class SupportScreen extends ConsumerWidget {
             width: double.infinity,
             child: TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: AppColors.orange,
+                backgroundColor: AppColors.rust,
                 foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(

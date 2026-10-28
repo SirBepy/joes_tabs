@@ -12,6 +12,7 @@ import '../state/favorites_provider.dart';
 import '../state/settings_provider.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../web_tabs/open_external.dart';
 import '../widgets/song_tiles.dart';
@@ -35,9 +36,9 @@ class SongDetailScreen extends ConsumerWidget {
     final async = ref.watch(songProvider(songId));
     final isFav = ref.watch(isFavoriteProvider(songId));
 
-    // Light: the theme's orange bar with white title/icons. Dark: the theme's
-    // brown bar (like every other screen), so brand orange is the accent
-    // instead of the background.
+    // Light: the theme's sky band with navy title/icons. Dark: the theme's
+    // navy bar (like every other screen), so sky blue is the accent instead of
+    // the background.
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -51,7 +52,7 @@ class SongDetailScreen extends ConsumerWidget {
             tooltip: isFav ? 'Remove favorite' : 'Add favorite',
             icon: Icon(
               isFav ? PhosphorIconsFill.heart : PhosphorIconsRegular.heart,
-              color: isFav ? (dark ? AppColors.orange : AppColors.white) : null,
+              color: isFav && dark ? AppColors.orange : null,
             ),
             onPressed: () =>
                 ref.read(favoritesProvider.notifier).toggle(songId),
@@ -281,7 +282,7 @@ class _SongBodyState extends ConsumerState<_SongBody>
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Song controls',
-        backgroundColor: AppColors.orange,
+        backgroundColor: AppColors.rust,
         foregroundColor: AppColors.white,
         onPressed: () => _openControls(
           published,
@@ -302,26 +303,37 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Center(
       child: Column(
         children: [
           Text(
-            song.title.toUpperCase(),
+            song.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.orange,
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: palette.ink,
+              fontSize: 26,
+              height: 1.15,
             ),
           ),
-          Text(song.artist, style: const TextStyle(color: AppColors.rust)),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            song.artist,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.accent,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Credit and link back to the page an imported tab was parsed from.
+/// Credit and link back to the page an imported tab was parsed from: a pale
+/// hibiscus pill, so the source reads as a deliberate credit, not a footnote.
 class _SourceCredit extends StatelessWidget {
   const _SourceCredit({required this.url, required this.siteId});
 
@@ -332,12 +344,21 @@ class _SourceCredit extends StatelessWidget {
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(url);
     final name = WebTabSite.byId(siteId)?.name ?? uri?.host ?? url;
-    return Center(
-      child: TextButton.icon(
-        onPressed: uri == null ? null : () => openExternally(uri),
-        icon: const Icon(PhosphorIconsRegular.arrowSquareOut, size: 16),
-        label: Text('Source: $name'),
-        style: TextButton.styleFrom(foregroundColor: AppColors.rust),
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: uri == null ? null : () => openExternally(uri),
+          icon: const Icon(PhosphorIconsRegular.arrowSquareOut, size: 16),
+          label: Text('Source: $name'),
+          style: TextButton.styleFrom(
+            foregroundColor: palette.ink,
+            backgroundColor: palette.chip,
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          ),
+        ),
       ),
     );
   }

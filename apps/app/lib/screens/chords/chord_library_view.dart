@@ -177,8 +177,8 @@ class _RootSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               root,
-              style: const TextStyle(
-                color: AppColors.orange,
+              style: TextStyle(
+                color: context.palette.accent,
                 fontWeight: FontWeight.w900,
                 fontSize: 28,
               ),

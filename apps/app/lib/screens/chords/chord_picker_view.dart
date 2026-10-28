@@ -147,7 +147,7 @@ class _FamilyTab extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.orange : Colors.transparent,
+          color: selected ? AppColors.rust : Colors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         ),
         child: Text(
@@ -211,7 +211,7 @@ class _TypeRow extends StatelessWidget {
         vertical: AppSpacing.xs / 2,
       ),
       child: Material(
-        color: selected ? AppColors.orange : context.palette.card,
+        color: selected ? AppColors.rust : context.palette.card,
         borderRadius: BorderRadius.circular(AppSpacing.radius),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppSpacing.radius),
@@ -272,8 +272,8 @@ class _ResultCard extends StatelessWidget {
           Expanded(
             child: Text(
               symbol,
-              style: const TextStyle(
-                color: AppColors.orange,
+              style: TextStyle(
+                color: context.palette.accent,
                 fontWeight: FontWeight.w900,
                 fontSize: 30,
               ),

@@ -155,4 +155,37 @@ void main() {
       findsOneWidget,
     );
   });
+
+  test('numbers only results whose title and artist repeat', () {
+    Uri u(int n) => Uri.parse('https://www.ukulele-tabs.com/x-uke-tab-$n.html');
+    final versions = searchVersions([
+      _result(u(1), 'Giant Woman', 'Rebecca Sugar'),
+      _result(u(2), 'Giant Woman (steven Universe)', 'Rebecca Sugar'),
+      _result(u(3), 'giant woman', 'rebecca sugar'),
+      _result(u(4), 'Giant Woman', 'Steven Universe'),
+      _result(u(5), 'Giant Woman', 'Rebecca Sugar'),
+    ]);
+    expect(versions, [1, null, 2, null, 3]);
+  });
+
+  testWidgets('same-named results show which version each is', (tester) async {
+    final other = Uri.parse(
+      'https://www.ukulele-tabs.com/uke-songs/rebecca-sugar/love-like-you-uke-tab-2.html',
+    );
+    await _pump(
+      tester,
+      query: 'love',
+      overrides: [
+        webSearchProvider('love').overrideWith(
+          (ref) async => [
+            _result(_love, 'Love Like You', 'Rebecca Sugar'),
+            _result(other, 'Love Like You', 'Rebecca Sugar'),
+          ],
+        ),
+      ],
+    );
+
+    expect(find.text('Rebecca Sugar · Version 1'), findsOneWidget);
+    expect(find.text('Rebecca Sugar · Version 2'), findsOneWidget);
+  });
 }

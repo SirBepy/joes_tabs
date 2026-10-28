@@ -53,14 +53,14 @@ Color? _fill(WidgetTester tester, Finder finder) {
 void main() {
   testWidgets('anonymous: generic welcome, no user name', (tester) async {
     await _pump(tester);
-    expect(find.text('WELCOME'), findsOneWidget);
+    expect(find.text('Welcome'), findsOneWidget);
     expect(find.text('Tap Log In to sync your tabs'), findsNothing);
   });
 
   testWidgets('signed in: greets by the email local part', (tester) async {
     await _pump(tester, user: _user('joe@example.com'));
-    expect(find.text('WELCOME BACK'), findsOneWidget);
-    expect(find.text('JOE!'), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('joe!'), findsOneWidget);
   });
 
   group('sign-in card', () {
@@ -109,7 +109,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await _pump(tester, recent: [_url1, 'catalog-uuid'], saved: {_url2});
 
-    expect(find.text('RECENTLY OPENED'), findsOneWidget);
+    expect(find.text('Recently opened'), findsOneWidget);
     expect(find.text('Riptide'), findsOneWidget);
     expect(find.text('Vance Joy'), findsOneWidget);
     expect(find.text('Over The Rainbow'), findsOneWidget);

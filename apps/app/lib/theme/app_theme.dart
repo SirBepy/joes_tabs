@@ -4,14 +4,16 @@ import 'app_colors.dart';
 import 'app_palette.dart';
 import 'app_spacing.dart';
 
-/// The app's [ThemeData]. Wireframe fidelity only: a warm peach/cream surface
-/// with an orange accent and a rounded, friendly heading style. Widgets must
-/// reference this theme rather than hardcoding colors.
+/// The app's [ThemeData]: pale blue surfaces with white cards, the sky-blue
+/// brand band on top, deep-blue actions, and a rounded, friendly heading style.
+/// Widgets must reference this theme rather than hardcoding colors.
 abstract final class AppTheme {
   static ThemeData get light {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.orange,
-      primary: AppColors.orange,
+      // Deep blue, not the brand sky blue: filled buttons carry white labels,
+      // which only reach contrast on the deeper tone.
+      primary: AppColors.rust,
       secondary: AppColors.rust,
       surface: AppColors.cream,
       brightness: Brightness.light,
@@ -25,15 +27,17 @@ abstract final class AppTheme {
 
     return base.copyWith(
       extensions: const [AppPalette.light],
+      // Navy on the sky band: white on it measures 2.85:1, navy 4.7:1.
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.orange,
-        foregroundColor: AppColors.white,
+        foregroundColor: AppColors.textDark,
         elevation: 0,
         centerTitle: true,
       ),
-      textTheme: _textTheme(base.textTheme),
+      textTheme: _textTheme(base.textTheme, headingColor: AppColors.textDark),
+      dividerTheme: const DividerThemeData(color: AppColors.hairline),
       cardTheme: CardThemeData(
-        color: AppColors.cardPeach,
+        color: AppColors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radius),
@@ -41,7 +45,7 @@ abstract final class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.orange,
+          backgroundColor: AppColors.rust,
           foregroundColor: AppColors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
@@ -67,9 +71,9 @@ abstract final class AppTheme {
     );
   }
 
-  /// The dark counterpart to [light]. Keeps the same orange accent and the
-  /// rounded bubble headings + pill buttons, but on deep warm charcoal-brown
-  /// surfaces with light, readable text. Wireframe-level only.
+  /// The dark counterpart to [light]. Keeps the rounded bubble headings and
+  /// pill buttons on deep navy surfaces; sky blue reads well on navy, so it
+  /// stays the accent here.
   static ThemeData get dark {
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.orange,
@@ -88,16 +92,21 @@ abstract final class AppTheme {
     return base.copyWith(
       extensions: const [AppPalette.dark],
       // The browse app bar tracks the theme so dark mode darkens with the body
-      // instead of keeping the bright orange band. It uses the same darkSurface
+      // instead of keeping the bright sky band. It uses the same darkSurface
       // tone as the SectionHeader, so both top bars and the body are consistent
-      // in dark mode. Light mode keeps the orange brand band unchanged.
+      // in dark mode.
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkText,
         elevation: 0,
         centerTitle: true,
       ),
-      textTheme: _textTheme(base.textTheme, bodyColor: AppColors.darkText),
+      textTheme: _textTheme(
+        base.textTheme,
+        bodyColor: AppColors.darkText,
+        headingColor: AppColors.orange,
+      ),
+      dividerTheme: const DividerThemeData(color: AppColors.darkCard),
       cardTheme: CardThemeData(
         color: AppColors.darkCard,
         elevation: 0,
@@ -107,7 +116,7 @@ abstract final class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.orange,
+          backgroundColor: AppColors.rust,
           foregroundColor: AppColors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
@@ -134,42 +143,42 @@ abstract final class AppTheme {
   }
 
   /// Headings use the bundled [_brandFont] (Fredoka): a chunky rounded "bubble"
-  /// face matching the mockups, at a heavy 600-700 weight. Body / chord-sheet
-  /// text deliberately stays the default readable sans. Display, headline, and
-  /// title styles all render orange (the brand accent) and are shared across
-  /// light and dark; only the body text color differs (defaults to the light
-  /// theme's [AppColors.textDark]).
+  /// face at a heavy 600-700 weight. Body / chord-sheet text deliberately stays
+  /// the default readable sans. Display, headline, and title styles render in
+  /// [headingColor] (navy on light, where sky blue fails contrast; sky blue on
+  /// dark); body text defaults to the light theme's [AppColors.textDark].
   ///
   /// NOTE(design): the exact brand display font is still TBD with Joe; Fredoka
   /// is the stand-in (see pubspec.yaml).
   static const String _brandFont = 'Fredoka';
 
-  static TextTheme _textTheme(TextTheme base, {Color? bodyColor}) {
+  static TextTheme _textTheme(
+    TextTheme base, {
+    Color? bodyColor,
+    required Color headingColor,
+  }) {
     final body = bodyColor ?? AppColors.textDark;
     return base.copyWith(
       displaySmall: base.displaySmall?.copyWith(
         fontFamily: _brandFont,
         fontWeight: FontWeight.w700,
-        color: AppColors.orange,
+        color: headingColor,
         letterSpacing: 1.2,
       ),
       headlineMedium: base.headlineMedium?.copyWith(
         fontFamily: _brandFont,
-        fontWeight: FontWeight.w700,
-        color: AppColors.orange,
+        fontWeight: FontWeight.w600,
+        color: headingColor,
       ),
       headlineSmall: base.headlineSmall?.copyWith(
         fontFamily: _brandFont,
         fontWeight: FontWeight.w600,
-        color: AppColors.orange,
+        color: headingColor,
       ),
-      // Section headers ("SAVED TABS", "TRENDING") render orange in the mockups,
-      // not near-black.
       titleLarge: base.titleLarge?.copyWith(
         fontFamily: _brandFont,
         fontWeight: FontWeight.w600,
-        color: AppColors.orange,
-        letterSpacing: 0.5,
+        color: headingColor,
       ),
       titleMedium: base.titleMedium?.copyWith(
         fontFamily: _brandFont,

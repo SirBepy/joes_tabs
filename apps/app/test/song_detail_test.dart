@@ -89,8 +89,8 @@ void main() {
   ) async {
     await _pump(tester);
 
-    // Header title (upper-cased) and artist.
-    expect(find.text('AMAZING GRACE'), findsOneWidget);
+    // Header title (as written) and artist.
+    expect(find.text('Amazing Grace'), findsOneWidget);
     expect(find.text('Traditional'), findsWidgets);
 
     // Lyric runs from the parsed sheet.

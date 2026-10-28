@@ -245,12 +245,12 @@ void main() {
       final router = await _pumpApp(tester, location: AppRoutes.settings);
       router.push(AppRoutes.support);
       await tester.pumpAndSettle();
-      expect(find.text('SUPPORT US'), findsOneWidget);
+      expect(find.text('Support us'), findsOneWidget);
 
       await tester.tap(_tab('Settings'));
       await tester.pumpAndSettle();
 
-      expect(find.text('SUPPORT US'), findsNothing);
+      expect(find.text('Support us'), findsNothing);
       expect(find.byKey(const Key('account-log-in')), findsOneWidget);
     });
   });
@@ -363,7 +363,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.text('SUPPORT US'), findsOneWidget);
+      expect(find.text('Support us'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Back'));
       await tester.pumpAndSettle();
 
@@ -496,14 +496,14 @@ void main() {
       expect(find.byKey(const Key('home-login-cta')), findsNothing);
     });
 
-    testWidgets('the saved row says SEE ALL and opens /saved', (tester) async {
+    testWidgets('the saved row says See all and opens /saved', (tester) async {
       final router = await _pumpApp(tester);
       await tester.scrollUntilVisible(
         find.byKey(const Key('home-saved-see-all')),
         200,
       );
 
-      expect(find.text('SEE ALL'), findsOneWidget);
+      expect(find.text('See all'), findsOneWidget);
       expect(find.textContaining('ALL SAVED TABS'), findsNothing);
 
       await tester.ensureVisible(find.byKey(const Key('home-saved-see-all')));

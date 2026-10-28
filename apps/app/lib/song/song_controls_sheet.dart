@@ -2,7 +2,6 @@ import 'package:flutter/material.dart' hide Tab;
 import 'package:models/models.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
@@ -183,7 +182,7 @@ class _TransposeRow extends StatelessWidget {
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: Text(
               'Capo $capo',
-              style: const TextStyle(color: AppColors.rust),
+              style: TextStyle(color: context.palette.accent),
             ),
           ),
         if (transpose != 0)

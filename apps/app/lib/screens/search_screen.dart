@@ -133,6 +133,7 @@ class _Results extends ConsumerWidget {
             if (results.isEmpty) {
               return EmptyState(message: 'No songs found for "$query".');
             }
+            final versions = searchVersions(results);
             return SongListOrGrid(
               itemCount: results.length,
               itemBuilder: (_, i) => SongListTile(
@@ -142,11 +143,33 @@ class _Results extends ConsumerWidget {
                   artist: results[i].artist,
                 ),
                 highlight: query,
+                version: versions[i],
               ),
             );
           },
         );
   }
+}
+
+/// Each result's version number among results with the same title and artist
+/// (case-insensitive), in page order, or null when its title and artist are
+/// unique. The site lists many user-made sheets of one song with nothing else
+/// to tell them apart (no rating or date on the search page).
+List<int?> searchVersions(List<WebSearchResult> results) {
+  String key(WebSearchResult r) =>
+      '${r.title.toLowerCase()}\u0000${(r.artist ?? '').toLowerCase()}';
+  final totals = <String, int>{};
+  for (final r in results) {
+    totals.update(key(r), (n) => n + 1, ifAbsent: () => 1);
+  }
+  final seen = <String, int>{};
+  return [
+    for (final r in results)
+      if (totals[key(r)]! > 1)
+        seen.update(key(r), (n) => n + 1, ifAbsent: () => 1)
+      else
+        null,
+  ];
 }
 
 class _OpenOnSite extends StatelessWidget {
@@ -171,7 +194,7 @@ class _OpenOnSite extends StatelessWidget {
             FilledButton.icon(
               icon: const Icon(PhosphorIconsRegular.arrowSquareOut),
               label: const Text('Search on ukulele-tabs.com'),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.orange),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.rust),
               onPressed: () => openExternally(ukuleleTabsSearchUrl(query)),
             ),
           ],

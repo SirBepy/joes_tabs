@@ -61,13 +61,13 @@ class ScrollableChipRow extends StatelessWidget {
                     label: Text(option),
                     selected: option == selected,
                     showCheckmark: false,
-                    selectedColor: AppColors.orange,
+                    selectedColor: AppColors.rust,
                     backgroundColor: context.palette.chip,
                     labelStyle: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: option == selected
                           ? AppColors.white
-                          : AppColors.rust,
+                          : context.palette.accent,
                     ),
                     side: BorderSide.none,
                     onSelected: (_) => onSelected(option),
