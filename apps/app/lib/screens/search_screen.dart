@@ -75,12 +75,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             prefixIcon: const Icon(
               PhosphorIconsRegular.magnifyingGlass,
               color: AppColors.textMuted,
+              size: 20,
             ),
+            // 40px tall, matching Home's search pill: the default 48px icon
+            // box would otherwise set the field's height.
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 44,
+              minHeight: 40,
+            ),
+            isDense: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
               borderSide: BorderSide.none,
             ),
-            contentPadding: EdgeInsets.zero,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
           ),
         ),
       ),

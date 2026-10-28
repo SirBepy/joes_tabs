@@ -23,7 +23,7 @@ import '../widgets/song_tiles.dart';
 /// artist, the horizontal chord-diagram strip, and the rendered chord sheet
 /// (chords over lyrics) dominate. The playback controls (instrument toggle,
 /// transpose, autoscroll) are NOT inline: they live in a brand-styled bottom
-/// sheet opened from the orange faders [FloatingActionButton] at bottom-right,
+/// sheet opened from the round faders [FloatingActionButton] at bottom-right,
 /// matching the mockup. The app-bar heart toggles the in-memory favorites
 /// store.
 class SongDetailScreen extends ConsumerWidget {
@@ -38,12 +38,16 @@ class SongDetailScreen extends ConsumerWidget {
 
     // Light: the theme's sky band with white icons. Dark: the theme's navy bar
     // (like every other screen), so sky blue is the accent instead of the
-    // background. No title: the whole app is ukulele-tabs.com, and the song's
-    // own name heads the page.
+    // background. The bar names the artist: the song's own name heads the
+    // page and is often too long for a bar.
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final artist = async.valueOrNull?.song.artist ?? '';
 
     return Scaffold(
       appBar: AppBar(
+        title: artist.isEmpty
+            ? null
+            : Text(artist, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             tooltip: isFav ? 'Remove favorite' : 'Add favorite',
@@ -234,6 +238,17 @@ class _SongBodyState extends ConsumerState<_SongBody>
           child: CustomScrollView(
             controller: _scroll,
             slivers: [
+              // Full width, outside the page padding, so a strip wider than
+              // the screen is cut off by the screen edge, not by a margin.
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: _ChordStrip(
+                    chords: sheet.chordsUsed,
+                    instrumentSlug: slug,
+                  ),
+                ),
+              ),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -245,11 +260,6 @@ class _SongBodyState extends ConsumerState<_SongBody>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ChordStrip(
-                        chords: sheet.chordsUsed,
-                        instrumentSlug: slug,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
                       _Header(song: widget.data.song),
                       if (tab.sourceUrl case final url?) _OpenInWeb(url: url),
                       const SizedBox(height: AppSpacing.md),
@@ -280,6 +290,7 @@ class _SongBodyState extends ConsumerState<_SongBody>
         tooltip: 'Song controls',
         backgroundColor: AppColors.rust,
         foregroundColor: AppColors.white,
+        shape: const CircleBorder(),
         onPressed: () => _openControls(
           published,
           instruments,
@@ -367,6 +378,7 @@ class _ChordStrip extends StatelessWidget {
       height: 110,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: chords.length,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (_, i) =>

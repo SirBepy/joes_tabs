@@ -416,7 +416,7 @@ class _SearchField extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       onTap: () => context.push(AppRoutes.search),
       child: Container(
-        height: 46,
+        height: 40,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -435,7 +435,7 @@ class _SearchField extends StatelessWidget {
             const Icon(
               PhosphorIconsRegular.magnifyingGlass,
               color: AppColors.textMuted,
-              size: 22,
+              size: 20,
             ),
           ],
         ),

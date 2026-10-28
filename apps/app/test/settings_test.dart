@@ -138,6 +138,23 @@ void main() {
     expect(tester.widget<SwitchListTile>(sw).value, isTrue);
   });
 
+  testWidgets('Account sits at the bottom of the screen, below the rows', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pump(tester);
+
+    final register = tester.getRect(find.byKey(const Key('account-register')));
+    final adRow = tester.getRect(find.byKey(const Key('watch-ad-row')));
+    expect(register.top, greaterThan(adRow.bottom));
+    // Pinned to the bottom of the space, not stacked right under the rows.
+    expect(844 - register.bottom, lessThan(40));
+    expect(register.top - adRow.bottom, greaterThan(100));
+  });
+
   testWidgets('Delete Account is hidden while signed out', (tester) async {
     await _pump(tester);
 

@@ -39,121 +39,147 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = ref.watch(currentUserProvider);
     final palette = context.palette;
 
-    return ListView(
-      children: [
-        // FONT SETTINGS (expandable).
-        _Row(
-          label: 'FONT SETTINGS',
-          trailing: Icon(
-            _fontExpanded
-                ? PhosphorIconsFill.caretDown
-                : PhosphorIconsFill.caretRight,
-            color: context.palette.accent,
-          ),
-          onTap: () => setState(() => _fontExpanded = !_fontExpanded),
-        ),
-        if (_fontExpanded)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              AppSpacing.md,
+    // The settings rows scroll from the top; Account sits pinned to the
+    // bottom of the remaining space (it joins the scroll once the rows fill
+    // the screen).
+    return CustomScrollView(
+      slivers: [
+        SliverList.list(
+          children: [
+            // FONT SETTINGS (expandable).
+            _Row(
+              label: 'FONT SETTINGS',
+              trailing: Icon(
+                _fontExpanded
+                    ? PhosphorIconsFill.caretDown
+                    : PhosphorIconsFill.caretRight,
+                color: context.palette.accent,
+              ),
+              onTap: () => setState(() => _fontExpanded = !_fontExpanded),
             ),
-            child: Row(
-              children: [
-                const Text('Font size:'),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'Decrease font size',
-                  icon: const Icon(PhosphorIconsRegular.minus),
-                  onPressed: fontSize > 8
-                      ? () => ref
-                            .read(fontSizeProvider.notifier)
-                            .set(fontSize - 1)
-                      : null,
+            if (_fontExpanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.md,
                 ),
-                Text('$fontSize', key: const Key('font-size-value')),
-                IconButton(
-                  tooltip: 'Increase font size',
-                  icon: const Icon(PhosphorIconsRegular.plus),
-                  onPressed: fontSize < 40
-                      ? () => ref
-                            .read(fontSizeProvider.notifier)
-                            .set(fontSize + 1)
-                      : null,
+                child: Row(
+                  children: [
+                    const Text('Font size:'),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Decrease font size',
+                      icon: const Icon(PhosphorIconsRegular.minus),
+                      onPressed: fontSize > 8
+                          ? () => ref
+                                .read(fontSizeProvider.notifier)
+                                .set(fontSize - 1)
+                          : null,
+                    ),
+                    Text('$fontSize', key: const Key('font-size-value')),
+                    IconButton(
+                      tooltip: 'Increase font size',
+                      icon: const Icon(PhosphorIconsRegular.plus),
+                      onPressed: fontSize < 40
+                          ? () => ref
+                                .read(fontSizeProvider.notifier)
+                                .set(fontSize + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            const Divider(height: 1),
+            // THEME (System / Light / Dark), beside its label. Text-only segments:
+            // with icons the three no longer fit next to the label on a phone.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  Expanded(child: Text('THEME', style: _labelStyle(context))),
+                  SegmentedButton<ThemeMode>(
+                    key: const Key('theme-mode-selector'),
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        label: Text('System'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        label: Text('Light'),
+                      ),
+                      ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+                    ],
+                    selected: {themeMode},
+                    showSelectedIcon: false,
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onSelectionChanged: (s) =>
+                        ref.read(themeModeProvider.notifier).set(s.first),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            SwitchListTile(
+              key: const Key('maximal-chords-switch'),
+              value: maximalChords,
+              activeThumbColor: AppColors.rust,
+              title: Text('MAXIMAL CHORDS', style: _labelStyle(context)),
+              subtitle: const Text(
+                'Show advanced chord types (9ths, 11ths, altered, etc.)',
+              ),
+              onChanged: (v) => ref.read(maximalChordsProvider.notifier).set(v),
+            ),
+            const Divider(height: 1),
+            // MY TAGS (placeholder, future feature).
+            _Row(
+              label: 'MY TAGS',
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tag management coming soon.')),
+              ),
+            ),
+            const Divider(height: 1),
+            // WATCH AN AD TO SUPPORT US (rewarded ad, optional, mobile only). On
+            // web/desktop the row is disabled with a caption, since AdMob has no
+            // web support.
+            _buildWatchAdRow(),
+            const Divider(height: 1),
+          ],
+        ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              const SizedBox(height: AppSpacing.xl),
+              const Divider(height: 1),
+              const _AccountSection(),
+              // Log out lives in the Account section; only deletion is below
+              // it.
+              if (user != null) ...[
+                Divider(height: 1, color: palette.divider),
+                // Google Play requires in-app deletion for apps that create
+                // accounts.
+                _Row(
+                  key: const Key('delete-account-row'),
+                  label: 'DELETE ACCOUNT',
+                  trailing: Icon(
+                    PhosphorIconsFill.caretRight,
+                    color: context.palette.accent,
+                  ),
+                  onTap: () => _confirmDeleteAccount(context),
                 ),
               ],
-            ),
-          ),
-        const Divider(height: 1),
-        // THEME (System / Light / Dark), beside its label. Text-only segments:
-        // with icons the three no longer fit next to the label on a phone.
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          child: Row(
-            children: [
-              Expanded(child: Text('THEME', style: _labelStyle(context))),
-              SegmentedButton<ThemeMode>(
-                key: const Key('theme-mode-selector'),
-                segments: const [
-                  ButtonSegment(value: ThemeMode.system, label: Text('System')),
-                  ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-                  ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-                ],
-                selected: {themeMode},
-                showSelectedIcon: false,
-                style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                onSelectionChanged: (s) =>
-                    ref.read(themeModeProvider.notifier).set(s.first),
-              ),
             ],
           ),
         ),
-        const Divider(height: 1),
-        SwitchListTile(
-          key: const Key('maximal-chords-switch'),
-          value: maximalChords,
-          activeThumbColor: AppColors.rust,
-          title: Text('MAXIMAL CHORDS', style: _labelStyle(context)),
-          subtitle: const Text(
-            'Show advanced chord types (9ths, 11ths, altered, etc.)',
-          ),
-          onChanged: (v) => ref.read(maximalChordsProvider.notifier).set(v),
-        ),
-        const Divider(height: 1),
-        // MY TAGS (placeholder, future feature).
-        _Row(
-          label: 'MY TAGS',
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tag management coming soon.')),
-          ),
-        ),
-        const Divider(height: 1),
-        // WATCH AN AD TO SUPPORT US (rewarded ad, optional, mobile only). On
-        // web/desktop the row is disabled with a caption, since AdMob has no
-        // web support.
-        _buildWatchAdRow(),
-        const Divider(height: 1),
-        const _AccountSection(),
-        // Log out lives in the Account section; only deletion is below it.
-        if (user != null) ...[
-          const SizedBox(height: AppSpacing.xl),
-          Divider(height: 1, color: palette.divider),
-          // Google Play requires in-app deletion for apps that create accounts.
-          _Row(
-            key: const Key('delete-account-row'),
-            label: 'DELETE ACCOUNT',
-            trailing: Icon(
-              PhosphorIconsFill.caretRight,
-              color: context.palette.accent,
-            ),
-            onTap: () => _confirmDeleteAccount(context),
-          ),
-        ],
       ],
     );
   }

@@ -28,13 +28,13 @@ abstract final class AppTheme {
     return base.copyWith(
       extensions: const [AppPalette.light],
       // White on the sky band is the brand look, though it measures 2.85:1.
-      // 72 tall so the 46px search pill has room around it.
+      // 64 tall so the 40px search pill has 12px of band above and below.
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.orange,
         foregroundColor: AppColors.white,
         elevation: 0,
         centerTitle: true,
-        toolbarHeight: 72,
+        toolbarHeight: 64,
       ),
       textTheme: _textTheme(base.textTheme, headingColor: AppColors.textDark),
       dividerTheme: const DividerThemeData(color: AppColors.hairline),
@@ -102,7 +102,7 @@ abstract final class AppTheme {
         foregroundColor: AppColors.darkText,
         elevation: 0,
         centerTitle: true,
-        toolbarHeight: 72,
+        toolbarHeight: 64,
       ),
       textTheme: _textTheme(
         base.textTheme,

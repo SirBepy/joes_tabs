@@ -380,6 +380,9 @@ void main() {
       expect(find.byKey(const Key('account-register')), findsOneWidget);
       expect(find.byKey(const Key('account-log-out')), findsNothing);
 
+      // Account is pinned below the rows, past the fold in a short window.
+      await tester.ensureVisible(find.byKey(const Key('account-log-in')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('account-log-in')));
       await tester.pumpAndSettle();
       expect(_path(router), AppRoutes.login);
@@ -390,6 +393,9 @@ void main() {
     ) async {
       final router = await _pumpApp(tester, location: AppRoutes.settings);
 
+      // Account is pinned below the rows, past the fold in a short window.
+      await tester.ensureVisible(find.byKey(const Key('account-register')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('account-register')));
       await tester.pumpAndSettle();
 
@@ -421,6 +427,9 @@ void main() {
       expect(find.byKey(const Key('account-log-in')), findsNothing);
       expect(find.byKey(const Key('account-register')), findsNothing);
 
+      // Account is pinned below the rows, past the fold in a short window.
+      await tester.ensureVisible(find.byKey(const Key('account-log-out')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('account-log-out')));
       await tester.pumpAndSettle();
 
@@ -444,6 +453,9 @@ void main() {
         overrides: [_signedIn, authServiceProvider.overrideWithValue(auth)],
       );
 
+      // Account is pinned below the rows, past the fold in a short window.
+      await tester.ensureVisible(find.byKey(const Key('account-log-out')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('account-log-out')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('NOPE!'));

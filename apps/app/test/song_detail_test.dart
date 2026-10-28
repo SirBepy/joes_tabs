@@ -68,8 +68,24 @@ void main() {
     await _pump(tester, theme: AppTheme.light);
 
     expect(_appBarColor(tester), AppColors.orange);
-    // The song's own name heads the page, so the bar carries no title.
+    // The bar names the artist; the song's own name heads the page.
     expect(find.text('Ukulele Tabs'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Traditional'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the song controls button is round', (tester) async {
+    await _pump(tester);
+
+    final fab = tester.widget<FloatingActionButton>(
+      find.byType(FloatingActionButton),
+    );
+    expect(fab.shape, isA<CircleBorder>());
   });
 
   testWidgets('dark theme uses the dark bar', (tester) async {
