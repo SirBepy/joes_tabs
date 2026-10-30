@@ -90,14 +90,17 @@ const _named = {
 };
 
 /// Decodes the named entities above plus decimal and hex numeric ones.
-String decodeHtmlEntities(String s) =>
-    s.replaceAllMapped(RegExp(r'&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);'), (m) {
-      final e = m.group(1)!;
-      if (e.startsWith('#x') || e.startsWith('#X')) {
-        return String.fromCharCode(int.parse(e.substring(2), radix: 16));
-      }
-      if (e.startsWith('#')) {
-        return String.fromCharCode(int.parse(e.substring(1)));
-      }
-      return _named[e.toLowerCase()] ?? m.group(0)!;
-    });
+String decodeHtmlEntities(String s) => s.replaceAllMapped(
+  RegExp(r'&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);'),
+  (m) {
+    final e = m.group(1)!;
+    if (e.startsWith('#')) {
+      final hex = e.startsWith('#x') || e.startsWith('#X');
+      final code = int.tryParse(e.substring(hex ? 2 : 1), radix: hex ? 16 : 10);
+      // fromCharCode throws above U+10FFFF, which would fail the whole search.
+      if (code == null || code > 0x10FFFF) return m.group(0)!;
+      return String.fromCharCode(code);
+    }
+    return _named[e.toLowerCase()] ?? m.group(0)!;
+  },
+);

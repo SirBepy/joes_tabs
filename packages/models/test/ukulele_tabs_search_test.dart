@@ -49,6 +49,13 @@ void main() {
     });
   });
 
+  test('decodeHtmlEntities leaves an out-of-range numeric entity as text', () {
+    expect(
+      decodeHtmlEntities('a &#99999999; &#xFFFFFFFF; b &#65;'),
+      'a &#99999999; &#xFFFFFFFF; b A',
+    );
+  });
+
   test('ukuleleTabsSearchUrl encodes the trimmed query', () {
     expect(
       ukuleleTabsSearchUrl('  steven universe ').toString(),
