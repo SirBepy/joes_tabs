@@ -1,17 +1,15 @@
 name: Release APK
 
-# Cuts a GitHub Release with a built APK whenever the version in package.json
-# changes. `/commit pushnbump` bumps package.json and pushes to master, so this
-# fires automatically: read the version, and if no `v<version>` tag/release
-# exists yet, build the APK and publish the release (which also creates the tag).
-# A normal push that does not change the version finds the tag already present
-# and skips the build, so only version bumps produce releases.
+# ut-client demo branch: run by hand (workflow_dispatch, ref ut-client). Builds
+# the Play app bundle for the Ukulele Tabs demo and uploads it to the internal
+# testing track, then pushes an `ut-v<version>` tag so the same version is not
+# built twice. It publishes no GitHub Release and no APK artifact on purpose:
+# the demo reads ukulele-tabs.com, whose terms forbid extraction without written
+# permission, so it must not be downloadable from this public repo.
 #
-# Both the APK and the Play app bundle are signed with the upload keystore, so
-# every build has the same certificate and native Google sign-in keeps working
-# (the OAuth Android client is registered against that SHA-1). They are wired to
-# the cloud Supabase backend so the mobile app shares account data with the web
-# app. The bundle also goes to the Play internal testing track.
+# The bundle is signed with the upload keystore, so every build has the same
+# certificate and native Google sign-in keeps working (the OAuth Android client
+# is registered against that SHA-1). It is wired to the cloud Supabase backend.
 #
 # Repository secrets (GitHub > Settings > Secrets and variables > Actions):
 #   KEYSTORE_BASE64           - base64 of the upload keystore (.jks)
@@ -31,7 +29,7 @@ env:
   FLUTTER_VERSION: "3.38.3"
 
 permissions:
-  # Required so softprops/action-gh-release can create the tag + Release.
+  # Required so the tag step can push the ut-v<version> tag.
   contents: write
 
 jobs:
@@ -61,16 +59,16 @@ jobs:
       - name: Does the tag already exist?
         id: tag
         run: |
-          if git rev-parse "v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "ut-v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Tag v${{ steps.ver.outputs.version }} already exists - skipping release."
+            echo "Tag ut-v${{ steps.ver.outputs.version }} already exists - skipping release."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No tag for v${{ steps.ver.outputs.version }} yet - will build + release."
+            echo "No tag for ut-v${{ steps.ver.outputs.version }} yet - will build + upload."
           fi
 
   release:
-    name: Build APK + bundle and publish release
+    name: Build bundle and upload to Play
     needs: check
     if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
@@ -128,17 +126,7 @@ jobs:
 
       # Secrets are injected at build time; if unset they expand to empty and
       # the app runs without that feature. The version name is stamped from
-      # package.json so the installed app matches the release tag.
-      - name: Build signed APK
-        working-directory: apps/app
-        run: >
-          flutter build apk --release
-          --build-name=${{ needs.check.outputs.version }}
-          --build-number=${{ needs.check.outputs.version_code }}
-          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-
+      # package.json so the installed app matches the tag.
       - name: Build signed app bundle
         working-directory: apps/app
         run: >
@@ -149,20 +137,9 @@ jobs:
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
 
-      - name: Rename APK
-        run: cp apps/app/build/app/outputs/flutter-apk/app-release.apk "joes-tabs-${{ needs.check.outputs.version }}.apk"
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: joes-tabs-apk
-          path: joes-tabs-${{ needs.check.outputs.version }}.apk
-          if-no-files-found: error
-
-      # Runs before the GitHub Release on purpose: the release creates the
-      # v<version> tag, and the check job skips any version whose tag exists,
-      # so a Play failure after tagging could never be retried by a re-run.
-      # Pinned to the v1.1.5 commit so a moved tag cannot swap in other code.
+      # Runs before the tag on purpose: the check job skips any version whose
+      # tag exists, so a Play failure after tagging could never be retried by a
+      # re-run. Pinned to the v1.1.5 commit so a moved tag cannot swap in other code.
       - name: Upload to Google Play (internal track)
         if: env.HAS_PLAY_ACCOUNT == 'true'
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5
@@ -173,10 +150,7 @@ jobs:
           track: internal
           status: completed
 
-      - name: Create release and attach APK
-        uses: softprops/action-gh-release@v2.0.8
-        with:
-          tag_name: v${{ needs.check.outputs.version }}
-          name: v${{ needs.check.outputs.version }}
-          files: joes-tabs-${{ needs.check.outputs.version }}.apk
-          generate_release_notes: true
+      - name: Tag this version
+        run: |
+          git tag "ut-v${{ needs.check.outputs.version }}"
+          git push origin "ut-v${{ needs.check.outputs.version }}"
