@@ -70,8 +70,12 @@ class _WebTabScreenState extends ConsumerState<WebTabScreen> {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageFinished: (_) =>
-              _controller?.runJavaScript(webTabExtractionScript(site)),
+          // A followed link to another song would otherwise be saved under
+          // this song's URL and title.
+          onPageFinished: (loaded) {
+            if (Uri.tryParse(loaded)?.path != widget.url.path) return;
+            _controller?.runJavaScript(webTabExtractionScript(site));
+          },
         ),
       )
       ..loadRequest(widget.url);
