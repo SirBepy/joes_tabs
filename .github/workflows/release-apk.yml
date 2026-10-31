@@ -21,8 +21,6 @@ name: Release APK
 #                               upload step is skipped while it is unset
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 env:
@@ -70,7 +68,9 @@ jobs:
   release:
     name: Build bundle and upload to Play
     needs: check
-    if: needs.check.outputs.should_release == 'true'
+    # The ref guard stops a dispatch on another branch from building its code
+    # and tagging it as the demo.
+    if: needs.check.outputs.should_release == 'true' && github.ref == 'refs/heads/ut-client'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -150,7 +150,9 @@ jobs:
           track: internal
           status: completed
 
+      # Skipped with the upload: a tag without an upload would block a retry.
       - name: Tag this version
+        if: env.HAS_PLAY_ACCOUNT == 'true'
         run: |
           git tag "ut-v${{ needs.check.outputs.version }}"
           git push origin "ut-v${{ needs.check.outputs.version }}"
